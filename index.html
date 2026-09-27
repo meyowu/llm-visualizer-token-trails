@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Latent Atlas</title>
+    <meta name="description" content="AI 概念的可交互图谱：用动画拆开 Transformer、推理引擎与 Agent。" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="rail">
+        <div>
+          <div class="brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 7h18M3 12h18M3 17h18" stroke="var(--faint)" stroke-width="1.4" />
+              <path d="M9 17C3 15 3 9 9 7" fill="none" stroke="var(--t0)" stroke-width="1.6" stroke-linecap="round" />
+              <path d="M9 17C5 16 5 13 9 12" fill="none" stroke="var(--t2)" stroke-width="1.6" stroke-linecap="round" />
+              <circle cx="9" cy="17" r="2" fill="var(--ink)" />
+            </svg>
+            <b>Latent Atlas</b>
+          </div>
+          <p class="tagline">AI 概念的可交互图谱</p>
+        </div>
+        <nav class="nav" aria-label="展品"></nav>
+        <div class="rail-foot">
+          <div class="legend"><span><i class="on"></i>已上线</span><span><i></i>筹备中</span></div>
+          <div><kbd>Space</kbd> 播放 / 暂停　<kbd>←</kbd> <kbd>→</kbd> 切换阶段</div>
+          <div>点击画布上带 ↗ 的部件，展开它的计算细节。</div>
+        </div>
+      </aside>
+      <main class="main"></main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

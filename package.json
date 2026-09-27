@@ -1,0 +1,19 @@
+{
+  "name": "latent-atlas",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Interactive, animated visualizations of AI concepts, starting with the Transformer.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "build:artifact": "vite build --mode artifact && node scripts/artifact.mjs",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vite-plugin-singlefile": "^2.3.3"
+  }
+}
