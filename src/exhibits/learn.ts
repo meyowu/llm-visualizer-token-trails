@@ -454,6 +454,33 @@ const LEARN: Record<string, Learn> = {
       'One image takes many full passes (250 here), each removing a little noise.',
     ],
   },
+  mamba: {
+    refs: [["Gu & Dao 2023, Mamba: Linear-Time Sequence Modeling with Selective State Spaces", "https://arxiv.org/abs/2312.00752"], ["Gu et al. 2021, Efficiently Modeling Long Sequences with Structured State Spaces (S4)", "https://arxiv.org/abs/2111.00396"], ["state-spaces/mamba-130m-hf, the weights behind the real numbers", "https://huggingface.co/state-spaces/mamba-130m-hf"]],
+    code: {
+      lines: [
+        '# the Mamba block: one mixer where GPT-2 has attention and an MLP',
+        'x, z = in_proj(rms_norm(u)).chunk(2, dim=-1)       # 768 → 2 × 1,536',
+        'x = F.silu(causal_conv1d(x))                       # depthwise, width 4',
+        'dt, B, C = x_proj(x).split([48, 16, 16], dim=-1)   # all three depend on the token',
+        'dt = F.softplus(dt_proj(dt))                       # Δ: a step size per channel',
+        'A = -torch.exp(A_log)                              # (1536, 16) learned decay rates',
+        'for t in range(T):                                 # the selective scan',
+        '    h = torch.exp(dt[t, :, None] * A) * h + dt[t, :, None] * B[t] * x[t, :, None]',
+        '    y[t] = (h * C[t]).sum(-1) + D * x[t]',
+        'u = u + out_proj(y * F.silu(z))',
+      ],
+      at: { blocks: [0, 1, 2, 9], cost: [6, 7], scan: [5, 6, 7, 8], select: [3, 4, 7], predict: [] },
+    },
+    checks: [
+      { phase: 'cost', q: 'As the text gets longer, how much does Mamba keep in memory to predict the next token?', options: ['The same amount at any length: a fixed-size state', 'More with every token, like a KV cache', 'Nothing at all', 'The whole text'], answer: 0, why: 'Everything earlier tokens contributed is folded into the state, 16 numbers per channel plus 3 inputs for the convolution.' },
+      { phase: 'select', q: 'In Mamba, what does a large step size Δ on a token do?', options: ['Writes that token strongly into the state and forgets more of the past', 'Skips the token', 'Makes the model wider', 'Nothing: Δ is fixed after training'], answer: 0, why: 'The old state is multiplied by e^(ΔA), which shrinks as Δ grows, while the input enters with weight Δ·B.' },
+    ],
+    recap: [
+      'Mamba replaces attention with a selective state-space scan: a fixed-size state updated once per token.',
+      'Its step size Δ and its B and C depend on the input, so it chooses per token what to write and what to keep.',
+      'Its work grows linearly with the length of the text and its memory stays constant.',
+    ],
+  },
   llama: {
     refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {

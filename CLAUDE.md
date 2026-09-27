@@ -45,6 +45,7 @@ src/lib/t5/data.ts          types for src/data/t5.json, and T5's relative-positi
 src/lib/vit/data.ts         decodes src/data/vit.json (int8 base64): posSim(i, j), filters, explained
 src/lib/clip/data.ts        types for src/data/clip.json, preview(i) canvases of the drawn images, softmax
 src/lib/dit/data.ts         decodes src/data/dit.json (meanAbs, heatAt) and DDPM's ALPHA_BAR schedule
+src/lib/mamba/data.ts       types for src/data/mamba.json
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
@@ -63,6 +64,8 @@ scripts/clip-export.ts      offline CLIP ViT-B/32 (both towers, CLIP BPE) on fou
                             src/data/clip.json; weights in ~/.cache/token-trails/clip (safetensors from refs/pr/21)
 scripts/dit-export.ts       fetches DiT-XL/2 embedder and adaLN tensors of blocks 1, 14, 28 by HTTP range (safetensors
                             from refs/pr/1, cached in ~/.cache/token-trails/dit); writes src/data/dit.json
+scripts/mamba-export.ts     offline Mamba-130m (selective scan, GPT-NeoX BPE): next-token guesses and Δ per layer and
+                            token; writes src/data/mamba.json; weights in ~/.cache/token-trails/mamba
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
   overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
@@ -81,6 +84,8 @@ src/exhibits/lineage/
                             translation, the three attentions, cross-attention GEMM, post-LN (real GPT-2 stream
                             lengths), sinusoids vs GPT-2's real W_P
   llama.ts                  LLaMA 3 vs GPT-2: blocks, RoPE, RMSNorm, SwiGLU, GQA (real numbers are LLaMA 3 8B)
+  mamba.ts                  Mamba-130m vs GPT-2: one mixer per block, KV cache vs fixed state, a toy scan coloured by the tokens
+                            each state number holds, real Δ of every layer, real next-token guesses next to GPT-2's
   dit.ts                    DiT-XL/2 vs GPT-2: exact noising with DiT's schedule (toy image), latent patches, real adaLN-Zero
                             gates and scales vs t, a 250-step sampling run with the true noise
   clip.ts                   CLIP ViT-B/32 vs GPT-2: two towers, real embeddings and their PCA (modality gap), real I · Tᵀ

@@ -3,6 +3,7 @@ import { mountClip } from './lineage/clip'
 import { mountDeepseek } from './lineage/deepseek'
 import { mountDit } from './lineage/dit'
 import { mountLlama } from './lineage/llama'
+import { mountMamba } from './lineage/mamba'
 import { mountT5 } from './lineage/t5'
 import { mountVit } from './lineage/vit'
 import { mountMixtral } from './lineage/mixtral'
@@ -85,7 +86,7 @@ export const CATEGORIES: Category[] = [
       { name: 'CLIP', tag: 'image ↔ text embeddings', route: 'lineage/clip', mount: mountClip },
       { name: 'Diffusion Transformer', tag: 'denoising · DiT', route: 'lineage/dit', mount: mountDit },
       { heading: 'Beyond attention' },
-      { name: 'Mamba', tag: 'attention → selective SSM' },
+      { name: 'Mamba', tag: 'attention → selective SSM', route: 'lineage/mamba', mount: mountMamba },
     ],
   },
   {
