@@ -42,6 +42,7 @@ src/exhibits/registry.ts    categories (Anatomy, Lineage, Training, Interpretabi
                             an exhibit may have `children` (its steps); live when it has `route` and `mount`
 src/lib/bert/data.ts        types for src/data/bert.json (masked-word examples, a look-ahead head, a sentence pair)
 src/lib/t5/data.ts          types for src/data/t5.json, and T5's relative-position bucket()
+src/lib/vit/data.ts         decodes src/data/vit.json (int8 base64): posSim(i, j), filters, explained
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
@@ -54,6 +55,8 @@ scripts/bert-export.ts      offline BERT-base (uncased) forward pass, WordPiece 
                             weights in ~/.cache/token-trails/bert (model.safetensors, vocab.txt)
 scripts/t5-export.ts        offline T5-small encoder–decoder with greedy decoding, SentencePiece unigram included;
                             writes src/data/t5.json; weights in ~/.cache/token-trails/t5 (model.safetensors, tokenizer.json)
+scripts/vit-export.ts       fetches two ViT-B/16 tensors by HTTP range (cached in ~/.cache/token-trails/vit): position
+                            similarities and patch-filter principal components; writes src/data/vit.json
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
   overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
@@ -72,6 +75,8 @@ src/exhibits/lineage/
                             translation, the three attentions, cross-attention GEMM, post-LN (real GPT-2 stream
                             lengths), sinusoids vs GPT-2's real W_P
   llama.ts                  LLaMA 3 vs GPT-2: blocks, RoPE, RMSNorm, SwiGLU, GQA (real numbers are LLaMA 3 8B)
+  vit.ts                    ViT-B/16 vs GPT-2: toy image → 14 × 14 patches, patch-embedding GEMM + real filter components,
+                            real position-embedding similarity (the learned 2D grid), only [CLS] classified
   t5.ts                     T5-small vs GPT-2 and 2017: real text-to-text answers, span corruption (paper figure 2 + a real fill),
                             blocks, relative position buckets, real learned biases per bucket and head
   bert.ts                   BERT-base vs GPT-2: same shape, real heads (GPT-2 previous-token vs BERT next-token),

@@ -375,6 +375,31 @@ const LEARN: Record<string, Learn> = {
       'Position enters as a learned bias per bucket of relative distance and per head, added to the attention scores.',
     ],
   },
+  vit: {
+    refs: [["Dosovitskiy et al. 2020, An Image is Worth 16x16 Words (ViT)", "https://arxiv.org/abs/2010.11929"], ["google/vit-base-patch16-224, the weights behind the real numbers", "https://huggingface.co/google/vit-base-patch16-224"]],
+    code: {
+      lines: [
+        '# ViT: an image becomes a sequence of patch tokens',
+        'patches = img.unfold(16)                        # (196, 16 · 16 · 3 = 768)',
+        'x = patches @ W_patch + b                       # = Conv2d(3, 768, kernel=16, stride=16)',
+        'x = torch.cat([cls_token, x]) + pos_emb         # (197, 768), learned positions',
+        'for block in blocks:                            # GPT-2 small\'s shape, pre-LN',
+        '    x = x + attn(ln_1(x))                       # no mask: every patch sees every patch',
+        '    x = x + mlp(ln_2(x))',
+        'logits = head(ln_f(x[0]))                       # [CLS] only → 1,000 classes',
+      ],
+      at: { blocks: [4, 5, 6], patches: [1], embed: [1, 2], positions: [3], head: [7] },
+    },
+    checks: [
+      { phase: 'positions', q: 'ViT’s position embeddings are a plain list of 197 vectors, with no 2D layout given. What did they learn?', options: ['Nearby patches, and patches in the same row or column, get similar vectors: the 2D grid', 'All positions look alike', 'Only the left-to-right reading order', 'Random noise'], answer: 0, why: 'Neighbouring patches tend to look alike, so training pulls their position vectors together; the grid emerges from the data.' },
+      { phase: 'head', q: 'Which output does ViT classify?', options: ['Only the [CLS] token’s', 'Every patch’s, one label each', 'The last patch’s', 'The average of the pixels'], answer: 0, why: 'The [CLS] token has no pixels of its own; through attention it gathers what the class head needs.' },
+    ],
+    recap: [
+      'ViT turns an image into 196 patch tokens plus a [CLS] token and runs GPT-2-sized encoder blocks on them, with no mask.',
+      'Each patch is flattened and multiplied by one shared matrix: a 16 × 16 convolution with stride 16.',
+      'Its learned 1D positions rediscover the 2D grid, and only the [CLS] output is classified.',
+    ],
+  },
   llama: {
     refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {
