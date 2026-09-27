@@ -617,6 +617,30 @@ const LEARN: Record<string, Learn> = {
       'The output is exactly the large model’s; the speed-up depends on the acceptance rate and on how cheap the draft is.',
     ],
   },
+  quantization: {
+    refs: [["Dettmers et al. 2022, LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale", "https://arxiv.org/abs/2208.07339"], ["Frantar et al. 2022, GPTQ", "https://arxiv.org/abs/2210.17323"], ["Lin et al. 2023, AWQ: Activation-aware Weight Quantization", "https://arxiv.org/abs/2306.00978"], ["Xiao et al. 2022, SmoothQuant", "https://arxiv.org/abs/2211.10438"]],
+    code: {
+      lines: [
+        '# absmax, symmetric: one scale per group of weights',
+        'q = 2 ** (bits - 1) - 1                          # 127 for int8, 7 for int4',
+        'W = W.reshape(out_features, -1, group)            # groups of 128 along the input',
+        'scale = W.abs().amax(dim=-1, keepdim=True) / q',
+        'codes = torch.round(W / scale).clamp(-q, q).to(torch.int8)',
+        '# at inference: dequantize on the fly (weight-only) and multiply in 16-bit',
+        'y = x @ (codes * scale).reshape(out_features, -1).T',
+      ],
+      at: { formats: [], round: [0, 1, 3, 4], scales: [2, 3], outliers: [3], effect: [5, 6] },
+    },
+    checks: [
+      { phase: 'scales', q: 'Why does int4 with one scale per matrix break GPT-2, while int4 in groups of 128 works?', options: ['One scale is set by the largest weight in the matrix, leaving most weights on one or two levels', 'Groups use more bits per weight', 'Per-tensor scales are stored in lower precision', 'The groups skip the largest weights'], answer: 0, why: 'With 15 levels spread over the range of the single largest weight, typical weights round to 0 or ±1 level; small groups set the grid by their own local maximum.' },
+      { phase: 'outliers', q: 'Why are activations harder to quantize than weights?', options: ['A few dimensions are much larger than the rest, and they stretch the grid', 'Activations are always negative', 'Activations change size during training only', 'There are fewer activations than weights'], answer: 0, why: 'With one scale per vector, a single large value makes the step between levels large, so most ordinary values round to zero.' },
+    ],
+    recap: [
+      'Quantization stores weights as small integers times a scale: 8 bits halve a 16-bit model, 4 bits quarter it.',
+      'Finer scales (per channel, per group of 128) keep the rounding error small; one scale per matrix does not.',
+      'Activations have outliers, so 4-bit serving usually quantizes only the weights; on GPT-2, int8 is nearly lossless.',
+    ],
+  },
   llama: {
     refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {

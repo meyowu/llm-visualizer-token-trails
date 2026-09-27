@@ -2,6 +2,7 @@ import { mountContinuousBatching } from './serving/batching'
 import { mountFlashAttention } from './serving/flashattention'
 import { mountKvCache } from './serving/kvcache'
 import { mountPagedAttention } from './serving/paged'
+import { mountQuantization } from './serving/quantization'
 import { mountSpeculative } from './serving/speculative'
 import { mountBert } from './lineage/bert'
 import { mountClip } from './lineage/clip'
@@ -128,7 +129,7 @@ export const CATEGORIES: Category[] = [
       { name: 'PagedAttention', tag: 'block tables', route: 'serving/pagedattention', mount: mountPagedAttention },
       { name: 'Continuous Batching', tag: 'iteration-level', route: 'serving/continuous-batching', mount: mountContinuousBatching },
       { name: 'Speculative Decoding', tag: 'draft → verify', route: 'serving/speculative-decoding', mount: mountSpeculative },
-      { name: 'Quantization', tag: 'int4 · fp8' },
+      { name: 'Quantization', tag: 'int4 · fp8', route: 'serving/quantization', mount: mountQuantization },
     ],
   },
   {

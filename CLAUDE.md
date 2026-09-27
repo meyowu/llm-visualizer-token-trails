@@ -49,6 +49,7 @@ src/lib/clip/data.ts        types for src/data/clip.json, preview(i) canvases of
 src/lib/dit/data.ts         decodes src/data/dit.json (meanAbs, heatAt) and DDPM's ALPHA_BAR schedule
 src/lib/mamba/data.ts       types for src/data/mamba.json
 src/lib/spec/data.ts        types for src/data/spec.json, plain() for GPT-2 spellings
+src/lib/quant/data.ts       types for src/data/quant.json
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
@@ -72,6 +73,9 @@ scripts/mamba-export.ts     offline Mamba-130m (selective scan, GPT-NeoX BPE): n
                             token; writes src/data/mamba.json; weights in ~/.cache/token-trails/mamba
 scripts/spec-export.ts      speculative decoding for real: distilgpt2 drafts, GPT-2 small verifies; writes src/data/spec.json;
                             weights in ~/.cache/token-trails/gpt2 and ~/.cache/token-trails/distilgpt2
+scripts/quant-export.ts     GPT-2 small with its linear weights rounded to int8/int4 (per tensor, channel, group of 128) and
+                            rerun; writes src/data/quant.json
+scripts/gpt2-model.ts       shared GPT-2-shaped forward pass for spec-export and quant-export
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
   overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
@@ -115,6 +119,8 @@ src/exhibits/serving/
                             scheduler, wait/latency/throughput, chunked prefill step times
   speculative.ts            a real run of distilgpt2 drafting for GPT-2 small (scripts/spec-export.ts): one round checked,
                             all rounds, the min(1, p/q) rule with real p and q, tokens per pass and speed-up vs draft cost
+  quantization.ts           number formats, absmax rounding of a real GPT-2 weight column (int8, int4), per-tensor/channel/group
+                            scales with real errors and perplexities, a real activation's outliers, real next-token effect
 ```
 
 ## Adding an exhibit or detail view
