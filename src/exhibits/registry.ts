@@ -1,4 +1,5 @@
 import { mountAttention } from './transformer/attention'
+import { mountEmbedding } from './transformer/embedding'
 import { mountMlp } from './transformer/mlp'
 import { mountOverview } from './transformer/overview'
 import { mountTokenizer } from './transformer/tokenizer'
@@ -29,7 +30,7 @@ export const CATEGORIES: Category[] = [
     items: [
       { name: 'Forward pass', tag: 'tokenizer → LM head', route: 'transformer', mount: mountOverview },
       { name: 'Tokenizer', tag: 'byte-level BPE', route: 'transformer/tokenizer', mount: mountTokenizer },
-      { name: 'Embedding', tag: 'W_E · positions' },
+      { name: 'Embedding', tag: 'W_E · positions', route: 'transformer/embedding', mount: mountEmbedding },
       { name: 'Attention', tag: 'QKᵀ · softmax · V', route: 'transformer/attention', mount: mountAttention },
       { name: 'MLP', tag: '768 → 3072 → 768', route: 'transformer/mlp', mount: mountMlp },
       { name: 'LayerNorm & Residual', tag: 'pre-LN stream' },

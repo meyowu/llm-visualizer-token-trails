@@ -63,10 +63,19 @@ export const transpose = (A: M): M => A[0].map((_, j) => A.map((r) => r[j]))
 const randMat = (r: () => number, rows: number, cols: number, s: number): M =>
   Array.from({ length: rows }, () => Array.from({ length: cols }, () => gauss(r) * s))
 
-/** Token embedding plus sinusoidal position, both at toy width. */
-export function embedRow(t: Tok, i: number): number[] {
+/** Row `t.id` of the toy token-embedding matrix W_E. */
+export function tokEmb(t: { id: number }): number[] {
   const r = rng(t.id * 9973 + 17)
-  return Array.from({ length: TOY.d }, (_, k) => gauss(r) + 0.5 * Math.sin(i / Math.pow(10, (2 * Math.floor(k / 2)) / TOY.d) + (k % 2) * (Math.PI / 2)))
+  return Array.from({ length: TOY.d }, () => gauss(r))
+}
+/** Row `i` of the toy position-embedding matrix W_P. GPT-2 learns these; the toy uses a sinusoid. */
+export function posEmb(i: number): number[] {
+  return Array.from({ length: TOY.d }, (_, k) => 0.5 * Math.sin(i / Math.pow(10, (2 * Math.floor(k / 2)) / TOY.d) + (k % 2) * (Math.PI / 2)))
+}
+/** Token embedding plus position embedding: the residual stream entering block 1. */
+export function embedRow(t: Tok, i: number): number[] {
+  const e = tokEmb(t), p = posEmb(i)
+  return e.map((v, k) => v + p[k])
 }
 
 export function layerNorm(v: number[]): number[] {
