@@ -267,3 +267,21 @@ abbr.term { text-decoration: underline dotted; text-decoration-color: var(--mute
 
 .legend-opts { display: flex; gap: 8px; align-items: center; margin: 0 0 10px; font-size: 12.5px; color: var(--ink2); }
 .sr-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- questions, recaps and code ---------- */
+.coach { flex: 1 0 100%; order: -1; border: 1px solid var(--line2); border-radius: 10px; background: var(--bg2); padding: 14px 18px; }
+.coach-k { margin: 0 0 6px; font: 500 10.5px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--mute); }
+.coach-q { margin: 0 0 10px; font-size: 15px; color: var(--ink); }
+.coach-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.coach-opts button { border: 1px solid var(--line2); border-radius: 8px; background: none; padding: 7px 12px; cursor: pointer; color: var(--ink2); font: 400 13.5px var(--sans); text-align: left; }
+.coach-opts button:hover:not(:disabled) { border-color: var(--mute); color: var(--ink); }
+.coach-opts button.right { border-color: var(--t4); color: var(--ink); }
+.coach-opts button.wrong { border-color: var(--t6); }
+.coach-why { margin: 10px 0 0; color: var(--ink2); font-size: 13.5px; }
+.coach ul { margin: 0; padding-left: 18px; color: var(--ink2); font-size: 13.5px; display: grid; gap: 4px; }
+.coach-go { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+.chap.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.code-d { order: 6; }
+.code-d pre { margin: 10px 0 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg2); overflow-x: auto; font: 400 12.5px/1.6 var(--mono); color: var(--mute); max-width: 900px; }
+.code-d pre span { display: inline-block; min-width: 100%; }
+.code-d pre span.on { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }

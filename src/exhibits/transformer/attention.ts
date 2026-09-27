@@ -5,8 +5,9 @@ import { C, blend, rgba } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
 import { F, chipW, drawChip, fillRich, mathName, mathRun, plate, subLabel, useCtx } from '../../core/draw'
 import { MatrixKit, fmt, gemm, lr, type M, type Rect } from '../../core/matrix'
+import { teach } from '../learn'
 import type { Nav } from '../registry'
-import { TOY, attention, laneMix, promptTokens, transpose } from './model'
+import { TOY, attention, laneMix, matmul, promptTokens, transpose, type Head } from './model'
 
 /*
  * Attention, opened up. One head of block 1 at toy scale (d_model 8, d_head 4), with every
@@ -29,7 +30,7 @@ const SUBS = '₀₁₂₃₄₅₆₇₈₉'
 export function mountAttention(root: HTMLElement, nav: Nav): () => void {
   const reduced = reducedMotion()
   const seq = promptTokens(), N = seq.length, R = attention(seq)
-  const S = { head: 0 }
+  const S = { head: 0, brk: 0 }
 
   const frame = createFrame(root, {
     formula: true,
@@ -48,12 +49,35 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
   const stage = new Stage(frame.stageHost, 1040, 470, 'Step-by-step attention: X times W_Q, W_K and W_V gives Q, K and V; Q times K transposed gives scores, which are scaled, masked and softmaxed into attention weights A; A times V is projected by W_O and added back to the residual stream.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
+  teach(player, 'attention')
   toggle(player.meta, 'Attention head', ['head 1', 'head 2'], 0, (i) => {
     S.head = i
     frame.setSubtitle(`causal self-attention · block 1 · head ${i + 1}`)
   })
   const prog = (id: string) => player.prog(id)
-  const hd = () => R.heads[S.head]
+  // "break it": recompute this head without the ÷√d scale or without the causal mask
+  const BREAKS = ['as trained', 'no ÷√d', 'no mask']
+  toggle(player.meta, 'Break it', BREAKS, 0, (i) => { S.brk = i })
+  function broken(h: Head): Head {
+    if (!S.brk) return h
+    const noMask = S.brk === 2, Ss = S.brk === 1 ? h.S : h.Ss
+    const A = Ss.map((r, i) => {
+      const vis = r.map((_, j) => noMask || j <= i), m = Math.max(...r.filter((_, j) => vis[j]))
+      const e = r.map((v, j) => (vis[j] ? Math.exp(v - m) : 0)), z = e.reduce((a, b) => a + b, 0)
+      return e.map((v) => v / z)
+    })
+    return { ...h, Ss, A, O: matmul(A, h.V) }
+  }
+  const hd = () => broken(R.heads[S.head])
+  /** What the break changes, for the notes. */
+  const breakNote = () => {
+    if (S.brk === 1) {
+      const peak = (A: M) => A.reduce((s, r) => s + Math.max(...r), 0) / A.length
+      return ` Broken: without ÷√d the rows get sharper (largest weight per row ${fmt(peak(hd().A))} instead of ${fmt(peak(R.heads[S.head].A))}). At GPT-2's d_head 64 the scores would be 8× too large and each row would collapse onto one token.`
+    }
+    if (S.brk === 2) return ` Broken: without the mask ${tl(0)} attends to ${tl(1)} and later tokens. In training that is reading the answer: position i could copy token i + 1.`
+    return ''
+  }
 
   /* ---------- layouts, one per scene ---------- */
   const pad = 36, tokW = 76, top = 60, bot = 46
@@ -180,7 +204,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     const scaleT = eio(clamp(pc / 0.6))
     const vals = h.S.map((r, i) => r.map((v, j) => lerp(v, h.Ss[i][j], scaleT)))
     const vmax = Math.max(...vals.flat().map(Math.abs))
-    const maskP = (i: number, j: number) => (j > i ? clamp((pm - (j - i - 1) * 0.12) / 0.4) : 0)
+    const maskP = (i: number, j: number) => (j > i && S.brk !== 2 ? clamp((pm - (j - i - 1) * 0.12) / 0.4) : 0)
     const softR = (i: number) => clamp((pso - i * 0.13) / 0.35)
     const named = pso > 0.5 ? 'A' : scaleT > 0.5 ? 'S′' : 'S'
     drawMat({
@@ -189,7 +213,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
         const m = maskP(i, j), sr = softR(i)
         let fa = 0
         if (m < 1) fa = paintCell(x, y, cc, vals[i][j], vmax, null, 0.45, a * (1 - sr) * (1 - m))
-        if (sr > 0 && j <= i) fa = Math.max(fa, paintAttn(x, y, cc, h.A[i][j], tokRGB(j), a * sr))
+        if (sr > 0 && (j <= i || S.brk === 2)) fa = Math.max(fa, paintAttn(x, y, cc, h.A[i][j], tokRGB(j), a * sr))
         if (m > 0) hatch(x, y, cc, a * m)
         return m > 0.5 ? 0 : sr > 0.5 ? 0.05 + 0.9 * Math.sqrt(h.A[i][j]) : fa
       },
@@ -205,8 +229,8 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     }
     drawOps(L.opsX, L.S.y, c, [
       ['Q · Kᵀ', clamp((ps - 0.22) / 0.75), 'one dot product per cell'],
-      ['÷ √d_head', pc, `÷ ${Math.sqrt(TOY.dh)}  (GPT-2: ÷ 8)`],
-      ['mask', pm, 'set j > i to −∞'],
+      ['÷ √d_head', pc, S.brk === 1 ? 'skipped (broken)' : `÷ ${Math.sqrt(TOY.dh)}  (GPT-2: ÷ 8)`],
+      ['mask', pm, S.brk === 2 ? 'skipped (broken)' : 'set j > i to −∞'],
       ['softmax', pso, 'each row sums to 1'],
     ], tr)
 
@@ -215,14 +239,16 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
       gemmOverlay({ A: L.Q, Av: h.Q, B: L.KT, Bv: transpose(h.K), C: L.S, f, names: ['S', 'Q', 'Kᵀ'], note: `${tl(f.i)}'s query · ${tl(f.j)}'s key: the higher the score, the more ${tl(f.i)} attends to ${tl(f.j)}.` })
     } else if (pso > 0) {
       const i = mk.focus?.key === 'S' ? mk.focus.i : Math.min(N - 1, Math.floor(clamp(pso / 0.87) * N))
-      const row = h.Ss[i].slice(0, i + 1), arow = h.A[i].slice(0, i + 1)
+      const n = S.brk === 2 ? N : i + 1, row = h.Ss[i].slice(0, n), arow = h.A[i].slice(0, n)
       mk.formula = {
         segs: [[`A[${i}]`, C.ink], ['  =  softmax( ', C.mute], [row.map(fmt).join(', '), C.ink2], [' )  =  ', C.mute], [arow.map((v) => v.toFixed(2)).join(', '), C.ink]],
-        note: `The ${i + 1} tokens ${tl(i)} can see: exponentiate, divide by the sum. The largest score takes most of the weight.`,
+        note: `The ${n} tokens ${tl(i)} can see: exponentiate, divide by the sum. The largest score takes most of the weight.${breakNote()}`,
       }
       ctx.strokeStyle = rgba(C.ink, 0.9); ctx.lineWidth = 1.5; ctx.strokeRect(L.S.x - 1, L.S.y + i * c - 1, N * c + 2, c + 2)
     } else if (pm > 0) {
-      mk.formula = { segs: [['S′[i,j]  =  −∞', C.ink], ['    when j > i', C.mute]], note: 'Token i sees only itself and earlier tokens. exp(−∞) = 0, so these weights become 0.' }
+      mk.formula = S.brk === 2
+        ? { segs: [['no mask', C.ink], ['    (broken)', C.mute]], note: 'Every token now sees every other one, later ones included.' + breakNote() }
+        : { segs: [['S′[i,j]  =  −∞', C.ink], ['    when j > i', C.mute]], note: 'Token i sees only itself and earlier tokens. exp(−∞) = 0, so these weights become 0.' }
     } else if (pc > 0) {
       mk.formula = { segs: [['S′  =  S / √d_head  =  S / ', C.ink], [String(Math.sqrt(TOY.dh)), C.ink]], note: `After scaling, the ${tl(N - 1)} row goes from [${h.S[N - 1].map(fmt).join(', ')}] to [${h.Ss[N - 1].map(fmt).join(', ')}].` }
     }
@@ -231,24 +257,24 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
   /* ---------- scene 3: A · V ---------- */
   function attnPaint(A: M) {
     return (x: number, y: number, c: number, i: number, j: number, a: number) => {
-      if (j > i) { hatch(x, y, c, a); return 0 }
+      if (j > i && S.brk !== 2) { hatch(x, y, c, a); return 0 }
       return paintAttn(x, y, c, A[i][j], tokRGB(j), a)
     }
   }
-  const attnText = (A: M) => (i: number, j: number) => (j > i ? '' : fmt(A[i][j]))
+  const attnText = (A: M) => (i: number, j: number) => (j > i && S.brk !== 2 ? '' : fmt(A[i][j]))
   function drawPanel(i: number, a: number) {
     const L = G.av, h = hd(), c = L.O.c, rh = clamp(c * 0.82, 22, 30), s = Math.min(rh * 0.68, 16)
     const x = L.px, y0 = L.A.y, vmax = Math.max(...h.V.flat().map(Math.abs))
     mathRun([['o', false], [String(i), true], [' = Σ', false], ['j', true], [' a', false], [`${i}j`, true], [' · v', false], ['j', true]], x, y0 - 12, a)
-    const amax = Math.max(...h.A[i])
-    for (let j = 0; j <= i; j++) {
+    const amax = Math.max(...h.A[i]), n = S.brk === 2 ? N : i + 1
+    for (let j = 0; j < n; j++) {
       const y = y0 + j * rh + rh / 2, w = h.A[i][j], wa = a * (0.25 + 0.75 * (w / amax))
       drawChip(x, y, seq[j], wa, Math.min(18, rh * 0.75), false, F.mono(11, 500))
       ctx.font = F.mono(11); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
       ctx.fillStyle = rgba(C.ink2, wa); ctx.fillText('× ' + w.toFixed(2), x + 60, y)
       for (let k = 0; k < TOY.dh; k++) paintCell(x + 118 + k * (s + 2), y - s / 2, s, h.V[j][k] * w / amax, vmax, tokRGB(j), 0, a)
     }
-    const ys = y0 + (i + 1) * rh + 6, xr = x + 118 + TOY.dh * (s + 2)
+    const ys = y0 + n * rh + 6, xr = x + 118 + TOY.dh * (s + 2)
     ctx.strokeStyle = rgba(C.ink, 0.5 * a); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + 118, ys); ctx.lineTo(xr - 2, ys); ctx.stroke()
     const oc = oCols(h.A)[i], omax = Math.max(...h.O.flat().map(Math.abs))
     ctx.font = F.mono(11); ctx.fillStyle = rgba(C.mute, a); ctx.textAlign = 'right'; ctx.textBaseline = 'middle'

@@ -5,6 +5,7 @@ import { C, blend, mixc, pop, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
 import { F, bracketLabel, chipW, drawChip, plate, rr, spaced, subLabel, tokDisp, tokLabel, tokText, useCtx } from '../../core/draw'
 import { PROMPT_LABELS, headKind, mixing, nextDist, presets, type Dist, type GptPass, type Preset } from '../../lib/gpt2/data'
+import { teach } from '../learn'
 import type { Nav } from '../registry'
 
 const PHASES = [
@@ -62,6 +63,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   const stage = new Stage(frame.stageHost, 980, 460, 'Animation of a GPT-2 small forward pass with real numbers: the prompt is tokenized and embedded, flows through attention and MLP blocks, and the last position is turned into next-token probabilities; the most likely token is appended and the pass repeats.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
+  teach(player, 'overview')
   const PRESETS = presets()
 
   const S = { preset: 0, passIdx: 0, layer: 0, head: 0, prevYs: null as number[] | null, prevSp: 0, hover: -1, lock: -1, hoverPlate: '' }

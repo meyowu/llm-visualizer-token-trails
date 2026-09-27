@@ -5,6 +5,7 @@ import { Player } from '../../core/player'
 import { Stage, runLoop } from '../../core/stage'
 import { C, blend, pop, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
+import { teach } from '../learn'
 import type { Nav } from '../registry'
 import { LN, LN_EPS, TOY, attention, embedRow, laneMix, lnStats, promptTokens } from './model'
 
@@ -45,6 +46,7 @@ export function mountLayerNorm(root: HTMLElement, nav: Nav): () => void {
   const stage = new Stage(frame.stageHost, 1040, 470, 'LayerNorm and the residual stream: the stream flows straight through a block while each sub-layer reads a normalised copy and adds its output back; LayerNorm centres each token vector, scales it to unit variance, then applies a learned scale and shift.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
+  teach(player, 'layernorm')
   const prog = (id: string) => player.prog(id)
   const mk = new MatrixKit(stage, seq, frame.setFormula)
   const { tokRGB, tl } = mk

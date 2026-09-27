@@ -6,6 +6,7 @@ import { Stage, poke, runLoop } from '../../core/stage'
 import { C, mixc, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
 import { Gpt2Bpe, PRETOKENIZE_SOURCE, type PieceTrace } from '../../lib/gpt2/bpe'
+import { teach } from '../learn'
 import type { Nav } from '../registry'
 
 /*
@@ -52,6 +53,7 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
   const stage = new Stage(frame.stageHost, 1040, 470, 'Byte-level BPE on your text: the text is split into pieces, each piece becomes bytes, and inside each piece the adjacent pair with the lowest merge rank is fused, again and again, until each piece is a few vocabulary tokens with ids.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
+  teach(player, 'tokenizer')
   const prog = (id: string) => player.prog(id)
   const specText = root.querySelector('.specs div:last-child dd') as HTMLElement
 

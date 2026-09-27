@@ -5,6 +5,7 @@ import { Stage, runLoop } from '../../core/stage'
 import { C, blend, rgba } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
 import { chipW, F, mathName, plate, serifAt, subLabel, useCtx } from '../../core/draw'
+import { teach } from '../learn'
 import type { Nav } from '../registry'
 import { GELU_MIN, TOY, TOY_FF, attention, gelu, laneMix, mlp, promptTokens, transpose } from './model'
 
@@ -44,6 +45,7 @@ export function mountMlp(root: HTMLElement, nav: Nav): () => void {
   const stage = new Stage(frame.stageHost, 1040, 470, 'Step-by-step MLP: X is multiplied by W_fc and widened four times, GELU is applied to every cell, the result is projected back down by W_proj, and the output is added to the residual stream.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
+  teach(player, 'mlp')
   const prog = (id: string) => player.prog(id)
 
   /* ---------- layout ---------- */

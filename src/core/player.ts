@@ -11,6 +11,20 @@ export interface Phase {
   short?: string
   dur: number
 }
+/** A predict-then-reveal question asked when playback reaches the start of `phase`. */
+export interface Check {
+  phase: string
+  q: string
+  options: string[]
+  answer: number
+  why: string
+}
+/** Lines of real code for this view; `at` lists the lines each phase runs. */
+export interface Code {
+  lines: string[]
+  at: Record<string, number[]>
+}
+
 export interface TimedPhase extends Phase {
   start: number
   end: number
@@ -19,6 +33,8 @@ export interface TimedPhase extends Phase {
 const PAUSE_ICON = 'M4 3h3v10H4zM9 3h3v10H9z'
 const PLAY_ICON = 'M4.5 2.5v11l9-5.5z'
 const SPEEDS = [0.25, 0.5, 1, 2]
+/** Questions already answered right in this browser are not asked again. */
+const answered = (c: Check) => { try { return !!JSON.parse(pref.get('checks') ?? '{}')[c.q] } catch { return false } }
 
 /** The phase the next Player should open on, set by the router from a link like #/anatomy/unembed?phase=sample. */
 let pendingPhase: string | null = null
@@ -44,12 +60,21 @@ export class Player {
   onEnd: (() => void) | null = null
   /** Caption text and shape of phase i, for the list of all steps. */
   describe: ((i: number) => [string, string]) | null = null
+  /** Questions to answer before a phase plays. */
+  checks: Check[] = []
+  /** Three takeaways shown when the last step ends. */
+  recap: string[] = []
   /** Slot for exhibit-specific controls (head switcher, temperature…). */
   readonly meta: HTMLElement
   private byId: Record<string, TimedPhase> = {}
   private segs: { el: HTMLButtonElement; fill: HTMLElement }[] = []
   private steps: HTMLDetailsElement
   private shown = -1
+  private card: HTMLElement
+  private codeEl: HTMLDetailsElement | null = null
+  private code: Code | null = null
+  private asked = new Set<string>()
+  private controls: HTMLElement
   private btn: HTMLButtonElement
   private nextBtn: HTMLButtonElement
   private icon: SVGPathElement
@@ -135,7 +160,13 @@ export class Player {
     this.steps.className = 'steps'
     this.steps.innerHTML = '<summary>All steps</summary><ol></ol>'
     this.steps.addEventListener('toggle', () => this.renderSteps())
-    controls.append(transport, tl, this.meta, this.steps)
+    // a card above the controls for questions and the end-of-page recap
+    this.card = document.createElement('section')
+    this.card.className = 'coach'
+    this.card.hidden = true
+    this.card.setAttribute('aria-live', 'polite')
+    this.controls = controls
+    controls.append(this.card, transport, tl, this.meta, this.steps)
     // a pointer click leaves focus on the button, where Space would click it again instead of play / pause
     controls.addEventListener('click', (e) => { if (e.detail > 0) (e.target as HTMLElement).closest('button')?.blur() })
     if (pendingPhase) {
@@ -177,6 +208,8 @@ export class Player {
     if (v && this.held) {
       const ci = this.curIndex()
       this.t = ci === this.phases.length - 1 ? this.total : this.phases[ci + 1].start + 0.001
+      const q = ci < this.phases.length - 1 && this.pending(this.phases[ci + 1].id)
+      if (q) { this.setHeld(false); this.ask(q); return }
     }
     if (v && !this.onEnd && this.t >= this.total) this.t = 0
     this.setHeld(false)
@@ -201,7 +234,13 @@ export class Player {
   step(dir: number) {
     this.setHeld(false)
     this.seekPhase(dir)
+    const q = dir > 0 && this.pending(this.cur().id)
+    if (q) { this.setPlaying(false); this.ask(q); return }
     if (this.t < this.total || this.onEnd) this.setPlaying(true)
+  }
+  /** The question waiting at a phase, if it has not been asked here or answered before. */
+  private pending(phase: string) {
+    return this.checks.find((c) => c.phase === phase && !this.asked.has(phase) && !answered(c)) ?? null
   }
 
   seekPhase(dir: number) {
@@ -228,6 +267,10 @@ export class Player {
   tick(dt: number) {
     if (this.playing) {
       const end = this.phases[this.curIndex()].end, nt = this.t + dt * this.speed
+      // a question waits at the start of its phase
+      const crossing = this.checks.find((c) => { const p = this.byId[c.phase]; return p && this.t < p.start && nt >= p.start })
+      const q = crossing && this.pending(crossing.phase)
+      if (q) { this.t = this.byId[q.phase].start + 0.001; this.setPlaying(false); this.ask(q); return }
       if (this.guided && this.t < end && nt >= end) {
         this.t = end - 1e-4
         this.setPlaying(false)
@@ -244,6 +287,10 @@ export class Player {
 
   updateUI() {
     const ci = this.curIndex()
+    // the recap shows once the last step has played to its end
+    const atEnd = !this.onEnd && this.recap.length > 0 && ci === this.phases.length - 1 && (this.held || (!this.playing && this.t >= this.total - 0.01))
+    if (atEnd && this.card.hidden) this.showRecap()
+    else if (!atEnd && this.card.dataset.kind === 'recap' && !this.card.hidden) this.card.hidden = true
     this.segs.forEach((s, i) => {
       const p = this.phases[i]
       s.fill.style.transform = `scaleX(${clamp((this.t - p.start) / p.dur)})`
@@ -253,6 +300,7 @@ export class Player {
       this.shown = ci
       if (this.steps.open) this.renderSteps()
       this.linkPhase(this.phases[ci].id)
+      this.markCode()
     }
   }
 
@@ -262,6 +310,62 @@ export class Player {
     const [route] = location.hash.replace(/^#\/?/, '').split('?')
     const want = `#/${route}?phase=${id}`
     if (location.hash !== want) try { history.replaceState(history.state, '', want) } catch { /* sandboxed frames may refuse */ }
+  }
+
+  /** Show a question card; playback waits until it is answered or skipped. */
+  private ask(c: Check) {
+    this.asked.add(c.phase)
+    this.card.dataset.kind = 'check'
+    this.card.hidden = false
+    this.card.innerHTML = `<p class="coach-k">Predict first</p><p class="coach-q">${rich(c.q)}</p><div class="coach-opts"></div><p class="coach-why" hidden></p><div class="coach-go"><button type="button" class="chap">Skip</button></div>`
+    const opts = this.card.querySelector('.coach-opts')!, why = this.card.querySelector('.coach-why') as HTMLElement, go = this.card.querySelector('.coach-go button') as HTMLButtonElement
+    c.options.forEach((o, i) => {
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.innerHTML = rich(o)
+      b.addEventListener('click', () => {
+        const ok = i === c.answer
+        opts.querySelectorAll('button').forEach((x, k) => { (x as HTMLButtonElement).disabled = true; if (k === c.answer) x.classList.add('right'); else if (x === b) x.classList.add('wrong') })
+        why.hidden = false
+        why.innerHTML = `${ok ? 'Right.' : 'Not quite.'} ${withTerms(rich(c.why))}`
+        go.textContent = 'Watch it ›'
+        go.focus()
+        if (ok) try { const m = JSON.parse(pref.get('checks') ?? '{}'); m[c.q] = 1; pref.set('checks', JSON.stringify(m)) } catch { /* ignore */ }
+      })
+      opts.appendChild(b)
+    })
+    go.addEventListener('click', () => { this.card.hidden = true; this.setPlaying(true) })
+    ;(opts.firstElementChild as HTMLElement | null)?.focus({ preventScroll: true })
+  }
+
+  private showRecap() {
+    this.card.dataset.kind = 'recap'
+    this.card.hidden = false
+    this.card.innerHTML = `<p class="coach-k">Recap</p><ul>${this.recap.map((r) => `<li>${withTerms(rich(r))}</li>`).join('')}</ul><div class="coach-go"><button type="button" class="chap replay">↺ Replay</button></div>`
+    const go = this.card.querySelector('.coach-go')!
+    this.card.querySelector('.replay')!.addEventListener('click', () => { this.card.hidden = true; this.t = 0; this.setPlaying(true) })
+    const next = this.btn.closest('.view')?.querySelector('.chapnav .chap.next') as HTMLButtonElement | null
+    if (next) {
+      const b = document.createElement('button')
+      b.type = 'button'; b.className = 'chap primary'; b.textContent = next.textContent ?? 'Next ›'
+      b.addEventListener('click', () => next.click())
+      go.appendChild(b)
+    }
+  }
+
+  /** Real code for this view in a drawer; the current step's lines are marked. */
+  setCode(code: Code) {
+    this.code = code
+    this.codeEl = document.createElement('details')
+    this.codeEl.className = 'steps code-d'
+    this.codeEl.innerHTML = `<summary>Code</summary><pre><code>${code.lines.map((l) => `<span>${l.replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[ch]!)}</span>`).join('\n')}</code></pre>`
+    this.controls.appendChild(this.codeEl)
+    this.markCode()
+  }
+  private markCode() {
+    if (!this.code || !this.codeEl) return
+    const on = new Set(this.code.at[this.phases[this.curIndex()].id] ?? [])
+    this.codeEl.querySelectorAll('pre span').forEach((el, i) => el.classList.toggle('on', on.has(i)))
   }
 
   private renderSteps() {

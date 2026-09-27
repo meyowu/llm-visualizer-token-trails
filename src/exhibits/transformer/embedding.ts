@@ -5,6 +5,7 @@ import { Player } from '../../core/player'
 import { Stage, runLoop } from '../../core/stage'
 import { C, rgba } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
+import { teach } from '../learn'
 import type { Nav } from '../registry'
 import { TOY, TOY_PROMPTS, posEmb, tokEmb, toyTokens, type Tok } from './model'
 
@@ -53,6 +54,7 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
   const stage = new Stage(frame.stageHost, 1040, 470, 'Embedding: each token id becomes a one-hot row that selects one row of the embedding matrix W_E; the position embedding for each slot is then added to form the residual stream.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
+  teach(player, 'embedding')
   const prog = (id: string) => player.prog(id)
   const mk = new MatrixKit(stage, seq, frame.setFormula)
   const { tokRGB, tl } = mk

@@ -7,6 +7,7 @@ import { Stage, runLoop } from '../../core/stage'
 import { C, blend, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
 import { PROMPT_LABELS, VOCAB, mixing, nextDist, presets, type Next } from '../../lib/gpt2/data'
+import { teach } from '../learn'
 import type { Nav } from '../registry'
 
 /*
@@ -90,6 +91,7 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
   const stage = new Stage(frame.stageHost, 1040, 470, 'Unembedding and sampling with numbers from a real GPT-2 small run: the last position passes through ln_f, is scored against every vocabulary embedding to give logits, which are divided by the temperature, turned into probabilities by softmax, and sampled.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
+  teach(player, 'unembed')
   const prog = (id: string) => player.prog(id)
   const mk = new MatrixKit(stage, seq, frame.setFormula)
   const nextCol = () => C.tok[seq.length % 7]

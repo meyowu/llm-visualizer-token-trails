@@ -124,7 +124,7 @@ function chapterNav(route: string, root: HTMLElement) {
     if (!to) continue
     const b = document.createElement('button')
     b.type = 'button'
-    b.className = 'chap'
+    b.className = dir < 0 ? 'chap prev' : 'chap next'
     b.textContent = label(nameOf(to))
     b.title = `${dir < 0 ? 'Previous' : 'Next'} page (Shift + ${dir < 0 ? '←' : '→'})`
     b.addEventListener('click', () => go(to))

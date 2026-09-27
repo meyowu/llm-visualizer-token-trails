@@ -5,6 +5,7 @@ import { Player } from '../../core/player'
 import { Stage, runLoop } from '../../core/stage'
 import { C, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, gauss, lerp, reducedMotion, rng } from '../../core/util'
+import { teach } from '../learn'
 import type { Nav } from '../registry'
 import { embedRow, gelu, promptTokens } from '../transformer/model'
 
@@ -48,6 +49,7 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
   const stage = new Stage(frame.stageHost, 1040, 470, 'LLaMA compared with GPT-2: rotary position embeddings inside attention, RMSNorm instead of LayerNorm, a gated SwiGLU MLP, and grouped-query attention that shares keys and values across query heads.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
+  teach(player, 'llama')
   const prog = (id: string) => player.prog(id)
   const mk = new MatrixKit(stage, seq, frame.setFormula)
   const hue = (i: number): RGB => C.tok[seq[i].c % 7]
