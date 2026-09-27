@@ -231,10 +231,18 @@ for (const pr of PRESETS) {
     return { target, p: Math.exp(z[target] - m) / Z, top: top.top.map((t) => ({ id: t.id, s: t.s, p: r3(t.p) })) }
   })
   out.training = { text, ids, syms: ids.map(sym), positions }
+  console.log('training:', positions.map((q) => `${sym(q.target)} ${(q.p * 100).toFixed(1)}%`).join(' · '))
   // how long the (pre-LN) residual stream gets, layer by layer, on the same text
   out.streamNorms = f.norms.map((v) => Math.round(v * 10) / 10)
   console.log('stream norms:', out.streamNorms.join(' '))
-  console.log('training:', positions.map((q) => `${sym(q.target)} ${(q.p * 100).toFixed(1)}%`).join(' · '))
+}
+// what GPT-2 guesses for a blank when it can see only the words before it (the BERT page's examples)
+{
+  out.leftOnly = ['The', 'I went to the', 'She played the'].map((left) => {
+    const { top } = softmaxTop(forward(bpe.encode(left)).logits, 8)
+    console.log(`left only: ${left} →`, top.map((t) => `${t.s} ${(t.p * 100).toFixed(1)}%`).join(', '))
+    return { left, top: top.map((t) => ({ s: t.s, p: r3(t.p) })) }
+  })
 }
 // a map of token embeddings: words from a few everyday categories, projected on the first two
 // principal components of their (unit-length) W_E rows, with each word's nearest neighbours among

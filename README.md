@@ -20,6 +20,7 @@ The atlas follows a model's life in six parts: **Anatomy** (GPT-2 taken apart), 
 - **Glossary**: every term of art in plain words; captions mark first mentions with their definition.
 - **Lineage / Transformer (2017)**: the original encoder–decoder as a diff against GPT-2: why attention replaced RNNs (one step instead of n), the encoder and decoder stacks, translating “I have seen the cat.” token by token, the three attentions and their masks, cross-attention as a target × source GEMM, post-LN vs pre-LN with GPT-2's real residual-stream lengths, and sinusoidal positions next to GPT-2's real learned W_P.
 - **Lineage / LLaMA**: LLaMA 3 as a diff against GPT-2: the two blocks side by side, then RoPE (rotating q/k pairs by position, and why only the offset matters), RMSNorm vs LayerNorm, the gated SwiGLU MLP, and MHA vs GQA vs MQA with real KV-cache sizes.
+- **Lineage / BERT**: the encoder-only model with GPT-2 small's exact shape: a real GPT-2 previous-token head next to BERT's real look-ahead head, WordPiece inputs with segments, real bert-base-uncased fill-in-the-blank predictions next to GPT-2's real guesses from the left side alone, and a classifier on the [CLS] vector.
 - **Lineage / DeepSeek**: DeepSeek-V3's two changes: multi-head latent attention as three GEMMs through a small cached latent, the KV cache per token for MHA, GQA, MQA and MLA at V3's size (3.8 MiB vs 69 KiB), DeepSeekMoE with a shared expert and 8 of 256 routed experts, and auxiliary-loss-free balancing simulated step by step.
 - **Lineage / Mixtral**: the mixture of experts: the MLP becomes a router and 8 SwiGLU experts, the router's scores and top-2 pick as a small GEMM, six tokens dispatched to their two experts and combined, 46.7B stored vs 12.9B used per token, and the Switch Transformer balancing loss computed on the batch.
 
@@ -33,9 +34,10 @@ npm run dev              # http://localhost:5173
 npm run build            # typecheck + production build to dist/
 npm run build:artifact   # single-file build to dist-artifact/index.html, for publishing as a claude.ai Artifact
 node scripts/gpt2-export.ts  # regenerate src/data/gpt2.json from GPT-2 small weights (see the script header)
+node scripts/bert-export.ts  # regenerate src/data/bert.json from BERT-base weights (see the script header)
 ```
 
-The browser never runs a model. `scripts/gpt2-export.ts` runs GPT-2 small once, offline, in plain TypeScript, and exports the slices the pages draw to `src/data/gpt2.json`. The detail views that animate every matrix product use a toy model at d_model 8 and say so.
+The browser never runs a model. `scripts/gpt2-export.ts` runs GPT-2 small once, offline, in plain TypeScript, and exports the slices the pages draw to `src/data/gpt2.json`; `scripts/bert-export.ts` does the same for BERT-base (`src/data/bert.json`). The detail views that animate every matrix product use a toy model at d_model 8 and say so.
 
 ## Structure
 
@@ -71,8 +73,10 @@ src/
       llama.ts            LLaMA 3 compared with GPT-2
       mixtral.ts          Mixtral 8x7B compared with GPT-2
       deepseek.ts         DeepSeek-V3 compared with GPT-2
+      bert.ts             BERT-base compared with GPT-2
 scripts/
   gpt2-export.ts          offline GPT-2 small forward pass that writes src/data/gpt2.json
+  bert-export.ts          offline BERT-base forward pass that writes src/data/bert.json
 ```
 
 To add an exhibit, write a `mount(root, nav) => destroy` function under `exhibits/` and give its entry in `registry.ts` a `route` and `mount`.

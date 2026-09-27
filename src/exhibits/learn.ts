@@ -319,6 +319,33 @@ const LEARN: Record<string, Learn> = {
       'DeepSeekMoE runs 1 shared and 8 of 256 small experts, kept balanced by a per-expert bias instead of an extra loss.',
     ],
   },
+  bert: {
+    refs: [["Devlin et al. 2018, BERT: Pre-training of Deep Bidirectional Transformers", "https://arxiv.org/abs/1810.04805"], ["Clark et al. 2019, What Does BERT Look At?", "https://arxiv.org/abs/1906.04341"], ["google-bert/bert-base-uncased, the weights behind the real numbers", "https://huggingface.co/google-bert/bert-base-uncased"]],
+    code: {
+      lines: [
+        '# BERT: GPT-2 small\'s shape, no causal mask, LayerNorm after each add',
+        'x = layer_norm(tok_emb[ids] + seg_emb[segments] + pos_emb[positions])',
+        'for layer in layers:                          # 12 × (768 wide, 12 heads, 3,072)',
+        '    x = layer_norm(x + self_attn(x))            # every token sees every token',
+        '    x = layer_norm(x + mlp(x))',
+        '# pretraining: predict hidden tokens from both sides',
+        'logits = mlm_head(x[masked_positions])        # 30,522 WordPiece scores',
+        'loss = F.cross_entropy(logits, original_ids)',
+        '# using it: a classifier on the [CLS] vector',
+        'probs = F.softmax(x[:, 0] @ W_cls, dim=-1)',
+      ],
+      at: { blocks: [0, 2, 3, 4], masks: [3], inputs: [1], mlm: [5, 6, 7], use: [8, 9] },
+    },
+    checks: [
+      { phase: 'masks', q: 'Why can BERT’s heads look at later tokens when GPT-2’s cannot?', options: ['BERT has no causal mask: it reads whole sentences, not left to right', 'BERT has more heads', 'BERT normalises after each residual add', 'BERT’s vocabulary is smaller'], answer: 0, why: 'GPT-2 must not see the token it is about to predict, so it masks later positions. BERT predicts hidden words instead, so it can look both ways.' },
+      { phase: 'mlm', q: 'In “She played the [MASK] in the orchestra”, why does BERT guess violin while GPT-2 guesses role?', options: ['BERT sees “in the orchestra” after the blank; GPT-2 sees only “She played the”', 'BERT is bigger', 'GPT-2 has never seen the word violin', 'BERT was trained only on music'], answer: 0, why: 'Both are about the same size. The difference is what each can see: the words after the blank decide it here.' },
+    ],
+    recap: [
+      'BERT has GPT-2 small’s exact shape but no causal mask: every token sees the whole sentence.',
+      'It is trained to fill in hidden words from both sides, not to predict the next word.',
+      'It is used to read and classify text, through the [CLS] vector, rather than to write it.',
+    ],
+  },
   llama: {
     refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {

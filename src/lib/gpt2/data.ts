@@ -15,7 +15,7 @@ interface RawPass {
 interface RawPreset { key: string; text: string; note: string; passes: RawPass[] }
 interface RawTraining { text: string; ids: number[]; syms: string[]; positions: { target: number; p: number; top: { id: number; s: string; p: number }[] }[] }
 interface RawMapItem { s: string; cat: string; x: number; y: number; nn: [string, number][] }
-interface Raw { model: string; tGrid: number[]; topK: number; presets: RawPreset[]; training: RawTraining; embeddingMap: RawMapItem[]; wpeSlice: number[][]; streamNorms: number[] }
+interface Raw { model: string; tGrid: number[]; topK: number; presets: RawPreset[]; training: RawTraining; embeddingMap: RawMapItem[]; wpeSlice: number[][]; streamNorms: number[]; leftOnly: { left: string; top: { s: string; p: number }[] }[] }
 const R = raw as unknown as Raw
 
 export const VOCAB = 50257
@@ -199,3 +199,5 @@ export const embeddingMap = (): MapItem[] =>
 export const wpeSlice = (): number[][] => R.wpeSlice
 /** Mean length of GPT-2's residual stream on the training text: after the embedding, then after each of the 12 blocks. */
 export const streamNorms = (): number[] => R.streamNorms
+/** GPT-2's next-token guesses from only the words before a blank (the BERT page's examples). */
+export const leftOnly = () => R.leftOnly

@@ -1,3 +1,4 @@
+import { mountBert } from './lineage/bert'
 import { mountDeepseek } from './lineage/deepseek'
 import { mountLlama } from './lineage/llama'
 import { mountMixtral } from './lineage/mixtral'
@@ -72,7 +73,7 @@ export const CATEGORIES: Category[] = [
       { name: 'Mixtral', tag: 'MLP → 8 experts, top-2', route: 'lineage/mixtral', mount: mountMixtral },
       { name: 'DeepSeek', tag: 'MLA · fine-grained MoE', route: 'lineage/deepseek', mount: mountDeepseek },
       { heading: 'Encoder' },
-      { name: 'BERT', tag: 'bidirectional mask' },
+      { name: 'BERT', tag: 'bidirectional mask', route: 'lineage/bert', mount: mountBert },
       { heading: 'Encoder–decoder' },
       { name: 'T5', tag: '+ cross-attention' },
       { heading: 'Vision & diffusion' },

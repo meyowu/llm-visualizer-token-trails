@@ -40,14 +40,17 @@ src/exhibits/foundations.ts #/foundations: dot product, matrix product layout, s
 src/exhibits/learn.ts       per page: code lines (marked per phase), predict-then-reveal checks, recap; teach(player, page)
 src/exhibits/registry.ts    categories (Anatomy, Lineage, Training, Interpretability, Serving, Agents) → entries: exhibits or sub-headings;
                             an exhibit may have `children` (its steps); live when it has `route` and `mount`
+src/lib/bert/data.ts        types for src/data/bert.json (masked-word examples, a look-ahead head, a sentence pair)
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
   data.ts                   decodes src/data/gpt2.json: presets, nextDist() at any T, headKind(), mixing() (lane colours),
-                            wpeSlice() and streamNorms() for the 2017 Transformer page
+                            wpeSlice() and streamNorms() for the 2017 Transformer page, leftOnly() for the BERT page
 src/data/gpt2.json          real GPT-2 small activations for 3 prompts × 3 greedy passes, and one sentence scored per position
                             for training (made by scripts/gpt2-export.ts)
 scripts/gpt2-export.ts      offline GPT-2 small forward pass in plain TS (Node 23+); weights in ~/.cache/token-trails/gpt2
+scripts/bert-export.ts      offline BERT-base (uncased) forward pass, WordPiece included; writes src/data/bert.json;
+                            weights in ~/.cache/token-trails/bert (model.safetensors, vocab.txt)
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
   overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
@@ -66,6 +69,8 @@ src/exhibits/lineage/
                             translation, the three attentions, cross-attention GEMM, post-LN (real GPT-2 stream
                             lengths), sinusoids vs GPT-2's real W_P
   llama.ts                  LLaMA 3 vs GPT-2: blocks, RoPE, RMSNorm, SwiGLU, GQA (real numbers are LLaMA 3 8B)
+  bert.ts                   BERT-base vs GPT-2: same shape, real heads (GPT-2 previous-token vs BERT next-token),
+                            WordPiece pair inputs, real masked-word predictions next to GPT-2's left-only guesses, [CLS] classifier (toy)
   deepseek.ts               DeepSeek-V3 vs GPT-2: MLA as three GEMMs through a latent, KV cache per token (MHA/GQA/MQA/MLA),
                             DeepSeekMoE (1 shared + top 8 of 256), bias balancing simulated on 16 toy experts
   mixtral.ts                Mixtral 8x7B vs GPT-2: MoE block, router GEMM + top-2, dispatch/combine, stored vs
