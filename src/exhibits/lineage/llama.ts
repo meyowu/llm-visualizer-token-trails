@@ -72,7 +72,7 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
   ropeCtl.setAttribute('role', 'group')
   ropeCtl.setAttribute('aria-label', 'RoPE example')
   const opts = seq.map((_, i) => `<option value="${i}">${mk.tl(i)} · ${i}</option>`).join('')
-  ropeCtl.innerHTML = `<label>q <select>${opts}</select></label><label>k <select>${opts}</select></label><label class="temp"><small>shift both</small><input type="range" min="0" max="10" step="0.5" value="0"><output>0</output></label>`
+  ropeCtl.innerHTML = `<label>q <select>${opts}</select></label><label>k <select>${opts}</select></label><label class="temp"><small>shift both</small><input type="range" min="0" max="10" step="1" value="0"><output>0</output></label>`
   const [qSel, kSel] = ropeCtl.querySelectorAll('select'), shiftIn = ropeCtl.querySelector('input')!, shiftOut = ropeCtl.querySelector('output')!
   qSel.value = String(R0.m); kSel.value = String(R0.n)
   const manual = () => { R0.manual = true; R0.m = +qSel.value; R0.n = +kSel.value; R0.shift = +shiftIn.value; shiftOut.textContent = shiftIn.value; if (player.cur().id === 'rope') player.setPlaying(false) }
@@ -178,7 +178,7 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
     // relative property: q at m and k at n, both shifted by s (animated, or set with the controls)
     const ra = R0.manual ? 1 : eout(clamp((p - 0.5) / 0.12)), m = R0.m, n = R0.n
     if (ra > 0) {
-      const s = R0.manual ? R0.shift : eio(clamp((p - 0.66) / 0.28)) * 10
+      const s = R0.manual ? R0.shift : Math.round(eio(clamp((p - 0.66) / 0.28)) * 10) // whole positions only
       const px = gx0 + PAIRS * dx + 40, BR = Math.min(avail * 0.28, 76), cx = px + BR + 10, cy = top + 70 + BR
       title('relative, not absolute', px, top + 12, ra)
       ctx.strokeStyle = rgba(C.ink, 0.2 * ra); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, BR, 0, 7); ctx.stroke()
@@ -195,7 +195,7 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
       const ly = cy + BR + 30
       caption(`q at position ${m + Math.round(s)} (${mk.tl(m)}) · k at ${n + Math.round(s)} (${mk.tl(n)})`, cx, ly, ra, C.ink2)
       caption(`offset m − n = ${m - n}   ·   q·k = ${fmt(score)}${n > m ? '  (k after q: masked)' : ''}`, cx, ly + 18, ra, C.ink)
-      caption(s > 0.05 ? `both shifted by +${s.toFixed(1)}: angle and score unchanged` : R0.manual ? 'drag “shift both” below' : 'shift both positions…', cx, ly + 36, ra)
+      caption(s > 0 ? `both shifted by +${s}: angle and score unchanged` : R0.manual ? 'drag “shift both” below' : 'shift both positions…', cx, ly + 36, ra)
     }
     mk.formula = { segs: [["q′ = R(m·θ) q,   k′ = R(n·θ) k   ⇒   q′ · k′ = f(q, k, m − n)", C.ink]], note: 'GPT-2 adds a learned position vector once, at the input. LLaMA rotates q and k in every attention layer, so the position part of each score depends only on the offset m − n, not on where the pair sits. Pick q, k and a shift below. LLaMA 3: 64 pairs per head, base 500,000.' }
   }
@@ -306,8 +306,8 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
     arrowLabel(ox + 10, nm, oy, '', mA)
     const xm = strip(sw.m, nm, yM, cs, col, mA, rev(0.72, 0.82))
     const nd = xm + gap; arrowLabel(xm, nd, oy, '· W_down', fin * rev(0.82, 0.86)); strip(sw.yB, nd, yM, cs, col, fin * rev(0.82, 0.86), rev(0.84, 0.93))
-    caption('SiLU (solid) and GELU (dashed) are almost the same curve; the new part is the gate', x0, yU + cs * 4.5, sA, C.mute, 'left')
-    mk.formula = { segs: [['MLP(x)  =  W_down ( SiLU(W_gate x) ⊙ W_up x )', C.ink]], note: 'The gate decides, per hidden unit, how much of W_up x passes. Three matrices at 8/3 × width keep the parameter count of two at 4 ×; LLaMA 3 uses 14,336 = 3.5 × 4,096. Hidden layers show their first 12 units.' }
+    caption('SiLU = x·σ(x) (solid) and GELU ≈ x·σ(1.7x) (dashed) have similar shapes; the new part is the gate', x0, yU + cs * 4.5, sA, C.mute, 'left')
+    mk.formula = { segs: [['MLP(x)  =  ( SiLU(x · W_gate) ⊙ (x · W_up) ) · W_down', C.ink]], note: 'The gate multiplies x · W_up element by element by a learned factor that depends on the input. Three matrices at 8/3 × width keep the parameter count of two at 4 ×; LLaMA 3 uses 14,336 = 3.5 × 4,096. Hidden layers show their first 12 units.' }
   }
 
   /* ---------- scene 5: MHA, GQA, MQA ---------- */
@@ -374,7 +374,7 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
     blocks: ['LLaMA keeps GPT-2\'s block: pre-norm, residual adds, causal attention. Four parts change, marked in the lower row; click one to jump to it. Also different: no bias terms anywhere, an untied output matrix (not W_Eᵀ), RMSNorm as the final norm, and a 128K-token vocabulary.', '4 changes · same block'],
     rope: ['GPT-2 adds a learned position vector once at the input. LLaMA instead rotates each pair of query and key numbers by an angle that grows with position, inside every attention layer. Use the q, k and shift controls below to test it.', 'θⱼ = base^(−2j / d_head)'],
     rms: ['LayerNorm centres each token and scales it to unit spread. RMSNorm only rescales by the root mean square: simpler, slightly faster, and just as stable.', 'x / √(mean(x²) + ε)'],
-    swiglu: ['GPT-2\'s MLP widens, applies GELU and narrows. LLaMA\'s runs two projections side by side and lets one gate the other, a pattern called SwiGLU.', 'W_down(SiLU(W_gate x) ⊙ W_up x)'],
+    swiglu: ['GPT-2\'s MLP widens, applies GELU and narrows. LLaMA\'s runs two projections side by side and lets one gate the other, a pattern called SwiGLU.', '(SiLU(x·W_gate) ⊙ x·W_up) · W_down'],
     gqa: ['While generating, the keys and values of past tokens are kept in a KV cache so they are not recomputed; it grows with every token and layer. In GPT-2 every head has its own keys and values; LLaMA 3 shares each key/value head between 4 query heads, so the cache that limits context length and batch size is 4× smaller.', '32 q heads · 8 kv heads'],
   }
 

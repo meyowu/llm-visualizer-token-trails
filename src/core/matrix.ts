@@ -23,7 +23,7 @@ export interface Cell { key: string; i: number; j: number }
 /** Compact numbers for cells: .57, −1.3, 12. */
 export const fmt = (v: number) => {
   if (!isFinite(v)) return v < 0 ? '−∞' : '∞'
-  const s = v < 0 ? '−' : '', a = Math.abs(v)
+  const s = v <= -0.005 ? '−' : '', a = Math.abs(v) // never a negative zero
   if (a >= 9.95) return s + a.toFixed(0)
   if (a >= 0.995) return s + a.toFixed(1)
   return s + a.toFixed(2).slice(1)
@@ -31,7 +31,7 @@ export const fmt = (v: number) => {
 /** Three significant digits, for the formula line, so its arithmetic can be checked by hand. */
 export const fmtF = (v: number) => {
   if (!isFinite(v)) return fmt(v)
-  const s = v < 0 ? '−' : '', a = Math.abs(v)
+  const s = v <= -0.0005 ? '−' : '', a = Math.abs(v)
   if (a >= 99.5) return s + a.toFixed(0)
   const t = a.toFixed(a >= 9.995 ? 1 : a >= 0.9995 ? 2 : 3)
   return s + (a < 0.9995 ? t.slice(1) : t)

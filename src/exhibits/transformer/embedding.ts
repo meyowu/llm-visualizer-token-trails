@@ -282,9 +282,9 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
   }
 
   const CAPS: Record<string, [string, string]> = {
-    onehot: ['Each token id becomes a one-hot row: 50,257 zeros with a single 1 at the id. Stacked, the prompt is a 5 × 50,257 matrix.', 'toy [5 × 50,257]'],
+    onehot: ['Each token id becomes a one-hot row: 50,257 zeros with a single 1 at the id. Stacked, the prompt is a 5 × 50,257 matrix.', '[5 × 50,257]'],
     lookup: ['Multiplying the one-hot rows by W_E selects one row of W_E per token: a GEMM on paper, a table lookup in practice. Each row is a learned 768-number description of its token, and tokens used alike get similar rows: in GPT-2, Ġcat is closer to Ġdog (cosine 0.55) and Ġkitten (0.50) than to Ġon (0.21).', 'GPT-2 W_E [50,257 × 768] · 38.6M params'],
-    pos: ['Attention on its own ignores order, so each slot adds its own row of the position matrix W_P. Slot i always gets row i. Try the other prompts: a repeated word, and the same words in two orders.', 'GPT-2 W_P [1,024 × 768] · context 1,024'],
+    pos: ['Attention treats its inputs as an unordered set (the causal mask gives only a weak hint of position), so each slot adds its own row of the position matrix W_P. Slot i always gets row i. Try the other prompts: a repeated word, and the same words in two orders.', 'GPT-2 W_P [1,024 × 768] · context 1,024'],
     stream: ['The sum is the residual stream that enters block 1: one 768-wide lane per token, still unmixed.', 'h₀ [N × 768]'],
   }
 

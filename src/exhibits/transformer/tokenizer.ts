@@ -46,7 +46,7 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
     specs: [
       { label: 'base symbols', value: '256 bytes' },
       { label: 'merges', value: '50,000' },
-      { label: 'vocab', value: '50,257' },
+      { label: 'vocab', value: '50,257', real: '256 + 50,000 + <|endoftext|>', realLabel: '' },
       { label: 'this text', value: '…' },
     ],
   })
@@ -371,7 +371,7 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
       case 'split': return [`A regular expression splits the text into words, numbers and punctuation. Each piece keeps its leading space. Type your own text below${cut ? ` (only the first ${MAXBYTES} bytes are drawn)` : ''}.`, `${pieces.length} pieces`]
       case 'bytes': return ['Each piece becomes its UTF-8 bytes. GPT-2 gives every byte value a visible stand-in character, so a space is written Ġ.', `${nBytes} bytes`]
       case 'merge': return ['Inside each piece, the rank of every adjacent pair is looked up and the lowest-ranked pair is fused. This repeats until no pair is in the table; rare words end up as several tokens.', `${fired.length} merges fire`]
-      default: return ['Each final symbol is an entry in the vocabulary. A merged token’s id is 256 plus its merge rank; ids 0–255 are the raw bytes.', `ids [${ids.join(', ')}]`]
+      default: return ['Each final symbol is an entry in the vocabulary. A merged token’s id is 256 plus its merge rank. Ids 0–255 are the 256 byte symbols in GPT-2’s own order, not by byte value (“.” is 13, Ġ is 220), and 50256 is <|endoftext|>.', `ids [${ids.join(', ')}]`]
     }
   }
 

@@ -386,9 +386,9 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
   function caption(id: string): [string, string] {
     switch (id) {
       case 'lnf': return ['Only the last position predicts the next token. Its vector, after all 12 blocks, goes through the final LayerNorm ln_f. The numbers are from a real GPT-2 small run.', '[1 × 768]']
-      case 'logits': return ['The vector is dotted with every row of the embedding matrix (GPT-2 reuses W_E as the LM head), giving one logit per token. The grid draws 8 of the 768 dimensions for the 6 likeliest tokens; each logit sums all 768.', '[1×768]·[768×50,257] · 77M FLOPs']
+      case 'logits': return ['The vector is dotted with every row of the embedding matrix: the unembedding W_U, or LM head, is W_Eᵀ in GPT-2. That gives one logit per token. The grid draws 8 of the 768 dimensions for the 6 likeliest tokens; each logit sums all 768.', '[1×768]·[768×50,257] · 77M FLOPs']
       case 'temp': return ['Logits are divided by the temperature T before softmax. Only the gaps between them matter: lower T stretches the gaps and sharpens the distribution, higher T flattens it.', 'z / T']
-      case 'softmax': return ['Softmax turns the scaled logits into probabilities over all 50,257 tokens, summing to 1. A few tokens lead, and the long tail together often holds most of the mass.', 'p = softmax(z / T)']
+      case 'softmax': return ['Softmax turns the scaled logits into probabilities over all 50,257 tokens, summing to 1. At low T the top few take most of the mass; raising T shifts it into the long tail.', 'p = softmax(z / T)']
       default: return ['A strategy picks the next token: greedy takes the likeliest, sampling lays the probabilities end to end and a random u picks one, and top-k or top-p drop the tail first. Generation repeats until <|endoftext|> or a length limit.', 'sample · greedy · top-k · top-p']
     }
   }

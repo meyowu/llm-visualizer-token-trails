@@ -29,6 +29,7 @@ export const TERMS: Term[] = [
   { term: 'Logit lens', match: ['logit lens'], def: 'Reading a middle layer through the final LayerNorm and the unembedding, to see what the model would predict if it stopped there.' },
   { term: 'Logits', match: ['logits', 'logit'], def: 'Raw, unnormalised scores, one per vocabulary token; softmax turns them into probabilities.' },
   { term: 'MLP', match: ['mlp'], def: 'Multi-layer perceptron: two matrix products with a nonlinearity (GELU) between them, applied to each token on its own.' },
+  { term: 'x · W and W x', match: [], def: 'Two ways to write the same product. Papers often write W x (a column vector); code and this site write x · W (x @ W), with one row per token.' },
   { term: 'Query, key, value', match: [], def: 'Three vectors made from each token for attention: what it is looking for, what it offers, and what it passes on when chosen.' },
   { term: 'Residual stream', match: ['residual stream'], def: 'The per-token vector that runs through the whole model. Every layer reads it and adds its output back instead of replacing it.' },
   { term: 'RMSNorm', match: ['rmsnorm'], def: 'LayerNorm without the mean: divides by the root mean square, then applies a learned scale.' },

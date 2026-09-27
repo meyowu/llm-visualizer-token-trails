@@ -274,9 +274,9 @@ export function mountMlp(root: HTMLElement, nav: Nav): () => void {
   }
 
   const CAPS: Record<string, [string, string]> = {
-    up: ["Attention moved information between tokens; the MLP works on each token alone, and is thought to hold much of what the model has learned. X (after ln_2) times W_fc plus b_fc widens every token from 8 numbers to 32 (768 → 3,072 in GPT-2): each column is one neuron.", 'GPT-2 [N×768]·[768×3072] · 23.6 MFLOPs'],
+    up: ["Attention moved information between tokens; the MLP works on each token alone, and is thought to hold much of what the model has learned. X (after ln_2) times W_fc plus b_fc widens every token from 8 numbers to 32 (768 → 3,072 in GPT-2): each column is one neuron.", 'GPT-2 [N×768]·[768×3072] · 4.7 MFLOPs / token'],
     gelu: ['GELU bends every cell on its own: large positive inputs pass almost unchanged, small ones are damped, negative ones are squeezed toward 0 (never below −0.17). Without this bend, W_fc then W_proj would collapse into one 768 × 768 matrix.', 'elementwise · 5 × 32 cells'],
-    down: ['The 32 activations are projected back down to 8 (3,072 → 768), and the bias b_proj is added. W_proj is drawn transposed, so each output dimension is a row sitting directly above the activations it multiplies.', 'GPT-2 [N×3072]·[3072×768] · 23.6 MFLOPs'],
+    down: ['The 32 activations are projected back down to 8 (3,072 → 768), and the bias b_proj is added. W_proj is drawn transposed, so each output dimension is a row sitting directly above the activations it multiplies.', 'GPT-2 [N×3072]·[3072×768] · 4.7 MFLOPs / token'],
     resid: ['The MLP output is added to the residual stream. Positions never exchanged information in this sub-layer; each token was processed on its own. Next is block 2.', "h″ = h′ + MLP(ln_2(h′))"],
   }
 
