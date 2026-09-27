@@ -143,7 +143,7 @@ function renderRail(active: string) {
 
 /* ---------- the tour: previous / next ---------- */
 /** Reading order across pages; the Anatomy steps are numbered. */
-const TOUR = ['start', 'foundations', 'anatomy', 'anatomy/tokenizer', 'anatomy/embedding', 'anatomy/layernorm', 'anatomy/attention', 'anatomy/mlp', 'anatomy/unembed', 'training/loss', 'lineage/transformer-2017', 'lineage/llama', 'lineage/mixtral']
+const TOUR = ['start', 'foundations', 'anatomy', 'anatomy/tokenizer', 'anatomy/embedding', 'anatomy/layernorm', 'anatomy/attention', 'anatomy/mlp', 'anatomy/unembed', 'training/loss', 'lineage/transformer-2017', 'lineage/llama', 'lineage/mixtral', 'lineage/deepseek']
 const STEPS = TOUR.filter((r) => r.startsWith('anatomy/'))
 const nameOf = (route: string) => [START, FOUNDATIONS, GLOSSARY, ...CATEGORIES.flatMap(exhibitsOf)].find((e) => e.route === route)?.name ?? route
 const tourStep = (route: string, dir: number) => { const i = TOUR.indexOf(route); return i < 0 ? null : TOUR[i + dir] ?? null }

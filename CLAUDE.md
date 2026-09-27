@@ -66,7 +66,10 @@ src/exhibits/lineage/
                             translation, the three attentions, cross-attention GEMM, post-LN (real GPT-2 stream
                             lengths), sinusoids vs GPT-2's real W_P
   llama.ts                  LLaMA 3 vs GPT-2: blocks, RoPE, RMSNorm, SwiGLU, GQA (real numbers are LLaMA 3 8B)
-  mixtral.ts                Mixtral 8x7B vs GPT-2: MoE block, router GEMM + top-2, dispatch/combine, stored vs\nactive params, balancing loss (toy routing, d_model 4, ROUTE_SEED)
+  deepseek.ts               DeepSeek-V3 vs GPT-2: MLA as three GEMMs through a latent, KV cache per token (MHA/GQA/MQA/MLA),
+                            DeepSeekMoE (1 shared + top 8 of 256), bias balancing simulated on 16 toy experts
+  mixtral.ts                Mixtral 8x7B vs GPT-2: MoE block, router GEMM + top-2, dispatch/combine, stored vs
+                            active params, balancing loss (toy routing, d_model 4, ROUTE_SEED)
 ```
 
 ## Adding an exhibit or detail view

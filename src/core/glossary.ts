@@ -34,6 +34,8 @@ export const TERMS: Term[] = [
   { term: 'Logits', match: ['logits', 'logit'], def: 'Raw, unnormalised scores, one per vocabulary token; softmax turns them into probabilities.' },
   { term: 'Mixture of experts (MoE)', match: ['mixture of experts', 'moe'], def: 'A layer with several expert MLPs and a router; each token runs through only the few experts the router picks, so the model can store many more parameters than it uses per token.' },
   { term: 'Router', match: ['router'], def: 'In a mixture of experts, a small matrix that scores every expert for a token; the top-scoring experts run, weighted by a softmax over their scores.' },
+  { term: 'Multi-head latent attention (MLA)', match: ['mla', 'multi-head latent attention'], def: 'DeepSeek’s attention: each token’s keys and values are compressed into one small latent vector, which is all the KV cache stores; every head’s keys and values are rebuilt from it.' },
+  { term: 'Multi-token prediction', match: ['multi-token prediction'], def: 'Training a model to also predict tokens further ahead (the one after next), as an extra, denser training signal.' },
   { term: 'MLP', match: ['mlp'], def: 'Multi-layer perceptron: two matrix products with a nonlinearity (GELU) between them, applied to each token on its own.' },
   { term: 'x · W and W x', match: [], def: 'Two ways to write the same product. Papers often write W x (a column vector); code and this site write x · W (x @ W), with one row per token.' },
   { term: 'Query, key, value', match: [], def: 'Three vectors made from each token for attention: what it is looking for, what it offers, and what it passes on when chosen.' },

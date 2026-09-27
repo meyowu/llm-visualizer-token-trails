@@ -290,6 +290,35 @@ const LEARN: Record<string, Learn> = {
       'It stores 46.7B parameters but uses 12.9B per token; a balancing loss keeps the experts evenly used.',
     ],
   },
+  deepseek: {
+    refs: [["DeepSeek-AI 2024, DeepSeek-V3 Technical Report", "https://arxiv.org/abs/2412.19437"], ["DeepSeek-AI 2024, DeepSeek-V2 (multi-head latent attention)", "https://arxiv.org/abs/2405.04434"], ["Dai et al. 2024, DeepSeekMoE", "https://arxiv.org/abs/2401.06066"], ["Wang et al. 2024, Auxiliary-Loss-Free Load Balancing for Mixture-of-Experts", "https://arxiv.org/abs/2408.15664"]],
+    code: {
+      lines: [
+        '# MLA: cache one small latent per token instead of every head\'s K and V',
+        'c_kv = kv_a_proj(h)                          # (tokens, 512)  cached',
+        'k_rope = rope(k_rope_proj(h))                # (tokens, 64)   cached, shared by all heads',
+        'k_nope, v = kv_b_proj(c_kv).split(...)       # each head\'s keys and values, rebuilt',
+        'k = torch.cat([k_nope, k_rope.expand(heads)], dim=-1)',
+        '# DeepSeekMoE: one shared expert plus the top 8 of 256 routed experts',
+        's = torch.sigmoid(gate(x))                   # (tokens, 256) affinities',
+        'idx = torch.topk(s + bias, 8).indices        # the bias only affects the choice',
+        'w = s.gather(-1, idx); w = w / w.sum(-1, keepdim=True)',
+        'y = shared_expert(x) + sum(w[..., j] * experts[idx[..., j]](x) for j in range(8))',
+        '# after each step: nudge each expert\'s bias toward an even load',
+        'bias += gamma * torch.sign(load.mean() - load)',
+      ],
+      at: { blocks: [0, 5], mla: [0, 1, 2, 3, 4], cache: [1, 2], moe: [5, 6, 7, 8, 9], balance: [7, 10, 11] },
+    },
+    checks: [
+      { phase: 'cache', q: 'In MLA, what goes into the KV cache for each token and layer?', options: ['A 512-number latent plus a 64-number RoPE key', 'Every head’s keys and values', 'Only the query', 'Nothing: keys are recomputed from the text'], answer: 0, why: 'Keys and values are rebuilt from the latent by up-projections, so the latent (and the small shared RoPE key) is all that needs keeping.' },
+      { phase: 'balance', q: 'DeepSeek-V3 adds a bias to each expert’s score. What does the bias change?', options: ['Only which experts are chosen', 'How much each expert’s output counts', 'The training loss', 'The size of each expert'], answer: 0, why: 'The bias steers the top-8 choice toward idle experts; the gate weights still come from the unbiased scores.' },
+    ],
+    recap: [
+      'DeepSeek-V3 changes both halves of GPT-2’s block: MLA for attention and DeepSeekMoE for the MLP.',
+      'MLA caches one small latent per token and rebuilds keys and values from it: 57× less cache than MHA.',
+      'DeepSeekMoE runs 1 shared and 8 of 256 small experts, kept balanced by a per-expert bias instead of an extra loss.',
+    ],
+  },
   llama: {
     refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {

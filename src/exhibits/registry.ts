@@ -1,3 +1,4 @@
+import { mountDeepseek } from './lineage/deepseek'
 import { mountLlama } from './lineage/llama'
 import { mountMixtral } from './lineage/mixtral'
 import { mountTransformer2017 } from './lineage/transformer2017'
@@ -69,7 +70,7 @@ export const CATEGORIES: Category[] = [
       { heading: 'Decoder-only' },
       { name: 'LLaMA', tag: 'RoPE · RMSNorm · SwiGLU · GQA', route: 'lineage/llama', mount: mountLlama },
       { name: 'Mixtral', tag: 'MLP → 8 experts, top-2', route: 'lineage/mixtral', mount: mountMixtral },
-      { name: 'DeepSeek', tag: 'MLA · fine-grained MoE' },
+      { name: 'DeepSeek', tag: 'MLA · fine-grained MoE', route: 'lineage/deepseek', mount: mountDeepseek },
       { heading: 'Encoder' },
       { name: 'BERT', tag: 'bidirectional mask' },
       { heading: 'Encoder–decoder' },
