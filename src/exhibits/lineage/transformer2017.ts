@@ -4,7 +4,7 @@ import { C, blend, mixc, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, gauss, lerp, rng } from '../../core/util'
 import { streamNorms, wpeSlice } from '../../lib/gpt2/data'
 import type { Nav } from '../registry'
-import { mountLineage, words, type Env } from './kit'
+import { mountExhibit, words, type Env } from '../kit'
 
 /*
  * The original Transformer (Vaswani et al. 2017) as a diff against GPT-2. Two stacks instead of
@@ -84,7 +84,7 @@ const CAPS: Record<string, [string, string]> = {
 }
 
 export function mountTransformer2017(root: HTMLElement, nav: Nav): () => void {
-  return mountLineage(root, nav, {
+  return mountExhibit(root, nav, {
     frame: {
       formulaHint: 'Hover a cell of an attention matrix or a position map to read it; click or tap to pin it.',
       eyebrow: 'Lineage · Origin',

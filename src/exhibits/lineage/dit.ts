@@ -4,7 +4,7 @@ import { C, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, gauss, lerp, rng } from '../../core/util'
 import { ALPHA_BAR, dit, heatAt, meanAbs } from '../../lib/dit/data'
 import type { Nav } from '../registry'
-import { mountLineage, words, type Env } from './kit'
+import { mountExhibit, words, type Env } from '../kit'
 
 /*
  * DiT-XL/2 as a diff against GPT-2: a Transformer over noisy latent image patches that predicts the
@@ -70,7 +70,7 @@ const CAPS: Record<string, [string, string]> = {
 }
 
 export function mountDit(root: HTMLElement, nav: Nav): () => void {
-  return mountLineage(root, nav, {
+  return mountExhibit(root, nav, {
     frame: {
       formulaHint: 'Hover the charts to read the real values; click or tap to pin.',
       eyebrow: 'Lineage · Vision & diffusion',

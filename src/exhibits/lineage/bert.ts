@@ -6,7 +6,7 @@ import { clamp, eio, eout, gauss, lerp, rng } from '../../core/util'
 import { bert } from '../../lib/bert/data'
 import { leftOnly, presets } from '../../lib/gpt2/data'
 import type { Nav } from '../registry'
-import { mountLineage, words, type Env } from './kit'
+import { mountExhibit, words, type Env } from '../kit'
 
 /*
  * BERT-base as a diff against GPT-2. Same shape (12 layers, 768, 12 heads, 3,072); what changes is the
@@ -64,7 +64,7 @@ const CAPS: Record<string, [string, string]> = {
 }
 
 export function mountBert(root: HTMLElement, nav: Nav): () => void {
-  return mountLineage(root, nav, {
+  return mountExhibit(root, nav, {
     frame: {
       formulaHint: 'Hover a cell of an attention map or a bar to read it; click or tap to pin it.',
       eyebrow: 'Lineage · Encoder',

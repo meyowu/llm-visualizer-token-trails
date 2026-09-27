@@ -5,7 +5,7 @@ import { clamp, eio, eout, gauss, lerp, rng } from '../../core/util'
 import { nextDist, presets } from '../../lib/gpt2/data'
 import { mamba } from '../../lib/mamba/data'
 import type { Nav } from '../registry'
-import { mountLineage, type Env } from './kit'
+import { mountExhibit, type Env } from '../kit'
 
 /*
  * Mamba as a diff against GPT-2: no attention, one mixer per block built around a selective
@@ -60,7 +60,7 @@ const CAPS: Record<string, [string, string]> = {
 }
 
 export function mountMamba(root: HTMLElement, nav: Nav): () => void {
-  return mountLineage(root, nav, {
+  return mountExhibit(root, nav, {
     frame: {
       formulaHint: 'Hover a state cell or a Δ cell to read it; click or tap to pin it.',
       eyebrow: 'Lineage · Beyond attention',

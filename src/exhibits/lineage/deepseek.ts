@@ -3,7 +3,7 @@ import { fmt, fmtF, gemm, type Rect } from '../../core/matrix'
 import { C, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, gauss, lerp, rng } from '../../core/util'
 import type { Nav } from '../registry'
-import { mountLineage, words, type Env } from './kit'
+import { mountExhibit, words, type Env } from '../kit'
 
 /*
  * DeepSeek-V3 as a diff against GPT-2. Both halves of the block change: attention becomes multi-head
@@ -91,7 +91,7 @@ const CAPS: Record<string, [string, string]> = {
 }
 
 export function mountDeepseek(root: HTMLElement, nav: Nav): () => void {
-  return mountLineage(root, nav, {
+  return mountExhibit(root, nav, {
     frame: {
       formulaHint: 'Hover a cell of the latent attention or an expert to see its value; click or tap to pin it.',
       eyebrow: 'Lineage · Decoder-only',

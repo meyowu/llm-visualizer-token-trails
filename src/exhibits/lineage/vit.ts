@@ -4,7 +4,7 @@ import { C, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, gauss, lerp, rng } from '../../core/util'
 import { GRID, explained, filters, posSim } from '../../lib/vit/data'
 import type { Nav } from '../registry'
-import { mountLineage, type Env } from './kit'
+import { mountExhibit, type Env } from '../kit'
 
 /*
  * ViT-B/16 as a diff against GPT-2: the same width and depth, no mask, and tokens that are image
@@ -69,7 +69,7 @@ const CAPS: Record<string, [string, string]> = {
 }
 
 export function mountVit(root: HTMLElement, nav: Nav): () => void {
-  return mountLineage(root, nav, {
+  return mountExhibit(root, nav, {
     frame: {
       formulaHint: 'Hover a patch, a matrix cell or a position map to read it; click or tap to pin it.',
       eyebrow: 'Lineage · Vision & diffusion',

@@ -4,7 +4,7 @@ import { C, rgba, type RGB } from '../../core/theme'
 import { clamp, eout, lerp } from '../../core/util'
 import { bucket, t5 } from '../../lib/t5/data'
 import type { Nav } from '../registry'
-import { mountLineage, words, type Env } from './kit'
+import { mountExhibit, words, type Env } from '../kit'
 
 /*
  * T5 as a diff against GPT-2 and the 2017 Transformer. An encoder–decoder where every task is text in,
@@ -42,7 +42,7 @@ const CAPS: Record<string, [string, string]> = {
 }
 
 export function mountT5(root: HTMLElement, nav: Nav): () => void {
-  return mountLineage(root, nav, {
+  return mountExhibit(root, nav, {
     frame: {
       formulaHint: 'Hover a bucket or a bias cell to read it; click or tap to pin it.',
       eyebrow: 'Lineage · Encoder–decoder',

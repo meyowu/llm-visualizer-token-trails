@@ -4,7 +4,7 @@ import { C, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, lerp } from '../../core/util'
 import { clip, preview, softmax } from '../../lib/clip/data'
 import type { Nav } from '../registry'
-import { mountLineage, type Env } from './kit'
+import { mountExhibit, type Env } from '../kit'
 
 /*
  * CLIP as a diff against GPT-2: two encoders, one for images (a ViT) and one for text (a GPT-2-like
@@ -46,7 +46,7 @@ const CAPS: Record<string, [string, string]> = {
 }
 
 export function mountClip(root: HTMLElement, nav: Nav): () => void {
-  return mountLineage(root, nav, {
+  return mountExhibit(root, nav, {
     frame: {
       formulaHint: 'Hover a cell of the similarity matrices to see how it is computed; click or tap to pin it.',
       eyebrow: 'Lineage · Vision & diffusion',

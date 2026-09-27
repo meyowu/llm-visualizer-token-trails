@@ -1,23 +1,23 @@
-import { F, fillRich, plate, rr, serifAt, spaced, upper, useCtx, type TokLike } from '../../core/draw'
-import { createFrame, type Frame, type FrameOptions } from '../../core/frame'
-import { MatrixKit } from '../../core/matrix'
-import { Player, type Phase } from '../../core/player'
-import { Stage, runLoop } from '../../core/stage'
-import { C, rgba, type RGB } from '../../core/theme'
-import { reducedMotion } from '../../core/util'
-import { teach } from '../learn'
-import type { Nav } from '../registry'
+import { F, fillRich, plate, rr, serifAt, spaced, upper, useCtx, type TokLike } from '../core/draw'
+import { createFrame, type Frame, type FrameOptions } from '../core/frame'
+import { MatrixKit } from '../core/matrix'
+import { Player, type Phase } from '../core/player'
+import { Stage, runLoop } from '../core/stage'
+import { C, rgba, type RGB } from '../core/theme'
+import { reducedMotion } from '../core/util'
+import { teach } from './learn'
+import type { Nav } from './registry'
 
 /*
- * The shared frame of a Lineage page: an architecture drawn as a diff against GPT-2, one scene per
- * phase, a Compare button that opens the GPT-2 part each phase changes, and pill labels on the
- * canvas that jump to a phase.
+ * The shared frame of a scene-per-phase exhibit (the Lineage and Serving pages): one scene per phase,
+ * a Compare button that opens the related GPT-2 part for each phase, and pill labels on the canvas
+ * that jump to a phase.
  */
 
 /** Plain word tokens for a toy sentence; token i gets hue i. */
 export const words = (ws: string[]): TokLike[] => ws.map((text, c) => ({ text, c }))
 
-/** Canvas helpers shared by the Lineage pages; they draw on the page's stage. */
+/** Canvas helpers shared by the scene-per-phase exhibits; they draw on the page's stage. */
 export interface Kit {
   /** A dark label that jumps to `phase` when clicked. */
   pill(t: string, x: number, y: number, phase: string, a: number): void
@@ -48,7 +48,7 @@ export interface Env {
   onFrame(fn: () => void): void
 }
 
-export interface LineageOptions {
+export interface ExhibitOptions {
   frame: FrameOptions
   /** Minimum drawing size. */
   size: [number, number]
@@ -69,7 +69,7 @@ export interface LineageOptions {
   still: [string, number]
 }
 
-export function mountLineage(root: HTMLElement, nav: Nav, o: LineageOptions): () => void {
+export function mountExhibit(root: HTMLElement, nav: Nav, o: ExhibitOptions): () => void {
   const reduced = reducedMotion()
   const frame = createFrame(root, { formula: true, ...o.frame })
   const stage = new Stage(frame.stageHost, o.size[0], o.size[1], o.aria)

@@ -3,7 +3,7 @@ import { fmt, fmtF, gemm, type Rect } from '../../core/matrix'
 import { C, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, gauss, lerp, rng } from '../../core/util'
 import type { Nav } from '../registry'
-import { mountLineage, words, type Env } from './kit'
+import { mountExhibit, words, type Env } from '../kit'
 
 /*
  * Mixtral 8x7B as a diff against GPT-2. The block is LLaMA's (RMSNorm, RoPE, grouped-query attention)
@@ -61,7 +61,7 @@ const CAPS: Record<string, [string, string]> = {
 }
 
 export function mountMixtral(root: HTMLElement, nav: Nav): () => void {
-  return mountLineage(root, nav, {
+  return mountExhibit(root, nav, {
     frame: {
       formulaHint: 'Hover a router score or gate to see how it is computed; click or tap to pin it.',
       eyebrow: 'Lineage · Decoder-only',

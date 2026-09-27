@@ -3,7 +3,7 @@ import { fmt } from '../../core/matrix'
 import { C, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, gauss, lerp, rng } from '../../core/util'
 import type { Nav } from '../registry'
-import { mountLineage, type Env } from './kit'
+import { mountExhibit, type Env } from '../kit'
 import { embedRow, gelu, promptTokens } from '../transformer/model'
 
 /*
@@ -39,7 +39,7 @@ const CAPS: Record<string, [string, string]> = {
 }
 
 export function mountLlama(root: HTMLElement, nav: Nav): () => void {
-  return mountLineage(root, nav, {
+  return mountExhibit(root, nav, {
     frame: {
       eyebrow: 'Lineage · Decoder-only',
       title: 'LLaMA',
