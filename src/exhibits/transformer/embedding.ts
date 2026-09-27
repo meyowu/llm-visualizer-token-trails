@@ -258,13 +258,14 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
     stream: ['The sum is the residual stream that enters block 1: one 768-wide lane per token, still unmixed.', 'h₀ [N × 768]'],
   }
 
-  if (reduced) player.t = player.start('lookup') + 3
+  if (reduced && player.t === 0) player.t = player.start('lookup') + 3
+  player.describe = (i) => CAPS[PHASES[i].id]
   const stop = runLoop((dt) => {
     player.tick(dt)
     draw()
     player.updateUI()
     const cur = player.cur(), [t, s] = CAPS[cur.id]
     frame.setCaption(cur.name, cur.short ?? cur.name, t, s)
-  })
+  }, () => !player.playing)
   return () => { stop(); player.destroy(); stage.destroy() }
 }

@@ -34,10 +34,12 @@ export function readTheme() {
   C.dark = (C.bg[0] + C.bg[1] + C.bg[2]) / 3 < 128
 }
 
-export function watchTheme() {
-  readTheme()
-  matchMedia('(prefers-color-scheme: light)').addEventListener('change', readTheme)
-  new MutationObserver(readTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+/** Re-read the palette whenever the theme changes; `onChange` lets still frames redraw. */
+export function watchTheme(onChange: () => void = () => {}) {
+  const update = () => { readTheme(); onChange() }
+  update()
+  matchMedia('(prefers-color-scheme: light)').addEventListener('change', update)
+  new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
 }
 
 export const rgba = (c: RGB, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${clamp(a)})`

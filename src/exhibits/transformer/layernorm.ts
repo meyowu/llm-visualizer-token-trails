@@ -267,13 +267,14 @@ export function mountLayerNorm(root: HTMLElement, nav: Nav): () => void {
     affine: ['Finally each feature is scaled by γ and shifted by β, both learned. The result X is what the attention layer receives.', 'X = γ ⊙ x̂ + β'],
   }
 
-  if (reduced) player.t = player.start('scale') + 3
+  if (reduced && player.t === 0) player.t = player.start('scale') + 3
+  player.describe = (i) => CAPS[PHASES[i].id]
   const stop = runLoop((dt) => {
     player.tick(dt)
     draw()
     player.updateUI()
     const cur = player.cur(), [t, s] = CAPS[cur.id]
     frame.setCaption(cur.name, cur.short ?? cur.name, t, s)
-  })
+  }, () => !player.playing)
   return () => { stop(); player.destroy(); stage.destroy() }
 }

@@ -1,10 +1,12 @@
 import './styles.css'
 import { rich } from './core/frame'
+import { openAtPhase } from './core/player'
+import { poke } from './core/stage'
 import { watchTheme } from './core/theme'
 import { reducedMotion } from './core/util'
 import { ALIASES, CATEGORIES, DEFAULT_ROUTE, ROUTES, START, exhibitsOf, isHeading, type Exhibit } from './exhibits/registry'
 
-watchTheme()
+watchTheme(poke)
 
 const railNav = document.querySelector('.nav') as HTMLElement
 const main = document.querySelector('.main') as HTMLElement
@@ -71,31 +73,74 @@ function renderRail(active: string) {
   }
 }
 
+/* ---------- the tour: previous / next ---------- */
+/** Reading order across pages; the Anatomy steps are numbered. */
+const TOUR = ['start', 'anatomy', 'anatomy/tokenizer', 'anatomy/embedding', 'anatomy/layernorm', 'anatomy/attention', 'anatomy/mlp', 'anatomy/unembed', 'lineage/llama']
+const STEPS = TOUR.filter((r) => r.startsWith('anatomy/'))
+const nameOf = (route: string) => [START, ...CATEGORIES.flatMap(exhibitsOf)].find((e) => e.route === route)?.name ?? route
+const tourStep = (route: string, dir: number) => { const i = TOUR.indexOf(route); return i < 0 ? null : TOUR[i + dir] ?? null }
+
+/** Top right of the page header: the step number and the previous and next pages of the tour. */
+function chapterNav(route: string, root: HTMLElement) {
+  const head = root.querySelector('.head')
+  if (!head || !TOUR.includes(route)) return
+  const row = document.createElement('nav')
+  row.className = 'chapnav'
+  row.setAttribute('aria-label', 'Tour')
+  const n = STEPS.indexOf(route)
+  if (n >= 0) { const c = document.createElement('span'); c.className = 'count'; c.textContent = `step ${n + 1} of ${STEPS.length}`; row.appendChild(c) }
+  for (const [dir, label] of [[-1, (t: string) => `‹ ${t}`], [1, (t: string) => `${t} ›`]] as const) {
+    const to = tourStep(route, dir)
+    if (!to) continue
+    const b = document.createElement('button')
+    b.type = 'button'
+    b.className = 'chap'
+    b.textContent = label(nameOf(to))
+    b.title = `${dir < 0 ? 'Previous' : 'Next'} page (Shift + ${dir < 0 ? '←' : '→'})`
+    b.addEventListener('click', () => go(to))
+    row.appendChild(b)
+  }
+  head.prepend(row)
+}
+
+window.addEventListener('keydown', (e) => {
+  const tag = (e.target as HTMLElement).tagName
+  if (!e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || tag === 'INPUT' || tag === 'TEXTAREA' || !current) return
+  const to = e.key === 'ArrowRight' ? tourStep(current.route, 1) : e.key === 'ArrowLeft' ? tourStep(current.route, -1) : null
+  if (to) { e.preventDefault(); go(to) }
+})
+
 /* ---------- router ---------- */
 let current: { route: string; root: HTMLElement; destroy: () => void } | null = null
 
+/** The route (and ?query) in the address, with old prefixes rewritten. */
 function parse(): string {
-  let h = location.hash.replace(/^#\/?/, '')
+  let [h, qs] = location.hash.replace(/^#\/?/, '').split('?')
   for (const [from, to] of ALIASES) {
     if (h !== from && !h.startsWith(from + '/')) continue
     h = to + h.slice(from.length)
-    try { history.replaceState(null, '', '#/' + h) } catch { /* sandboxed frames may refuse */ }
+    try { history.replaceState(null, '', '#/' + h + (qs ? '?' + qs : '')) } catch { /* sandboxed frames may refuse */ }
   }
-  return ROUTES[h] ? h : DEFAULT_ROUTE
+  return ROUTES[h] ? h + (qs ? '?' + qs : '') : DEFAULT_ROUTE
 }
 
 const depth = (r: string) => r.split('/').length
 
-function go(route: string, origin?: { x: number; y: number }, push = true) {
+/** Open a route, e.g. 'anatomy/unembed' or 'anatomy/unembed?phase=sample' to start at a phase. */
+function go(target: string, origin?: { x: number; y: number }, push = true) {
+  const [route, qs] = target.split('?')
   if (!ROUTES[route] || current?.route === route) return
   if (push) {
-    try { history.pushState(null, '', '#/' + route) } catch { /* sandboxed frames may refuse */ }
+    try { history.pushState(null, '', '#/' + target) } catch { /* sandboxed frames may refuse */ }
   }
+  openAtPhase(new URLSearchParams(qs ?? '').get('phase'))
   const old = current
   const root = document.createElement('div')
   root.className = 'view'
   main.appendChild(root)
   const destroy = ROUTES[route](root, go)
+  openAtPhase(null)
+  chapterNav(route, root)
   current = { route, root, destroy }
   renderRail(route)
   if (old) transition(old, root, depth(route) >= depth(old.route) ? 'in' : 'out', origin)

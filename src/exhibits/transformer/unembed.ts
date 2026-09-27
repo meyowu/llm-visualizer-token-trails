@@ -1,5 +1,6 @@
 import { chipW, drawChip, F, plate, rr, serifAt, spaced, subLabel, tokDisp, tokLabel, tokText, useCtx } from '../../core/draw'
 import { createFrame, toggle } from '../../core/frame'
+import { pref } from '../../core/prefs'
 import { MatrixKit, fmt, gemm, type M, type Rect } from '../../core/matrix'
 import { Player } from '../../core/player'
 import { Stage, runLoop } from '../../core/stage'
@@ -69,7 +70,8 @@ const pctS = (p: number) => (p < 0.001 ? '<0.1%' : (p * 100).toFixed(p < 0.1 ? 1
 export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
   const reduced = reducedMotion()
   const seq: Tok[] = []
-  const S = { T: 0.8, strat: 0, u: 0.22, preset: 0 }
+  // temperature and strategy are remembered across visits
+  const S = { T: clamp(Number(pref.get('temperature')) || 0.8, 0.2, 2), strat: clamp(Number(pref.get('strategy')) || 0, 0, STRATS.length - 1), u: 0.22, preset: 0 }
   let R = load(S.preset, seq)
 
   const frame = createFrame(root, {
@@ -97,15 +99,16 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
   // controls: prompt, strategy, resample, temperature
   const temp = document.createElement('label')
   temp.className = 'temp'; temp.htmlFor = 'un-temp'
-  temp.innerHTML = '<small>temperature</small><span>T</span><input id="un-temp" type="range" min="0.2" max="2" step="0.05" value="0.8"><output>0.80</output>'
+  temp.innerHTML = '<small>temperature</small><span>T</span><input id="un-temp" type="range" min="0.2" max="2" step="0.05"><output></output>'
   player.meta.append(temp)
   const tIn = temp.querySelector('input')!, tOut = temp.querySelector('output')!
-  tIn.addEventListener('input', () => { S.T = +tIn.value; tOut.textContent = S.T.toFixed(2); redraw() })
+  tIn.value = String(S.T); tOut.textContent = S.T.toFixed(2)
+  tIn.addEventListener('input', () => { S.T = +tIn.value; tOut.textContent = S.T.toFixed(2); pref.set('temperature', tIn.value); redraw() })
   const resample = document.createElement('button')
   resample.className = 'resample'; resample.textContent = 'Resample'
   resample.addEventListener('click', () => { S.u = Math.random(); if (player.t < player.start('sample')) player.t = player.start('sample') + 0.001; else redraw() })
   player.meta.prepend(resample)
-  toggle(player.meta, 'Sampling strategy', [...STRATS], 0, (i) => { S.strat = i; redraw() })
+  toggle(player.meta, 'Sampling strategy', [...STRATS], S.strat, (i) => { S.strat = i; pref.set('strategy', String(i)); redraw() })
   toggle(player.meta, 'Prompt', presets().map((p) => PROMPT_LABELS[p.key] ?? p.text), 0, (i) => { S.preset = i; R = load(i, seq) })
 
   /* ---------- the distribution under the current strategy ---------- */
@@ -388,13 +391,14 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
     }
   }
 
-  if (reduced) player.t = player.start('softmax') + 3
+  if (reduced && player.t === 0) player.t = player.start('softmax') + 3
+  player.describe = (i) => caption(PHASES[i].id)
   const stop = runLoop((dt) => {
     player.tick(dt)
     draw()
     player.updateUI()
     const cur = player.cur(), [t, s] = caption(cur.id)
     frame.setCaption(cur.name, cur.short ?? cur.name, t, s)
-  })
+  }, () => !player.playing)
   return () => { stop(); player.destroy(); stage.destroy() }
 }

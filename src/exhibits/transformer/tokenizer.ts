@@ -288,13 +288,14 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
     ids: ['Each final symbol is an entry in the vocabulary. Its id is 256 plus its merge rank, since ids 0–255 are the raw bytes.', 'ids [' + toks.map((t) => t.id).join(', ') + ']'],
   }
 
-  if (reduced) player.t = player.start('merge') + 6
+  if (reduced && player.t === 0) player.t = player.start('merge') + 6
+  player.describe = (i) => CAPS[PHASES[i].id]
   const stop = runLoop((dt) => {
     player.tick(dt)
     draw()
     player.updateUI()
     const cur = player.cur(), [t, s] = CAPS[cur.id]
     frame.setCaption(cur.name, cur.short ?? cur.name, t, s)
-  })
+  }, () => !player.playing)
   return () => { stop(); player.destroy(); stage.destroy() }
 }

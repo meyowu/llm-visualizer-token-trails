@@ -24,6 +24,8 @@ const TOP = 6
 const EMB_SCALE = 0.25
 
 interface Tok { text: string; id: number; c: number }
+/** Where the reader left the overview, restored (paused) when they come back from a detail view. */
+let saved: { preset: number; passIdx: number; t: number; layer: number; head: number; lock: number } | null = null
 interface View {
   N: number
   seq: Tok[]
@@ -72,7 +74,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   player.meta.prepend(passEl)
   const headStep = stepper(player.meta, 'head', 12, S.head, (h) => { S.head = h })
   const layerStep = stepper(player.meta, 'block', 12, S.layer, (l) => { S.layer = l })
-  toggle(player.meta, 'Prompt', PRESETS.map((p) => PROMPT_LABELS[p.key] ?? p.text), 0, (i) => { S.preset = i; startPreset() })
+  const presetToggle = toggle(player.meta, 'Prompt', PRESETS.map((p) => PROMPT_LABELS[p.key] ?? p.text), 0, (i) => { S.preset = i; startPreset() })
 
   function setPass(k: number) {
     S.passIdx = k
@@ -604,6 +606,16 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     tok: 'anatomy/tokenizer', emb: 'anatomy/embedding', ln1: 'anatomy/layernorm', attn: 'anatomy/attention',
     ln2: 'anatomy/layernorm', mlp: 'anatomy/mlp', ln: 'anatomy/unembed', wu: 'anatomy/unembed',
   }
+  /** The detail view opens at the step that matches what the overview is showing. */
+  const plateLink = (pl: string) => {
+    const at = (id: string) => `${PLATE_ROUTES[pl]}?phase=${id}`
+    if (pl === 'attn' && prog('attn') > 0.1) return at('softmax')
+    if (pl === 'mlp' && prog('mlp') > 0) return at('gelu')
+    if (pl === 'ln') return at('lnf')
+    if (pl === 'wu') return prog('pick') > 0 ? at('sample') : prog('unembed') > 0.4 ? at('softmax') : at('logits')
+    if (pl === 'emb' && prog('embed') > 0.5) return at('pos')
+    return PLATE_ROUTES[pl]
+  }
   const laneAt = (x: number, y: number) => {
     const { sp, ys } = curYs()
     let h = -1
@@ -621,7 +633,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   cv.addEventListener('click', (e) => {
     const [x, y] = stage.local(e)
     const pl = plateAt(x, y)
-    if (pl) { nav(PLATE_ROUTES[pl], { x: e.clientX, y: e.clientY }); return }
+    if (pl) { nav(plateLink(pl), { x: e.clientX, y: e.clientY }); return }
     if (inMat(x, y)) { S.head = (S.head + 1) % 12; headStep.set(S.head); return }
     const lane = laneAt(x, y)
     S.lock = lane === S.lock ? -1 : lane
@@ -639,8 +651,17 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   })
   frame.stageHost.append(links)
 
+  const linked = player.t // a link like #/anatomy?phase=mlp already placed the player
   startPreset()
-  if (reduced) player.t = player.start('attn') + PHASES[2].dur * 0.7
+  if (linked) player.t = linked
+  else if (saved) {
+    // coming back from a detail view: the same prompt, pass, frame and head, paused
+    S.preset = saved.preset; presetToggle.set(saved.preset)
+    setPass(saved.passIdx); player.t = saved.t
+    S.layer = saved.layer; S.head = saved.head; S.lock = saved.lock; layerStep.set(S.layer); headStep.set(S.head)
+    player.setPlaying(false)
+  } else if (reduced) player.t = player.start('attn') + PHASES[2].dur * 0.7
+  player.describe = (i) => { const c = caption(i); return [c.t, c.s] }
   const stop = runLoop((dt, now) => {
     player.tick(dt)
     draw(now)
@@ -649,6 +670,9 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     frame.setCaption(PHASES[ci].name, PHASES[ci].short ?? PHASES[ci].name, c.t, c.s)
     const pt = `pass ${S.passIdx + 1} / ${pr().passes.length} · ${V.N} tokens`
     if (passEl.textContent !== pt) passEl.textContent = pt
-  })
-  return () => { stop(); player.destroy(); stage.destroy() }
+  }, () => !player.playing)
+  return () => {
+    saved = { preset: S.preset, passIdx: S.passIdx, t: player.t, layer: S.layer, head: S.head, lock: S.lock }
+    stop(); player.destroy(); stage.destroy()
+  }
 }

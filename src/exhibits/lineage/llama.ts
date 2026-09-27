@@ -350,13 +350,14 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
     gqa: ['In GPT-2 every attention head has its own keys and values. LLaMA 3 shares each key/value head between 4 query heads, cutting the KV cache that limits context length and batch size.', '32 q heads · 8 kv heads'],
   }
 
-  if (reduced) player.t = player.start('rope') + 6
+  if (reduced && player.t === 0) player.t = player.start('rope') + 6
+  player.describe = (i) => CAPS[PHASES[i].id]
   const stop = runLoop((dt) => {
     player.tick(dt)
     draw()
     player.updateUI()
     const cur = player.cur(), [t, s] = CAPS[cur.id]
     frame.setCaption(cur.name, cur.short ?? cur.name, t, s)
-  })
+  }, () => !player.playing)
   return () => { stop(); player.destroy(); stage.destroy() }
 }

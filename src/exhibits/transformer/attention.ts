@@ -17,9 +17,9 @@ import { TOY, attention, laneMix, promptTokens, transpose } from './model'
 const PHASES = [
   { id: 'qkv', name: 'Projections', short: 'Q · K · V', dur: 8 },
   { id: 'scores', name: 'Scores', short: 'QKᵀ', dur: 6.5 },
-  { id: 'scale', name: 'Scale', short: '÷ √d', dur: 2 },
-  { id: 'mask', name: 'Causal mask', short: 'Mask', dur: 2 },
-  { id: 'softmax', name: 'Softmax', dur: 3.5 },
+  { id: 'scale', name: 'Scale', short: '÷ √d', dur: 5 },
+  { id: 'mask', name: 'Causal mask', short: 'Mask', dur: 5.5 },
+  { id: 'softmax', name: 'Softmax', dur: 5 },
   { id: 'av', name: 'Weighted sum', short: 'A · V', dur: 7.5 },
   { id: 'out', name: 'Output projection', short: 'W_O', dur: 6 },
 ]
@@ -353,13 +353,14 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     out: ["Concatenate the heads' outputs, multiply by W_O to mix them, and add the result back to the residual stream for the MLP.", 'GPT-2 [N×768]·[768×768] · 5.9 MFLOPs'],
   }
 
-  if (reduced) player.t = player.start('av') + 4
+  if (reduced && player.t === 0) player.t = player.start('av') + 4
+  player.describe = (i) => CAPS[PHASES[i].id]
   const stop = runLoop((dt) => {
     player.tick(dt)
     draw()
     player.updateUI()
     const cur = player.cur(), [t, s] = CAPS[cur.id]
     frame.setCaption(cur.name, cur.short ?? cur.name, t, s)
-  })
+  }, () => !player.playing)
   return () => { stop(); player.destroy(); stage.destroy() }
 }

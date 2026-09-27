@@ -105,10 +105,10 @@ h1 .sub { font: 400 12px var(--mono); letter-spacing: .02em; color: var(--mute);
 .cap-title { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
 .cap-title b { font-size: 19px; font-weight: 500; letter-spacing: .02em; }
 .cap-title em { font: italic 400 19px var(--serif); color: var(--mute); }
-.cap-text { margin: 0; max-width: 68ch; color: var(--ink2); font-size: 13.5px; }
+.cap-text { margin: 0; max-width: 68ch; color: var(--ink2); font-size: 13.5px; min-height: 4.65em; /* three lines, so the stage does not jump between steps */ }
 .cap-shape { font: 400 12px var(--mono); color: var(--mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
-.controls { display: flex; align-items: center; flex-wrap: wrap; gap: 14px 22px; padding: 12px 28px 20px; position: sticky; bottom: 0; z-index: 3; background: var(--bg); }
+.controls { display: flex; align-items: center; flex-wrap: wrap; gap: 14px 22px; padding: 12px 28px 20px; }
 .play { width: 38px; height: 38px; flex: none; border-radius: 50%; border: 1px solid var(--line2); background: var(--panel); display: grid; place-items: center; cursor: pointer; }
 .play:hover { border-color: var(--mute); }
 .transport { display: flex; align-items: center; gap: 6px; flex: none; }
@@ -134,6 +134,8 @@ h1 .sub { font: 400 12px var(--mono); letter-spacing: .02em; color: var(--mute);
 .stepper button:hover { color: var(--ink); }
 .stepper output { min-width: 5.6em; text-align: center; color: var(--ink); font: 500 11px var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.cycle { border: 1px solid var(--line2); border-radius: 6px; background: none; padding: 5px 9px; cursor: pointer; color: var(--ink2); font: 500 11px var(--mono); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cycle:hover { border-color: var(--mute); color: var(--ink); }
 .resample { border: 1px solid var(--line2); border-radius: 6px; background: none; padding: 5px 10px; cursor: pointer; color: var(--ink2); font: 500 11px var(--mono); }
 .resample:hover { border-color: var(--mute); color: var(--ink); }
 .temp { display: flex; align-items: center; gap: 8px; }
@@ -158,7 +160,7 @@ h1 .sub { font: 400 12px var(--mono); letter-spacing: .02em; color: var(--mute);
   h1 { font-size: 34px; }
   .formula { padding: 6px 16px 10px; }
   .caption { grid-template-columns: 1fr; padding: 12px 16px; }
-  .controls { padding: 12px 16px 20px; position: static; }
+  .controls { padding: 12px 16px 20px; }
 }
 
 /* ---------- start page ---------- */
@@ -202,4 +204,25 @@ kbd { font: 500 11px var(--mono); border: 1px solid var(--line2); border-radius:
   .start-body { grid-template-columns: 1fr; padding: 12px 16px 40px; }
   .st-bars li { grid-template-columns: 96px 1fr 50px; }
   .st-text { font-size: 24px; }
+}
+
+/* ---------- tour row and the list of steps ---------- */
+.head { position: relative; }
+.chapnav { position: absolute; top: 18px; right: 28px; display: flex; align-items: center; gap: 8px; }
+.chapnav .count { font: 400 11px var(--mono); color: var(--mute); margin-right: 6px; }
+.chap { border: 1px solid var(--line2); border-radius: 6px; background: none; padding: 4px 10px; cursor: pointer; color: var(--ink2); font: 500 11.5px var(--mono); }
+.chap:hover { color: var(--ink); border-color: var(--mute); }
+.steps[open] { flex: 1 0 100%; }
+.steps summary { cursor: pointer; width: max-content; font: 500 11px var(--mono); color: var(--mute); }
+.steps summary:hover { color: var(--ink2); }
+.steps ol { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; max-width: 900px; }
+.steps li { display: grid; grid-template-columns: 180px 1fr; column-gap: 20px; padding: 8px 10px; border-radius: 8px; }
+.steps li[aria-current] { background: var(--panel); }
+.steps li button { grid-row: span 2; justify-self: start; border: 0; background: none; padding: 0; cursor: pointer; color: var(--ink); font: 500 14px var(--sans); text-align: left; }
+.steps li button:hover { text-decoration: underline; }
+.steps li p { margin: 0; color: var(--ink2); font-size: 13px; }
+.steps li code { font: 400 11.5px var(--mono); color: var(--mute); }
+@media (max-width: 860px) {
+  .steps li { grid-template-columns: 1fr; }
+  .chapnav { position: static; flex: 1 0 100%; flex-wrap: wrap; order: -1; }
 }

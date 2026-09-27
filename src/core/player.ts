@@ -1,4 +1,5 @@
 import { rich } from './frame'
+import { pref } from './prefs'
 import { clamp } from './util'
 
 export interface Phase {
@@ -18,11 +19,9 @@ const PAUSE_ICON = 'M4 3h3v10H4zM9 3h3v10H9z'
 const PLAY_ICON = 'M4.5 2.5v11l9-5.5z'
 const SPEEDS = [0.25, 0.5, 1, 2]
 
-/** Reader preferences shared by every exhibit, kept in this browser when storage is available. */
-const pref = {
-  get(key: string): string | null { try { return localStorage.getItem('tt-' + key) } catch { return null } },
-  set(key: string, v: string) { try { localStorage.setItem('tt-' + key, v) } catch { /* private mode */ } },
-}
+/** The phase the next Player should open on, set by the router from a link like #/anatomy/unembed?phase=sample. */
+let pendingPhase: string | null = null
+export const openAtPhase = (id: string | null) => { pendingPhase = id }
 
 /**
  * Owns the phase timeline of one exhibit: time, play/pause, step buttons, speed, pacing, the
@@ -42,10 +41,14 @@ export class Player {
   held = false
   /** Called when t reaches the end. Without it the player stops at the last frame. */
   onEnd: (() => void) | null = null
+  /** Caption text and shape of phase i, for the list of all steps. */
+  describe: ((i: number) => [string, string]) | null = null
   /** Slot for exhibit-specific controls (head switcher, temperature…). */
   readonly meta: HTMLElement
   private byId: Record<string, TimedPhase> = {}
   private segs: { el: HTMLButtonElement; fill: HTMLElement }[] = []
+  private steps: HTMLDetailsElement
+  private shown = -1
   private btn: HTMLButtonElement
   private nextBtn: HTMLButtonElement
   private icon: SVGPathElement
@@ -103,39 +106,50 @@ export class Player {
     this.meta = document.createElement('div')
     this.meta.className = 'meta'
     if (!SPEEDS.includes(this.speed)) this.speed = 1
-    const group = (label: string, options: [string, string][], on: string, pick: (v: string) => void) => {
-      const g = document.createElement('div')
-      g.className = 'toggle'
-      g.setAttribute('role', 'group')
-      g.setAttribute('aria-label', label)
-      for (const [v, text, title] of options.map(([v, t]) => [v, ...t.split('|')])) {
-        const b = document.createElement('button')
-        b.type = 'button'
-        b.textContent = text
-        if (title) b.title = title
-        b.setAttribute('aria-pressed', String(v === on))
-        b.addEventListener('click', () => { pick(v); g.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))) })
-        g.appendChild(b)
-      }
-      return g
+    // speed and pacing as single buttons that cycle, to keep the control bar on one line
+    const cycle = (label: string, show: () => [string, string], next: () => void) => {
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.className = 'cycle'
+      const sync = () => { const [t, title] = show(); b.textContent = t; b.title = title; b.setAttribute('aria-label', `${label}: ${title}`) }
+      b.addEventListener('click', () => { next(); sync() })
+      sync()
+      return b
     }
-    const pace = group('Pacing', [['step', 'Step|Pause after each step'], ['auto', 'Auto|Play continuously']], this.guided ? 'step' : 'auto', (v) => {
-      this.guided = v === 'step'
-      pref.set('pace', v)
+    const pace = cycle('Pacing', () => (this.guided ? ['Step ⏸', 'Pause after each step (click for Auto)'] : ['Auto ▶', 'Play straight through (click for Step)']), () => {
+      this.guided = !this.guided
+      pref.set('pace', this.guided ? 'step' : 'auto')
     })
-    const speed = group('Speed', SPEEDS.map((s) => [String(s), s + '×']), String(this.speed), (v) => { this.speed = +v; pref.set('speed', v) })
+    const speed = cycle('Speed', () => [this.speed + '×', `Speed ${this.speed}× (click to change)`], () => {
+      this.speed = SPEEDS[(SPEEDS.indexOf(this.speed) + 1) % SPEEDS.length]
+      pref.set('speed', String(this.speed))
+    })
     this.meta.append(pace, speed)
     const transport = document.createElement('div')
     transport.className = 'transport'
     transport.append(prevBtn, this.btn, this.nextBtn)
-    controls.append(transport, tl, this.meta)
+    // every step with its explanation, to read at leisure or jump to
+    this.steps = document.createElement('details')
+    this.steps.className = 'steps'
+    this.steps.innerHTML = '<summary>All steps</summary><ol></ol>'
+    this.steps.addEventListener('toggle', () => this.renderSteps())
+    controls.append(transport, tl, this.meta, this.steps)
+    // a pointer click leaves focus on the button, where Space would click it again instead of play / pause
+    controls.addEventListener('click', (e) => { if (e.detail > 0) (e.target as HTMLElement).closest('button')?.blur() })
+    if (pendingPhase) {
+      const p = this.byId[pendingPhase]
+      if (p) this.t = p.start + 0.001
+      pendingPhase = null
+    }
 
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
-      if (e.code === 'Space' && tag !== 'BUTTON') { e.preventDefault(); this.setPlaying(!this.playing) }
+      if (e.defaultPrevented || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
+      if (e.code === 'Space' && tag !== 'BUTTON' && tag !== 'SUMMARY' && tag !== 'A') { e.preventDefault(); this.setPlaying(!this.playing) }
       else if (e.key === 'ArrowRight') { e.preventDefault(); this.step(1) }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); this.step(-1) }
+      // , and . nudge time while paused, for a frame-by-frame look
+      else if ((e.key === ',' || e.key === '.') && !this.playing) { this.setHeld(false); this.t = clamp(this.t + (e.key === '.' ? 0.1 : -0.1), 0, this.total - 0.001) }
     }
     document.addEventListener('keydown', onKey)
     this.offKeys = () => document.removeEventListener('keydown', onKey)
@@ -226,6 +240,33 @@ export class Player {
       const p = this.phases[i]
       s.fill.style.transform = `scaleX(${clamp((this.t - p.start) / p.dur)})`
       s.el.classList.toggle('on', i === ci)
+    })
+    if (ci !== this.shown) {
+      this.shown = ci
+      if (this.steps.open) this.renderSteps()
+      this.linkPhase(this.phases[ci].id)
+    }
+  }
+
+  /** Keep the address pointing at the current step, so a copied link opens here. */
+  private linkPhase(id: string) {
+    if (!this.btn.isConnected || this.btn.closest('.leaving')) return
+    const [route] = location.hash.replace(/^#\/?/, '').split('?')
+    const want = `#/${route}?phase=${id}`
+    if (location.hash !== want) try { history.replaceState(history.state, '', want) } catch { /* sandboxed frames may refuse */ }
+  }
+
+  private renderSteps() {
+    if (!this.steps.open) return
+    const ol = this.steps.querySelector('ol')!, ci = this.curIndex()
+    ol.innerHTML = ''
+    this.phases.forEach((p, i) => {
+      const [text, shape] = this.describe?.(i) ?? ['', '']
+      const li = document.createElement('li')
+      if (i === ci) li.setAttribute('aria-current', 'step')
+      li.innerHTML = `<button type="button"><b>${rich(p.name)}</b></button><p>${rich(text)}</p>${shape ? `<code>${rich(shape)}</code>` : ''}`
+      li.querySelector('button')!.addEventListener('click', () => { this.setHeld(false); this.t = p.start + 0.001 })
+      ol.appendChild(li)
     })
   }
 

@@ -57,6 +57,7 @@ export class Stage {
     this.zoomBtn.hidden = !small
     this.zoomBtn.textContent = this.full ? 'Fit to screen' : 'Full size ⤢'
     this.edges()
+    poke()
     this.onResize?.()
   }
 
@@ -88,14 +89,23 @@ export class Stage {
   }
 }
 
-/** requestAnimationFrame loop with a capped dt; returns a stop function. */
-export function runLoop(step: (dt: number, now: number) => void): () => void {
+/** Time of the last pointer, key, wheel, resize or theme event: anything that can change a still frame. */
+let lastPoke = performance.now()
+export const poke = () => { lastPoke = performance.now() }
+for (const ev of ['pointermove', 'pointerdown', 'pointerup', 'keydown', 'wheel', 'resize', 'focusin']) window.addEventListener(ev, poke, { passive: true, capture: true })
+
+/**
+ * requestAnimationFrame loop with a capped dt; returns a stop function. While `idle()` is true
+ * (e.g. paused) and nothing has been poked for a moment, frames are skipped instead of redrawn.
+ */
+export function runLoop(step: (dt: number, now: number) => void, idle: () => boolean = () => false): () => void {
   let last = performance.now()
   let id = 0
   const tick = (now: number) => {
-    const dt = Math.min(0.05, (now - last) / 1000)
+    // the first frame's timestamp can precede performance.now() at start: never step backwards
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000))
     last = now
-    step(dt, now)
+    if (!idle() || now - lastPoke < 700) step(dt, now)
     id = requestAnimationFrame(tick)
   }
   id = requestAnimationFrame(tick)
