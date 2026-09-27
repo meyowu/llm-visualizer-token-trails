@@ -506,6 +506,36 @@ const LEARN: Record<string, Learn> = {
       'The cache grows with every token and layer, and decoding is limited by memory bandwidth, not arithmetic.',
     ],
   },
+  flashattention: {
+    refs: [["Dao et al. 2022, FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness", "https://arxiv.org/abs/2205.14135"], ["Dao 2023, FlashAttention-2", "https://arxiv.org/abs/2307.08691"], ["Milakov & Gimelshein 2018, Online normalizer calculation for softmax", "https://arxiv.org/abs/1805.02867"]],
+    code: {
+      lines: [
+        '# standard: three kernels, S and P (N × N) go through HBM',
+        'S = Q @ K.T / sqrt(d); P = softmax(S); O = P @ V',
+        '# FlashAttention: one kernel; for each block of queries, stream K and V',
+        'for i in query_blocks:                          # Q_i stays in SRAM',
+        '    m, l, acc = -inf, 0, 0',
+        '    for j in key_blocks:                        # K_j, V_j loaded into SRAM',
+        '        s = Q[i] @ K[j].T / sqrt(d)             # one tile, never written out',
+        '        m_new = max(m, s.max(-1))',
+        '        p = exp(s - m_new)',
+        '        l = exp(m - m_new) * l + p.sum(-1)',
+        '        acc = exp(m - m_new) * acc + p @ V[j]',
+        '        m = m_new',
+        '    O[i] = acc / l                              # exactly softmax(S) @ V',
+      ],
+      at: { memory: [], standard: [0, 1], online: [7, 8, 9], tiles: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], io: [2, 12] },
+    },
+    checks: [
+      { phase: 'tiles', q: 'Does FlashAttention give a different (approximate) result from ordinary attention?', options: ['No: it is exact, only the order of the arithmetic changes', 'Yes: it drops small attention weights', 'Yes: it uses lower precision', 'Only for long sequences'], answer: 0, why: 'The online softmax rescales partial sums exactly; the output matches ordinary attention up to floating-point rounding.' },
+      { phase: 'io', q: 'What does FlashAttention avoid storing?', options: ['The N × N score and weight matrices', 'The keys and values', 'The model weights', 'The output'], answer: 0, why: 'Each tile of scores lives only in SRAM, so attention’s memory grows with N rather than N².' },
+    ],
+    recap: [
+      'GPU arithmetic is fast; moving data between HBM and the chip is the bottleneck.',
+      'FlashAttention computes attention in tiles held in SRAM, with an online softmax that rescales running sums.',
+      'The result is exact, the N × N matrices are never stored, and much less data crosses to HBM.',
+    ],
+  },
   llama: {
     refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {

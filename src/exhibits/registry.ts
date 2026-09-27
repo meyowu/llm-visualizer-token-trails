@@ -1,3 +1,4 @@
+import { mountFlashAttention } from './serving/flashattention'
 import { mountKvCache } from './serving/kvcache'
 import { mountBert } from './lineage/bert'
 import { mountClip } from './lineage/clip'
@@ -120,7 +121,7 @@ export const CATEGORIES: Category[] = [
     title: 'Serving',
     entries: [
       { name: 'KV Cache', tag: 'prefill / decode', route: 'serving/kv-cache', mount: mountKvCache },
-      { name: 'FlashAttention', tag: 'tiled · on-chip' },
+      { name: 'FlashAttention', tag: 'tiled · on-chip', route: 'serving/flashattention', mount: mountFlashAttention },
       { name: 'PagedAttention', tag: 'block tables' },
       { name: 'Continuous Batching', tag: 'iteration-level' },
       { name: 'Speculative Decoding', tag: 'draft → verify' },

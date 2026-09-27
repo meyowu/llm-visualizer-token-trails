@@ -104,6 +104,8 @@ src/exhibits/lineage/
 src/exhibits/serving/
   kvcache.ts                why a KV cache (n² → n), prefill, a real GPT-2 decode step (q · Kᵀ, softmax, · V for one head),
                             cache sizes across models, the roofline (prefill compute-bound, decode memory-bound)
+  flashattention.ts         SRAM vs HBM, standard attention's HBM round trips, the online softmax on one row, the tiled loop
+                            with real toy arithmetic checked against standard attention, HBM traffic and N × N memory
 ```
 
 ## Adding an exhibit or detail view
