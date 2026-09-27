@@ -6,6 +6,7 @@ The atlas follows a model's life in five parts: **Anatomy** (GPT-2 taken apart),
 
 ## What's here
 
+- **Start here**: what a language model does (a live next-token example with real GPT-2 numbers), what a Transformer is, the path through the Anatomy chapters, and how to read the pictures.
 - **Anatomy / Forward pass**: one full forward pass of GPT-2 small with the numbers of a real run, for three prompts, each continued greedily for three passes: real token ids, embeddings, all 144 attention heads (with a label for what each head does), block 1's MLP neurons, the logit lens after every block, and the real next-token distribution.
   - **Tokenizer**: GPT-2's byte-level BPE on the prompt: regex pre-split, bytes (space → Ġ), merge rules fired in rank order, and each token's id (256 + merge rank) placed on the vocabulary.
   - **Embedding**: ids as one-hot rows times W_E (a GEMM that is really a row lookup, on a log-scaled vocabulary axis), plus the first N rows of W_P, giving the residual stream.
@@ -16,7 +17,7 @@ The atlas follows a model's life in five parts: **Anatomy** (GPT-2 taken apart),
   - **Unembed & Sampling**: real GPT-2 numbers: ln_f on the last position, logits as x · W_Eᵀ (tied to the embedding; 8 of the 768 dimensions drawn, each logit the full sum), the whole 50,257-token distribution at any temperature (top 256 exact, the rest summarised), softmax, and sampling strategies (sample, greedy, top-k, top-p) drawn as an inverse CDF.
 - **Lineage / LLaMA**: LLaMA 3 as a diff against GPT-2: the two blocks side by side, then RoPE (rotating q/k pairs by position, and why only the offset matters), RMSNorm vs LayerNorm, the gated SwiGLU MLP, and MHA vs GQA vs MQA with real KV-cache sizes.
 
-On the overview, click a part marked ↗ (the tokens, the embedding strips, the attn, mlp, ln_f and W_U plates, the next-token bars) to zoom into its detail view.
+Every page pauses at the end of each step so there is time to read (switch to Auto to play straight through); ← and → move between steps. On the overview, click a part marked ↗ (the tokens, the embedding strips, the attn, mlp, ln_f and W_U plates, the next-token bars) to zoom into its detail view.
 
 ## Development
 
@@ -48,6 +49,7 @@ src/
     data.ts               decodes the exported GPT-2 run: distributions at any T, head kinds, lane colours
   data/gpt2.json          real GPT-2 small activations for the overview and Unembed
   exhibits/
+    start.ts              landing page
     registry.ts           categories, sub-headings and exhibits (with child steps); an exhibit goes live once it has a route
     transformer/
       model.ts            toy model for the detail views: attention and MLP arithmetic at d_model 8

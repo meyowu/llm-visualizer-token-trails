@@ -5,7 +5,7 @@ import { Player } from '../../core/player'
 import { Stage, runLoop } from '../../core/stage'
 import { C, blend, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
-import { VOCAB, mixing, nextDist, presets, type Next } from '../../lib/gpt2/data'
+import { PROMPT_LABELS, VOCAB, mixing, nextDist, presets, type Next } from '../../lib/gpt2/data'
 import type { Nav } from '../registry'
 
 /*
@@ -25,7 +25,6 @@ const PHASES = [
 /** Candidates drawn in the GEMM and as bars; dimensions of x drawn; tokens whose logits are stored exactly. */
 const K6 = 6, D = 8, TOPN = 256
 const STRATS = ['sample', 'greedy', 'top-k 3', 'top-p 0.9'] as const
-const PROMPT_LABELS: Record<string, string> = { cat: '“The cat sat…”', france: '“capital of France”', count: '“one two three…”' }
 /** The logit chart shows gaps to the top logit down to this value. */
 const GAP_MIN = -12
 
@@ -74,6 +73,7 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
   let R = load(S.preset, seq)
 
   const frame = createFrame(root, {
+    formula: true,
     eyebrow: 'Anatomy · Unembed & Sampling',
     title: 'Unembed & Sampling',
     subtitle: 'LM head · tied to W_E · real run',
@@ -85,11 +85,11 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
       { label: 'LM head', value: 'W_Eᵀ', real: 'tied' },
     ],
   })
-  const stage = new Stage(frame.stageHost, 1040, 520, 'Unembedding and sampling with numbers from a real GPT-2 small run: the last position passes through ln_f, is scored against every vocabulary embedding to give logits, which are divided by the temperature, turned into probabilities by softmax, and sampled.')
+  const stage = new Stage(frame.stageHost, 1040, 470, 'Unembedding and sampling with numbers from a real GPT-2 small run: the last position passes through ln_f, is scored against every vocabulary embedding to give logits, which are divided by the temperature, turned into probabilities by softmax, and sampled.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
   const prog = (id: string) => player.prog(id)
-  const mk = new MatrixKit(stage, seq, 36)
+  const mk = new MatrixKit(stage, seq, frame.setFormula)
   const nextCol = () => C.tok[seq.length % 7]
   /** A new draw is shown from the start of the Sample phase, so a changed setting never silently swaps the token. */
   const redraw = () => { if (player.t > player.start('sample')) player.t = player.start('sample') + 0.001 }
@@ -132,7 +132,7 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
   }
 
   /* ---------- layout ---------- */
-  const pad = 36, top = 60, bot = 96, tokW = 150
+  const pad = 36, top = 60, bot = 46, tokW = 150
   const L = { lx: 0, lnX: 0, xr: r0(), B: r0(), C: r0(), restW: 60, ch: { x0: 0, x1: 0, y0: 0, y1: 0, slot: 40 }, cdf: { x0: 0, x1: 0, y: 0, h: 22 }, sentY: 0 }
   function r0(): Rect { return { x: 0, y: 0, c: 26 } }
   function geom() {
@@ -267,7 +267,7 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
     sentence(0, '')
     lanesIn(a, p > 0.2 && p < 0.6 ? 1 : 0)
     drawX(eout(clamp((p - 0.35) / 0.3)))
-    mk.formula = { segs: [['x  =  ln_f(h[', C.mute], [String(seq.length - 1), C.ink], ['])  =  γ ⊙ (h − ', C.mute], [fmt(R.mu), C.ink2], [') / ', C.mute], [fmt(R.sigma), C.ink2], [' + β', C.mute]], note: `h is ${tokLabel(seq[seq.length - 1].text)}'s stream after all 12 blocks. The other positions were still needed: attention read their keys and values.` }
+    mk.formula = { segs: [['x  =  ln_f(h[', C.mute], [String(seq.length - 1), C.ink], ['])  =  γ ⊙ (h − μ) / σ + β', C.mute], ['   ·   μ = ', C.mute], [fmt(R.mu), C.ink2], ['   σ = ', C.mute], [fmt(R.sigma), C.ink2]], note: `h is ${tokLabel(seq[seq.length - 1].text)}'s stream after all 12 blocks. The other positions were still needed: attention read their keys and values.` }
   }
 
   function sceneLogits(p: number) {

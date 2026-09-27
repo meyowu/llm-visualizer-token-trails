@@ -30,6 +30,7 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
   const Hm: M = E.map((r, i) => r.map((v, k) => v + P[i][k]))
 
   const frame = createFrame(root, {
+    formula: true,
     eyebrow: 'Anatomy · Embedding',
     title: 'Embedding',
     subtitle: 'token + position · GPT-2',
@@ -42,15 +43,15 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
       { label: 'W_P params', value: '0.79M' },
     ],
   })
-  const stage = new Stage(frame.stageHost, 1040, 520, 'Embedding: each token id becomes a one-hot row that selects one row of the embedding matrix W_E; the position embedding for each slot is then added to form the residual stream.')
+  const stage = new Stage(frame.stageHost, 1040, 470, 'Embedding: each token id becomes a one-hot row that selects one row of the embedding matrix W_E; the position embedding for each slot is then added to form the residual stream.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
   const prog = (id: string) => player.prog(id)
-  const mk = new MatrixKit(stage, seq, 36)
+  const mk = new MatrixKit(stage, seq, frame.setFormula)
   const { tokRGB, tl } = mk
 
   /* ---------- layout ---------- */
-  const pad = 36, tokW = 124, top = 60, bot = 96
+  const pad = 36, tokW = 124, top = 60, bot = 46
   const L = { A: r0(), Lv: 200, B: { x: 0, y: 0, w: 0, h: 0 }, C: r0(), E2: r0(), P2: r0(), H2: r0(), WP: { x: 0, y: 0, w: 0, h: 0 } }
   function r0(): Rect { return { x: 0, y: 0, c: 30 } }
   function geom() {

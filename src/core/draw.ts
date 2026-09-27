@@ -161,6 +161,9 @@ export function fillRich(t: string, x: number, y: number): number {
 }
 
 /** Uppercase mono group label with a thin bracket underneath, spanning [a, b]. */
+/** Uppercase Latin letters only, so Greek (σ, μ) and math keep their case in uppercase labels. */
+export const upper = (t: string) => t.replace(/[a-z]+/g, (m) => m.toUpperCase())
+
 export function bracketLabel(t: string, a: number, b: number, y: number, on: boolean) {
   ctx.strokeStyle = rgba(on ? C.ink : C.faint, on ? 0.9 : 0.8)
   ctx.lineWidth = 1
@@ -175,7 +178,7 @@ export function bracketLabel(t: string, a: number, b: number, y: number, on: boo
   ctx.textBaseline = 'alphabetic'
   spaced(true)
   ctx.fillStyle = rgba(on ? C.ink : C.mute, 1)
-  ctx.fillText(t.toUpperCase(), a, y)
+  ctx.fillText(upper(t), a, y)
   spaced(false)
 }
 

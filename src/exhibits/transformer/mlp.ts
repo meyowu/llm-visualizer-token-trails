@@ -28,6 +28,7 @@ export function mountMlp(root: HTMLElement, nav: Nav): () => void {
   const WprojT = transpose(R.Wproj)
 
   const frame = createFrame(root, {
+    formula: true,
     eyebrow: 'Anatomy · MLP',
     title: 'MLP',
     subtitle: 'feed-forward · block 1',
@@ -40,13 +41,13 @@ export function mountMlp(root: HTMLElement, nav: Nav): () => void {
       { label: 'params', value: String(TOY.d * TOY_FF * 2 + TOY_FF + TOY.d), real: '4.7M' },
     ],
   })
-  const stage = new Stage(frame.stageHost, 1040, 520, 'Step-by-step MLP: X is multiplied by W_fc and widened four times, GELU is applied to every cell, the result is projected back down by W_proj, and the output is added to the residual stream.')
+  const stage = new Stage(frame.stageHost, 1040, 470, 'Step-by-step MLP: X is multiplied by W_fc and widened four times, GELU is applied to every cell, the result is projected back down by W_proj, and the output is added to the residual stream.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
   const prog = (id: string) => player.prog(id)
 
   /* ---------- layout ---------- */
-  const pad = 36, tokW = 76, lw = 84, top = 60, bot = 96
+  const pad = 36, tokW = 76, lw = 84, top = 60, bot = 46
   const L = { lx: 0, lnX: 0, X: r0(), W: r0(), bfc: r0(), H: r0(), bproj: r0(), panel: { x0: 0, x1: 0, y0: 0, y1: 0 } }
   function r0(): Rect { return { x: 0, y: 0, c: 24 } }
   function geom() {
@@ -66,7 +67,7 @@ export function mountMlp(root: HTMLElement, nav: Nav): () => void {
   geom()
 
   /* ---------- helpers ---------- */
-  const mk = new MatrixKit(stage, seq, pad)
+  const mk = new MatrixKit(stage, seq, frame.setFormula)
   const { tl } = mk
   // The residual stream after attention already carries mixed colours; the MLP never mixes positions.
   const laneCols = () => laneMix(att).map((w) => blend(seq.map((_, k) => mk.tokRGB(k)), w))
@@ -192,7 +193,7 @@ export function mountMlp(root: HTMLElement, nav: Nav): () => void {
       ctx.strokeStyle = rgba(C.ink); ctx.lineWidth = 2; ctx.strokeRect(L.H.x + focus.k * c, L.H.y + focus.i * c, c, c)
       mk.formula = {
         segs: [[`G[${focus.i},${focus.k}]`, C.ink], ['  =  GELU(', C.mute], [fmt(h), C.ink2], [')  =  ', C.mute], [fmt(g), C.ink]],
-        note: h < 0 ? `Neuron ${focus.k} for ${tl(focus.i)}: a negative input, squeezed toward 0.` : `Neuron ${focus.k} for ${tl(focus.i)}: a positive input passes through almost unchanged.`,
+        note: h < 0 ? `Neuron ${focus.k} for ${tl(focus.i)}: a negative input, squeezed toward 0.` : `Neuron ${focus.k} for ${tl(focus.i)}: a positive input; GELU keeps ${Math.round((g / h) * 100)}% of it (more for larger inputs).`,
       }
     } else {
       const neg = R.H.flat().filter((v) => v < 0).length
@@ -271,8 +272,8 @@ export function mountMlp(root: HTMLElement, nav: Nav): () => void {
   }
 
   const CAPS: Record<string, [string, string]> = {
-    up: ["X (after ln_2) is multiplied by W_fc, widening every token from 8 numbers to 32 (768 → 3,072 in GPT-2), and the bias b_fc is added. Each column is one neuron; each cell is a row of X dotted with that neuron's weights.", 'GPT-2 [N×768]·[768×3072] · 23.6 MFLOPs'],
-    gelu: ['GELU is applied to every cell on its own. Negative inputs are squeezed toward 0, never below −0.17; positive inputs pass through almost unchanged. So only some neurons stay active for each token.', 'elementwise · 5 × 32 cells'],
+    up: ["Attention moved information between tokens; the MLP works on each token alone, and is thought to hold much of what the model has learned. X (after ln_2) times W_fc plus b_fc widens every token from 8 numbers to 32 (768 → 3,072 in GPT-2): each column is one neuron.", 'GPT-2 [N×768]·[768×3072] · 23.6 MFLOPs'],
+    gelu: ['GELU bends every cell on its own: large positive inputs pass almost unchanged, small ones are damped, negative ones are squeezed toward 0 (never below −0.17). Without this bend, W_fc then W_proj would collapse into one 768 × 768 matrix.', 'elementwise · 5 × 32 cells'],
     down: ['The 32 activations are projected back down to 8 (3,072 → 768), and the bias b_proj is added. W_proj is drawn transposed, so each output dimension is a row sitting directly above the activations it multiplies.', 'GPT-2 [N×3072]·[3072×768] · 23.6 MFLOPs'],
     resid: ['The MLP output is added to the residual stream. Positions never exchanged information in this sub-layer; each token was processed on its own. Next is block 2.', "h″ = h′ + MLP(ln_2(h′))"],
   }

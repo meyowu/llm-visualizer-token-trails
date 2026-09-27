@@ -1,4 +1,4 @@
-import { F, chipW, drawChip, fillRich, plate, rr, serifAt, spaced, useCtx } from '../../core/draw'
+import { F, chipW, drawChip, fillRich, plate, rr, serifAt, spaced, upper, useCtx } from '../../core/draw'
 import { createFrame } from '../../core/frame'
 import { MatrixKit, fmt } from '../../core/matrix'
 import { Player } from '../../core/player'
@@ -31,6 +31,7 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
   const reduced = reducedMotion()
   const seq = promptTokens(), N = seq.length, D = 8
   const frame = createFrame(root, {
+    formula: true,
     eyebrow: 'Lineage · Decoder-only',
     title: 'LLaMA',
     subtitle: 'LLaMA 3 8B · what changed since GPT-2',
@@ -44,13 +45,13 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
       { label: 'context', value: '8,192', real: '1,024' },
     ],
   })
-  const stage = new Stage(frame.stageHost, 1040, 520, 'LLaMA compared with GPT-2: rotary position embeddings inside attention, RMSNorm instead of LayerNorm, a gated SwiGLU MLP, and grouped-query attention that shares keys and values across query heads.')
+  const stage = new Stage(frame.stageHost, 1040, 470, 'LLaMA compared with GPT-2: rotary position embeddings inside attention, RMSNorm instead of LayerNorm, a gated SwiGLU MLP, and grouped-query attention that shares keys and values across query heads.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
   const prog = (id: string) => player.prog(id)
-  const mk = new MatrixKit(stage, seq, 36)
+  const mk = new MatrixKit(stage, seq, frame.setFormula)
   const hue = (i: number): RGB => C.tok[seq[i].c % 7]
-  const pad = 36, top = 56, bot = 96
+  const pad = 36, top = 56, bot = 46
 
   // toy vectors: per-token query/key (8 = 4 rotation pairs) and the residual rows used for the norms
   const qv = seq.map((t) => { const r = rng(t.id * 131 + 7); return Array.from({ length: DH }, () => gauss(r)) })
@@ -84,7 +85,7 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
   }
   function title(t: string, x: number, y: number, a: number) {
     ctx.font = F.label; spaced(true); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.mute, a)
-    fillRich(t.toUpperCase(), x, y); spaced(false)
+    fillRich(upper(t), x, y); spaced(false)
   }
 
   /* ---------- scene 1: the two blocks ---------- */

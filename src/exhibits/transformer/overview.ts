@@ -4,7 +4,7 @@ import { Stage, runLoop } from '../../core/stage'
 import { C, blend, mixc, pop, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
 import { F, bracketLabel, chipW, drawChip, plate, rr, spaced, subLabel, tokDisp, tokLabel, tokText, useCtx } from '../../core/draw'
-import { headKind, mixing, nextDist, presets, type Dist, type GptPass, type Preset } from '../../lib/gpt2/data'
+import { PROMPT_LABELS, headKind, mixing, nextDist, presets, type Dist, type GptPass, type Preset } from '../../lib/gpt2/data'
 import type { Nav } from '../registry'
 
 const PHASES = [
@@ -18,7 +18,6 @@ const PHASES = [
 ]
 /** The head each prompt opens on, [block, head]; the counting prompt shows an induction head. */
 const START_HEAD: Record<string, [number, number]> = { cat: [0, 0], france: [0, 0], count: [5, 5] }
-const PROMPT_LABELS: Record<string, string> = { cat: '“The cat sat…”', france: '“capital of France”', count: '“one two three…”' }
 /** Candidates listed by name; the rest of the vocabulary is one row. */
 const TOP = 6
 /** |value| drawn at full strength in the embedding strip. */
@@ -52,7 +51,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   const frame = createFrame(root, {
     eyebrow: 'Anatomy',
     title: 'Forward pass',
-    subtitle: 'decoder-only · GPT-2 small, real run',
+    subtitle: 'decoder-only Transformer · GPT-2 small, real run',
     specs: [
       { label: 'shown', value: 'real GPT-2' }, { label: 'layers', value: '12' }, { label: 'd_model', value: '768' },
       { label: 'heads', value: '12' }, { label: 'vocab', value: '50,257' }, { label: 'params', value: '124M' },
@@ -565,7 +564,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
         ? { t: "GPT-2's byte-level BPE splits the text into tokens, each an id in a 50,257-entry vocabulary; Ġ marks a token that starts with a space. Click the tokens to see the merges.", s: `ids [${V.seq.map((t) => t.id).join(', ')}]` }
         : { t: 'The token picked in the last pass is appended and the whole sequence runs again. Real systems keep a KV cache so the earlier positions are not recomputed.', s: `${N} tokens · +${V.seq[N - 1].id}` }
       case 'embed': return { t: "Each id selects its row of the embedding matrix W_E, and the row of W_P for its position is added; the strips show the first 16 of the 768 real numbers. Click a strip to see the lookup.", s: `[${N} × 768]` }
-      case 'attn': return { t: 'Each position pulls in information from earlier ones: its query is scored against their keys and it takes a weighted mix of their values; later tokens are masked. Hover a lane to see its weights, and step through all 144 real heads below. Click attn for every product.', s: `12 heads × [${N} × ${N}]` }
+      case 'attn': return { t: 'Each position pulls in information from earlier ones: its query (what it looks for) is scored against their keys (what they offer), and it takes a weighted mix of their values; later tokens are masked. Hover a lane to see its weights, and step through all 144 real heads below. Click attn for every product.', s: `12 heads × [${N} × ${N}]` }
       case 'mlp': return { t: 'The MLP works on each position alone: it expands the 768 numbers to 3,072 neurons, applies GELU, and projects back. ln_1 and ln_2, the thin panes, normalise the stream before attn and mlp read it. Click mlp for the products.', s: `[${N} × 768] → [${N} × 3072]` }
       case 'stack': return { t: 'Eleven more blocks, same shape but each with its own weights, add their results to the stream. Right: the logit lens, what the last position would predict if the model stopped after each block. Lane colour sketches where information came from; the bars show the shares.', s: '12 blocks · ≈85M params' }
       case 'unembed': return { t: 'Only the last position predicts: ln_f normalises it and a dot product with every row of W_E (GPT-2 ties W_U to W_E) scores all 50,257 tokens. softmax turns the scores into these probabilities, the real ones from GPT-2 small. Click ln_f or W_U to see it step by step.', s: '[1 × 768] · W_Eᵀ → [1 × 50,257]' }

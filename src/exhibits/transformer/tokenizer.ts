@@ -1,4 +1,4 @@
-import { F, fillRich, rr, serifAt, spaced, useCtx } from '../../core/draw'
+import { F, rr, serifAt, spaced, useCtx } from '../../core/draw'
 import { createFrame } from '../../core/frame'
 import { Player } from '../../core/player'
 import { Stage, runLoop } from '../../core/stage'
@@ -62,6 +62,7 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
   const final = steps[steps.length - 1].after
 
   const frame = createFrame(root, {
+    formula: true,
     eyebrow: 'Anatomy · Tokenizer',
     title: 'Tokenizer',
     subtitle: 'byte-level BPE · GPT-2',
@@ -73,7 +74,7 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
       { label: 'this prompt', value: `${PROMPT.join('').length} bytes → ${N} tokens` },
     ],
   })
-  const stage = new Stage(frame.stageHost, 1040, 520, 'Byte-level BPE: the prompt is split into words, each word becomes bytes, and merge rules fuse adjacent symbols in priority order until each word is a single vocabulary token with an id.')
+  const stage = new Stage(frame.stageHost, 1040, 470, 'Byte-level BPE: the prompt is split into words, each word becomes bytes, and merge rules fuse adjacent symbols in priority order until each word is a single vocabulary token with an id.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
   const prog = (id: string) => player.prog(id)
@@ -85,7 +86,7 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
   function geom() {
     const { W, H } = stage
     G.rulesX = W - pad - rulesW; G.mainL = pad; G.mainR = G.rulesX - 40
-    G.rowY = Math.round(H * 0.42); G.sentY = G.rowY - 80; G.rulerY = G.rowY + 120; G.rulesY = 70
+    G.rowY = Math.round((H + 50) * 0.42); G.sentY = G.rowY - 80; G.rulerY = G.rowY + 120; G.rulesY = 70
   }
   stage.onResize = geom
   geom()
@@ -253,14 +254,7 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
     } else formula = { segs: [['ids  =  ', C.mute], [`[${toks.map((t) => t.id).join(', ')}]`, C.ink]], note: 'Common words were merged early, so they have small ids: "Ġthe" is 262. Each id picks one row of the embedding matrix next.' }
   }
 
-  function drawFormula() {
-    if (!formula) return
-    const y = stage.H - 46
-    let x = pad
-    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.font = F.mono(12)
-    for (const [t, col] of formula.segs) { ctx.fillStyle = rgba(col); x += fillRich(t, x, y) }
-    if (formula.note) { ctx.font = F.body; ctx.fillStyle = rgba(C.mute); fillRich(formula.note, pad, y + 21) }
-  }
+
 
   function draw() {
     useCtx(ctx)
@@ -276,7 +270,7 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
       const bytes = [...hover.sym].map(hex).join(' ')
       formula = { segs: [[`"${hover.sym}"`, C.ink], ['  =  bytes ', C.mute], [bytes, C.ink2]], note: `${[...hover.sym].length} byte${[...hover.sym].length > 1 ? 's' : ''} so far in this symbol.` }
     }
-    drawFormula()
+    frame.setFormula(formula?.segs ?? null, formula?.note)
   }
 
   stage.canvas.addEventListener('pointermove', (e) => {

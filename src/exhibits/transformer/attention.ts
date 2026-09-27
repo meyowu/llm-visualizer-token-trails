@@ -32,6 +32,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
   const S = { head: 0 }
 
   const frame = createFrame(root, {
+    formula: true,
     eyebrow: 'Anatomy · Attention',
     title: 'Attention',
     subtitle: 'causal self-attention · block 1 · head 1',
@@ -44,7 +45,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
       { label: 'heads', value: String(TOY.heads), real: '12' },
     ],
   })
-  const stage = new Stage(frame.stageHost, 1040, 520, 'Step-by-step attention: X times W_Q, W_K and W_V gives Q, K and V; Q times K transposed gives scores, which are scaled, masked and softmaxed into attention weights A; A times V is projected by W_O and added back to the residual stream.')
+  const stage = new Stage(frame.stageHost, 1040, 470, 'Step-by-step attention: X times W_Q, W_K and W_V gives Q, K and V; Q times K transposed gives scores, which are scaled, masked and softmaxed into attention weights A; A times V is projected by W_O and added back to the residual stream.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
   toggle(player.meta, 'Attention head', ['head 1', 'head 2'], 0, (i) => {
@@ -55,7 +56,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
   const hd = () => R.heads[S.head]
 
   /* ---------- layouts, one per scene ---------- */
-  const pad = 36, tokW = 76, top = 60, bot = 96
+  const pad = 36, tokW = 76, top = 60, bot = 46
   const G = {
     qkv: { lx: 0, lnX: 0, X: r0(), Wq: r0(), Wk: r0(), Wv: r0(), Q: r0(), K: r0(), V: r0() },
     scores: { Q: r0(), KT: r0(), S: r0(), Vp: r0(), opsX: 0 },
@@ -98,7 +99,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
   geom()
 
   /* ---------- matrix drawing ---------- */
-  const mk = new MatrixKit(stage, seq, pad)
+  const mk = new MatrixKit(stage, seq, frame.setFormula)
   const { tokRGB, tl } = mk
   const drawMat = mk.drawMat.bind(mk), rowChips = mk.rowChips.bind(mk), paintCell = mk.paintCell.bind(mk)
   const paintAttn = mk.paintAttn.bind(mk), hatch = mk.hatch.bind(mk), cellText = mk.cellText.bind(mk)
@@ -343,10 +344,10 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
   }
 
   const CAPS: Record<string, [string, string]> = {
-    qkv: ['X (after ln_1) is multiplied by W_Q, W_K and W_V to give every token a query, key and value. Each cell of a result is one row of X dotted with one column of W. GPT-2 fuses the three into a single GEMM: X · W_qkv.', 'GPT-2 [N×768]·[768×2304] · 17.7 MFLOPs'],
+    qkv: ['X (after ln_1) is multiplied by W_Q, W_K and W_V. A query is what a token is looking for, a key is what it offers, and a value is what it hands over when chosen. For example, Ġthe might look for the noun it belongs to. GPT-2 does all three in one GEMM, X · W_qkv.', 'GPT-2 [N×768]·[768×2304] · 17.7 MFLOPs'],
     scores: ["Q times K transposed. Row i, column j is the dot product of token i's query with token j's key: how much i should attend to j.", 'GPT-2 12 × [N×64]·[64×N]'],
     scale: ['Divide by √d_head. Dot products grow with dimension; scaling keeps softmax from saturating from the start.', 'toy ÷ 2 · GPT-2 ÷ 8'],
-    mask: ['Set the upper triangle to −∞. When predicting token i, the model cannot see the tokens after it.', 'causal: j > i → −∞'],
+    mask: ['Position i predicts token i + 1, so it may only look at positions ≤ i: the upper triangle is set to −∞. In training every position is predicted at once, and without the mask each could just read the next word.', 'causal: j > i → −∞'],
     softmax: ["Softmax each row, turning scores into weights that sum to 1; −∞ becomes 0 after exp. Each row is one token's attention distribution.", 'A = softmax(S / √d + mask)'],
     av: ['Weight the rows of V by attention and sum them. Output row i blends the values of every visible token, and its color blends with them. The panel on the right breaks down the current row.', 'GPT-2 12 × [N×N]·[N×64]'],
     out: ["Concatenate the heads' outputs, multiply by W_O to mix them, and add the result back to the residual stream for the MLP.", 'GPT-2 [N×768]·[768×768] · 5.9 MFLOPs'],

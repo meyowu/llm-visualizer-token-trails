@@ -52,6 +52,8 @@ export interface GptPass {
   unembed?: { h: Float32Array; xf: Float32Array; rows: { id: number; text: string; v: Float32Array }[] }
 }
 export interface Preset { key: string; text: string; note: string; passes: GptPass[] }
+/** Short names for the prompt switchers. */
+export const PROMPT_LABELS: Record<string, string> = { cat: '“The cat sat…”', france: '“capital of France”', count: '“one two three…”' }
 
 const floats = (b64: string) => new Float32Array(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)).buffer)
 

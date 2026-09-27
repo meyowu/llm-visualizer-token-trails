@@ -2,7 +2,7 @@ import './styles.css'
 import { rich } from './core/frame'
 import { watchTheme } from './core/theme'
 import { reducedMotion } from './core/util'
-import { ALIASES, CATEGORIES, DEFAULT_ROUTE, ROUTES, exhibitsOf, isHeading, type Exhibit } from './exhibits/registry'
+import { ALIASES, CATEGORIES, DEFAULT_ROUTE, ROUTES, START, exhibitsOf, isHeading, type Exhibit } from './exhibits/registry'
 
 watchTheme()
 
@@ -11,7 +11,7 @@ const main = document.querySelector('.main') as HTMLElement
 
 /* ---------- rail ---------- */
 /** Categories the reader has opened; the one holding the current route is always open. */
-const open = new Set<string>()
+const open = new Set<string>(['anatomy'])
 
 function exhibitLink(ex: Exhibit, active: string): HTMLElement {
   const li = document.createElement('li')
@@ -38,6 +38,10 @@ function exhibitLink(ex: Exhibit, active: string): HTMLElement {
 
 function renderRail(active: string) {
   railNav.innerHTML = ''
+  const start = document.createElement('ul')
+  start.className = 'start-link'
+  start.appendChild(exhibitLink(START, active))
+  railNav.appendChild(start)
   for (const cat of CATEGORIES) {
     const all = exhibitsOf(cat), live = all.filter((e) => e.route).length
     if (all.some((e) => e.route === active)) open.add(cat.id)

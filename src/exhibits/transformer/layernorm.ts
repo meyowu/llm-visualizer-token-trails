@@ -29,6 +29,7 @@ export function mountLayerNorm(root: HTMLElement, nav: Nav): () => void {
   const att = attention(seq)
 
   const frame = createFrame(root, {
+    formula: true,
     eyebrow: 'Anatomy · LayerNorm & Residual',
     title: 'LayerNorm & Residual',
     subtitle: 'pre-LN · ln_1 of block 1',
@@ -41,15 +42,15 @@ export function mountLayerNorm(root: HTMLElement, nav: Nav): () => void {
       { label: 'ε', value: '1e-5' },
     ],
   })
-  const stage = new Stage(frame.stageHost, 1040, 520, 'LayerNorm and the residual stream: the stream flows straight through a block while each sub-layer reads a normalised copy and adds its output back; LayerNorm centres each token vector, scales it to unit variance, then applies a learned scale and shift.')
+  const stage = new Stage(frame.stageHost, 1040, 470, 'LayerNorm and the residual stream: the stream flows straight through a block while each sub-layer reads a normalised copy and adds its output back; LayerNorm centres each token vector, scales it to unit variance, then applies a learned scale and shift.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
   const prog = (id: string) => player.prog(id)
-  const mk = new MatrixKit(stage, seq, 36)
+  const mk = new MatrixKit(stage, seq, frame.setFormula)
   const { tokRGB, tl } = mk
 
   /* ---------- layout ---------- */
-  const pad = 36, tokW = 76, top = 60, bot = 96
+  const pad = 36, tokW = 76, top = 60, bot = 46
   const L = { H: r0(), X: r0(), nx0: 0, nx1: 0, statX: 0, gb: r0(), sy: 0, sx0: 0, sx1: 0, ln1: 0, attn: 0, add1: 0, ln2: 0, mlp: 0, add2: 0, by: 0 }
   function r0(): Rect { return { x: 0, y: 0, c: 32 } }
   function geom() {
@@ -226,7 +227,7 @@ export function mountLayerNorm(root: HTMLElement, nav: Nav): () => void {
       ctx.strokeStyle = rgba(C.ink, 0.9); ctx.lineWidth = 1.5
       ctx.strokeRect(L.gb.x + j * c - 1, L.gb.y - 1, c + 2, c + 2); ctx.strokeRect(L.gb.x + j * c - 1, L.gb.y + c + 3, c + 2, c + 2)
       mk.formula = { segs: [[`X[${i},${j}]`, C.ink], ['  =  γ[j] · (h − μ) / σ + β[j]  =  ', C.mute], [`${fmt(LN.ln1.gamma[j])} · (${fmt(h[i][j])} − ${fmt(s.mu)}) / ${fmt(s.sigma)} + ${fmt(LN.ln1.beta[j])}`, C.ink2], ['  =  ', C.mute], [fmt(X[i][j]), C.ink]], note: `${tl(i)}, feature ${j}. This X is exactly what attention multiplies by W_Q, W_K and W_V.` }
-    } else mk.formula = { segs: [['X  =  γ ⊙ x̂ + β', C.ink]], note: 'γ and β are learned per feature, so the model can undo the normalisation where it helps. ln_2 and ln_f work the same way with their own γ and β.' }
+    } else mk.formula = { segs: [['X  =  γ ⊙ x̂ + β', C.ink]], note: "γ and β are learned per feature: after normalising, the model picks each feature's scale and offset. They cannot bring back a token's own mean or size. ln_2 and ln_f work the same way with their own γ and β." }
   }
 
   function draw() {

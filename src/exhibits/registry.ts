@@ -1,4 +1,5 @@
 import { mountLlama } from './lineage/llama'
+import { mountStart } from './start'
 import { mountAttention } from './transformer/attention'
 import { mountEmbedding } from './transformer/embedding'
 import { mountLayerNorm } from './transformer/layernorm'
@@ -41,13 +42,14 @@ export const CATEGORIES: Category[] = [
     title: 'Anatomy',
     entries: [
       {
-        name: 'Forward pass', tag: 'GPT-2 small · text → next token', route: 'anatomy', mount: mountOverview,
+        name: 'Forward pass', tag: 'the Transformer · GPT-2 small', route: 'anatomy', mount: mountOverview,
+        // teaching order: the residual stream and LayerNorm come before the sub-layers that use them
         children: [
           { name: 'Tokenizer', tag: 'byte-level BPE', route: 'anatomy/tokenizer', mount: mountTokenizer },
           { name: 'Embedding', tag: 'W_E · positions', route: 'anatomy/embedding', mount: mountEmbedding },
+          { name: 'LayerNorm & Residual', tag: 'pre-LN stream', route: 'anatomy/layernorm', mount: mountLayerNorm },
           { name: 'Attention', tag: 'QKᵀ · softmax · V', route: 'anatomy/attention', mount: mountAttention },
           { name: 'MLP', tag: '768 → 3072 → 768', route: 'anatomy/mlp', mount: mountMlp },
-          { name: 'LayerNorm & Residual', tag: 'pre-LN stream', route: 'anatomy/layernorm', mount: mountLayerNorm },
           { name: 'Unembed & Sampling', tag: 'logits · temperature', route: 'anatomy/unembed', mount: mountUnembed },
         ],
       },
@@ -110,9 +112,12 @@ export const CATEGORIES: Category[] = [
 export const exhibitsOf = (c: Category): Exhibit[] =>
   c.entries.filter((e): e is Exhibit => !isHeading(e)).flatMap((e) => [e, ...(e.children ?? [])])
 
+/** The landing page, linked above the categories. */
+export const START: Exhibit = { name: 'Start here', tag: 'what this model does', route: 'start', mount: mountStart }
+
 export const ROUTES: Record<string, Mount> = Object.fromEntries(
-  CATEGORIES.flatMap(exhibitsOf).filter((e) => e.route && e.mount).map((e) => [e.route!, e.mount!]),
+  [START, ...CATEGORIES.flatMap(exhibitsOf)].filter((e) => e.route && e.mount).map((e) => [e.route!, e.mount!]),
 )
-export const DEFAULT_ROUTE = 'anatomy'
+export const DEFAULT_ROUTE = 'start'
 /** Old route prefixes that still resolve (prefix → replacement). */
 export const ALIASES: [string, string][] = [['transformer', 'anatomy']]

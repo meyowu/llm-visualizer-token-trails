@@ -1,4 +1,4 @@
-import { F, chipW, drawChip, fillRich, mathName, tokCol, tokLabel, type TokLike } from './draw'
+import { F, chipW, drawChip, mathName, tokCol, tokLabel, type TokLike } from './draw'
 import type { Stage } from './stage'
 import { C, rgba, type RGB } from './theme'
 import { clamp, lerp } from './util'
@@ -91,7 +91,8 @@ export class MatrixKit {
   formula: { segs: Seg[]; note: string } | null = null
   hover: Cell | null = null
 
-  constructor(private stage: Stage, private tokens: TokLike[], private pad: number) {
+  /** sink: shows the formula line and note, e.g. frame.setFormula. */
+  constructor(private stage: Stage, private tokens: TokLike[], private sink: (segs: Seg[] | null, note?: string) => void) {
     const cv = stage.canvas
     cv.addEventListener('pointermove', (e) => {
       const [x, y] = stage.local(e)
@@ -283,12 +284,9 @@ export class MatrixKit {
     this.formula = { segs: this.gemmSegs(v, aRow, bCol), note: v.note }
   }
 
+  /** Hand this frame's formula (or none) to the strip under the stage. */
   drawFormula() {
-    if (!this.formula) return
-    const ctx = this.ctx, y = this.stage.H - 46
-    let x = this.pad
-    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.font = F.mono(12)
-    for (const [t, col, a] of this.formula.segs) { ctx.fillStyle = rgba(col, a ?? 1); x += fillRich(t, x, y) }
-    if (this.formula.note) { ctx.font = F.body; ctx.fillStyle = rgba(C.mute); fillRich(this.formula.note, this.pad, y + 21) }
+    this.sink(this.formula?.segs ?? null, this.formula?.note)
   }
+
 }

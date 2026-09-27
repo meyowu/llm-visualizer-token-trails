@@ -18,12 +18,13 @@ There are no tests. To verify a change: typecheck, then open the page and step t
 ```
 src/main.ts                 rail nav from the registry, hash router, zoom transition between views
 src/styles.css              design tokens (dark-first, light via prefers-color-scheme / data-theme) + frame styles
-src/core/stage.ts           Stage: DPR-aware canvas (min size, scrolls horizontally when narrow), runLoop()
-src/core/player.ts          Player: phases, t, play/pause, speed, scrubbable timeline, keyboard shortcuts
-src/core/frame.ts           createFrame(): header/specs, stage host, caption line, controls; toggle(), stepper()
+src/core/stage.ts           Stage: DPR-aware canvas with a min size; scaled to fit a narrower host (phones get a full-size toggle), runLoop()
+src/core/player.ts          Player: phases, t, play/pause, step buttons, Step/Auto pacing, speed, scrubbable timeline, keys; prefs in localStorage
+src/core/frame.ts           createFrame(): header/specs, stage host, formula strip, caption line, controls; toggle(), stepper(), rich()
 src/core/draw.ts            primitives: chips, plate(), bracketLabel(), mathName()/mathRun(), fonts F
-src/core/matrix.ts          MatrixKit: drawMat (slabs), gemm() schedules, gemmOverlay, hover hits, formula line
+src/core/matrix.ts          MatrixKit: drawMat (slabs), gemm() schedules, gemmOverlay, hover hits; formula goes to frame.setFormula
 src/core/theme.ts           canvas palette C (read from CSS tokens), rgba/mixc/blend/pop
+src/exhibits/start.ts       landing page (#/start, the default): live next-token demo, what a Transformer is, the path, legend
 src/exhibits/registry.ts    categories (Anatomy, Lineage, Training, Serving, Agents) → entries: exhibits or sub-headings;
                             an exhibit may have `children` (its steps); live when it has `route` and `mount`
 src/lib/gpt2/
@@ -46,7 +47,7 @@ src/exhibits/lineage/
 
 ## Adding an exhibit or detail view
 
-1. Write `mountX(root, nav): () => void`: `createFrame` → `new Stage` → `new Player(PHASES, frame.controls)` → `runLoop` that ticks, draws, updates the timeline UI and sets the caption. Return a destroy that stops the loop and calls `player.destroy()` and `stage.destroy()`.
+1. Write `mountX(root, nav): () => void`: `createFrame` (with `formula: true` for a detail view) → `new Stage` → `new Player(PHASES, frame.controls)` → `new MatrixKit(stage, tokens, frame.setFormula)` → `runLoop` that ticks, draws, updates the timeline UI and sets the caption. Return a destroy that stops the loop and calls `player.destroy()` and `stage.destroy()`.
 2. Register it in `registry.ts` (`route` + `mount`). Steps of an exhibit go in its `children` with a deeper route (`anatomy/mlp`), which opens with a zoom-in. Routes are hash-based (`#/anatomy/attention`, `#/lineage/llama`); old ones keep working through `ALIASES`.
 3. To open a detail view from the overview, add its plate to `plateAt` / `PLATE_ROUTES` in `overview.ts` (hover highlight and `drawOpenHint` follow). Mention the click in that phase's caption.
 
@@ -66,11 +67,12 @@ src/exhibits/lineage/
   - Each token keeps its hue (`--t0…--t6`, token i → `i % 7`) everywhere. Information mixing between tokens is shown by blending hues: the overview uses real attention (`mixing()` in `data.ts`, first-token sinks count as no-ops), the toy detail views use `laneMix()` in `model.ts`, averaged over heads.
   - Layers are tilted glass plates. Matrices are slabs with a 5px depth face. A filled cell is positive, an outlined cell is negative.
   - Fonts: EB Garamond italic for names and math (`serifAt()`, scaled up 10%), Geist for UI text, JetBrains Mono for labels and numbers (`MONO`, never under 10.5px on canvas). Group labels are uppercase mono over thin brackets. Use the constants in `core/draw.ts`, never a hard-coded font string.
-  - Keep canvas text minimal, using real units and terms of art (GPT-2 ids, Ġ, 768 → 3072, FLOPs). Explanations go in the caption line: one or two plain sentences per phase. The canvas formula line carries a short note for the focused cell.
+  - Keep canvas text minimal, using real units and terms of art (GPT-2 ids, Ġ, 768 → 3072, FLOPs). Explanations go in the caption line: one or two plain sentences per phase. The formula strip under the stage (HTML, via `mk.formula` / `frame.setFormula`) carries the focused cell's arithmetic and a short note.
 - Seeds are chosen for readable patterns (`WEIGHT_SEED` in `model.ts`). Changing a seed changes every number shown, so re-check the attention patterns if you touch it.
 
 ## Gotchas
 
+- The browser pane is unreliable for checking drawings: screenshots of an emulated viewport can come out blank or half-scaled, and a hidden pane stops rAF and ResizeObserver (document.visibilityState is "hidden"), so sizes go stale. To inspect a frame, POST `canvas.toDataURL()` to a small local server and read the PNG.
 - The browser pane's `preview_start` with the `dev` config has failed to serve before. If :5173 doesn't answer, run `npx vite --port 5174` in the background and navigate there. A hidden pane throttles rAF, so take a fresh screenshot before judging a frozen frame.
 - Don't rely on Unicode subscript characters in the serif; use `mathRun()` or `fillRich()` for math with subscripts.
 - The repo is private: github.com/meyowu/token-trails.
