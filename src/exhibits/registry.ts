@@ -1,6 +1,7 @@
 import { mountAttention } from './transformer/attention'
 import { mountMlp } from './transformer/mlp'
 import { mountOverview } from './transformer/overview'
+import { mountTokenizer } from './transformer/tokenizer'
 
 /** Navigate to a route; `origin` (client coords) is where the zoom transition starts. */
 export type Nav = (route: string, origin?: { x: number; y: number }) => void
@@ -27,7 +28,7 @@ export const CATEGORIES: Category[] = [
     title: 'Transformer',
     items: [
       { name: 'Forward pass', tag: 'tokenizer → LM head', route: 'transformer', mount: mountOverview },
-      { name: 'Tokenizer', tag: 'byte-level BPE' },
+      { name: 'Tokenizer', tag: 'byte-level BPE', route: 'transformer/tokenizer', mount: mountTokenizer },
       { name: 'Embedding', tag: 'W_E · positions' },
       { name: 'Attention', tag: 'QKᵀ · softmax · V', route: 'transformer/attention', mount: mountAttention },
       { name: 'MLP', tag: '768 → 3072 → 768', route: 'transformer/mlp', mount: mountMlp },

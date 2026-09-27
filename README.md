@@ -5,10 +5,11 @@ Follow the tokens through AI systems: animated, explorable walk-throughs of the 
 ## What's here
 
 - **Transformer / Forward pass**: one full forward pass of GPT-2 small, from tokenization to sampling at the LM head. Scrub the timeline, switch attention heads, and drag the temperature.
+- **Transformer / Tokenizer**: GPT-2's byte-level BPE on the prompt: regex pre-split, bytes (space → Ġ), merge rules fired in rank order, and each token's id (256 + merge rank) placed on the vocabulary.
 - **Transformer / Attention**: every matrix product in one attention head, computed with real arithmetic at toy scale (d_model 8, d_head 4) and animated cell by cell: X·W_Q/K/V → Q·Kᵀ → ÷√d → mask → softmax → A·V → concat·W_O → residual add. Hover any result cell to see which row and column produced it.
 - **Transformer / MLP**: the feed-forward block at toy scale (d_model 8 → d_ff 32, the same 4× as GPT-2): X·W_fc + b → GELU (each activation plotted on the curve) → ·W_proj + b → residual add.
 
-On the overview, click a part marked ↗ (the attn and mlp plates) to zoom into its detail view.
+On the overview, click a part marked ↗ (the tokens, the attn plate, the mlp plate) to zoom into its detail view.
 
 ## Development
 
@@ -37,6 +38,7 @@ src/
     transformer/
       model.ts            toy model: GPT-2 token ids, real attention and MLP arithmetic, sampling distribution
       overview.ts         forward-pass overview
+      tokenizer.ts        tokenizer detail view
       attention.ts        attention detail view
       mlp.ts              MLP detail view
 ```

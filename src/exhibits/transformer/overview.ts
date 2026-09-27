@@ -440,6 +440,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     drawFlight(pS, isLast)
     if (hovA) drawOpenHint(G.xAttn, py0 - 4)
     if (hovM) drawOpenHint(G.xMlp, py0 - 4)
+    if (S.hoverPlate === 'tok') drawOpenHint(G.xTok + 56, py0 - 4)
   }
 
   /* ---------- captions ---------- */
@@ -447,7 +448,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     const N = P.N
     switch (PHASES[ci].id) {
       case 'tokenize': return S.passIdx === 0
-        ? { t: "GPT-2's byte-level BPE splits the text into subwords, each an id in a 50,257-entry vocabulary. Ġ marks a token that begins with a space.", s: `ids [${P.seq.map((t) => t.id).join(', ')}]` }
+        ? { t: "GPT-2's byte-level BPE splits the text into subwords, each an id in a 50,257-entry vocabulary. Ġ marks a token that begins with a space. Click the tokens to see the merges.", s: `ids [${P.seq.map((t) => t.id).join(', ')}]` }
         : { t: 'The token sampled in the last pass is appended to the sequence as is, with no re-tokenizing. There is no KV cache here, so the whole sequence is recomputed from scratch.', s: `${N} tokens · +${P.seq[N - 1].id}` }
       case 'embed': return { t: 'Each id selects one row of the embedding matrix W_E, and the position vector for slot i is added. From here on, every token is a 768-wide residual stream.', s: `[${N} × 768]` }
       case 'attn': return { t: 'Each position compares its query with the keys of every earlier position and pulls in their values, weighted by similarity. The causal mask hides the future. Click the attn plate to open up every matrix product.', s: `12 heads × [${N} × ${N}]` }
@@ -468,9 +469,10 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     if (y < G.plateY[0] - 14 || y > G.plateY[1] + 14) return ''
     if (Math.abs(x - G.xAttn) < 14) return 'attn'
     if (Math.abs(x - G.xMlp) < 14) return 'mlp'
+    if (x >= G.xTok - 4 && x < G.xEmb0 - 12) return 'tok'
     return ''
   }
-  const PLATE_ROUTES: Record<string, string> = { attn: 'transformer/attention', mlp: 'transformer/mlp' }
+  const PLATE_ROUTES: Record<string, string> = { attn: 'transformer/attention', mlp: 'transformer/mlp', tok: 'transformer/tokenizer' }
   const cv = stage.canvas
   cv.addEventListener('pointermove', (e) => {
     const [x, y] = stage.local(e), { sp, ys } = curYs()

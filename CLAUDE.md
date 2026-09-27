@@ -28,6 +28,7 @@ src/exhibits/registry.ts    categories + exhibits; an item is live when it has `
 src/exhibits/transformer/
   model.ts                  GPT-2 ids, canned next-token distribution, toy attention + MLP blocks, overview pass data
   overview.ts               forward pass, tokenizer → sampling; attn/mlp plates open the detail views
+  tokenizer.ts              tokenizer detail view: pre-split, bytes, BPE merges by rank, ids (id = 256 + merge rank)
   attention.ts              attention detail view, every GEMM animated cell by cell
   mlp.ts                    MLP detail view: up-projection, GELU curve, down-projection, residual
 ```
