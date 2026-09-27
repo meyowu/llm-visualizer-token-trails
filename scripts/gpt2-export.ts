@@ -87,11 +87,14 @@ interface Forward {
   last: Float32Array[]
   /** Mean length of the residual stream over positions 1… (position 0 is an outlier), after the embedding and after each block. */
   norms: number[]
+  /** q, k, v rows (3 × 768 each) of the layer passed as `capture`. */
+  qkv: Float32Array[]
 }
-function forward(ids: number[]): Forward {
+function forward(ids: number[], capture = -1): Forward {
   const N = ids.length
   let x = ids.map((id, p) => { const v = new Float32Array(D); for (let k = 0; k < D; k++) v[k] = wte[id * D + k] + wpe[p * D + k]; return v })
   const att: number[][][][] = [], resid: Float32Array[] = []
+  let captured: Float32Array[] = []
   const meanNorm = () => x.slice(1).reduce((s, r) => s + Math.hypot(...r), 0) / Math.max(1, N - 1)
   const norms = [meanNorm()]
   let mlp0: Float32Array[] = []
@@ -99,6 +102,7 @@ function forward(ids: number[]): Forward {
     const P = `h.${l}.`
     const a = x.map((r) => layerNorm(r, w(P + 'ln_1.weight'), w(P + 'ln_1.bias')))
     const qkv = a.map((r) => linear(r, w(P + 'attn.c_attn.weight'), w(P + 'attn.c_attn.bias'), 3 * D))
+    if (l === capture) captured = qkv
     const heads: number[][][] = []
     const o = x.map(() => new Float32Array(D))
     for (let h = 0; h < H; h++) {
@@ -132,7 +136,7 @@ function forward(ids: number[]): Forward {
     norms.push(meanNorm())
   }
   const xf = layerNorm(x[N - 1], w('ln_f.weight'), w('ln_f.bias'))
-  return { att, resid, xf, logits: logitsOf(xf), mlp0, last: x, norms }
+  return { att, resid, xf, logits: logitsOf(xf), mlp0, last: x, norms, qkv: captured }
 }
 
 /* ---------- export helpers ---------- */
@@ -235,6 +239,28 @@ for (const pr of PRESETS) {
   // how long the (pre-LN) residual stream gets, layer by layer, on the same text
   out.streamNorms = f.norms.map((v) => Math.round(v * 10) / 10)
   console.log('stream norms:', out.streamNorms.join(' '))
+}
+// the KV cache page: one head's real q, k, v for a prompt plus its first generated token
+{
+  const ids = [...bpe.encode('The cat sat on the'), bpe.encode(' floor')[0]], N = ids.length, f = forward(ids)
+  // a head whose new token spreads its attention over several earlier words (and not onto the first-token sink)
+  let best = { l: 0, h: 0, j: 1, a: 0, e: -1 }
+  f.att.forEach((heads, l) => heads.forEach((A, h) => {
+    const row = A[N - 1], rest = row.slice(1), z = rest.reduce((p, q) => p + q, 0)
+    const e = -rest.reduce((p, q) => (q > 0 ? p + (q / z) * Math.log(q / z) : p), 0)
+    const j = 1 + rest.indexOf(Math.max(...rest))
+    if (row[0] < 0.3 && e > best.e) best = { l, h, j, a: row[j], e }
+  }))
+  if (process.env.KV_LAYER) { best.l = +process.env.KV_LAYER; best.h = +(process.env.KV_HEAD ?? 0) }
+  const q = forward(ids, best.l).qkv, H0 = best.h * DH
+  out.kv = {
+    ids, syms: ids.map(sym), layer: best.l, head: best.h,
+    q: q.map((r) => Array.from(r.subarray(H0, H0 + DH), r3)),
+    k: q.map((r) => Array.from(r.subarray(D + H0, D + H0 + DH), r3)),
+    v: q.map((r) => Array.from(r.subarray(2 * D + H0, 2 * D + H0 + DH), r3)),
+    attn: f.att[best.l][best.h][N - 1].map(r3),
+  }
+  console.log(`kv: layer ${best.l + 1} head ${best.h + 1}: the new token puts ${(best.a * 100).toFixed(0)}% on ${JSON.stringify(sym(ids[best.j]))}; row`, out.kv.attn.join(' '))
 }
 // what GPT-2 guesses for a blank when it can see only the words before it (the BERT page's examples)
 {

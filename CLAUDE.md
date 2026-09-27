@@ -52,7 +52,8 @@ src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
   data.ts                   decodes src/data/gpt2.json: presets, nextDist() at any T, headKind(), mixing() (lane colours),
-                            wpeSlice() and streamNorms() for the 2017 Transformer page, leftOnly() for the BERT page
+                            wpeSlice() and streamNorms() for the 2017 Transformer page, leftOnly() for the BERT page,
+                            kvSlice() (one head's real q, k, v) for the KV cache page
 src/data/gpt2.json          real GPT-2 small activations for 3 prompts × 3 greedy passes, and one sentence scored per position
                             for training (made by scripts/gpt2-export.ts)
 scripts/gpt2-export.ts      offline GPT-2 small forward pass in plain TS (Node 23+); weights in ~/.cache/token-trails/gpt2
@@ -100,6 +101,9 @@ src/exhibits/lineage/
                             DeepSeekMoE (1 shared + top 8 of 256), bias balancing simulated on 16 toy experts
   mixtral.ts                Mixtral 8x7B vs GPT-2: MoE block, router GEMM + top-2, dispatch/combine, stored vs
                             active params, balancing loss (toy routing, d_model 4, ROUTE_SEED)
+src/exhibits/serving/
+  kvcache.ts                why a KV cache (n² → n), prefill, a real GPT-2 decode step (q · Kᵀ, softmax, · V for one head),
+                            cache sizes across models, the roofline (prefill compute-bound, decode memory-bound)
 ```
 
 ## Adding an exhibit or detail view

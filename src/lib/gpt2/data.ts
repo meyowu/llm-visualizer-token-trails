@@ -15,7 +15,7 @@ interface RawPass {
 interface RawPreset { key: string; text: string; note: string; passes: RawPass[] }
 interface RawTraining { text: string; ids: number[]; syms: string[]; positions: { target: number; p: number; top: { id: number; s: string; p: number }[] }[] }
 interface RawMapItem { s: string; cat: string; x: number; y: number; nn: [string, number][] }
-interface Raw { model: string; tGrid: number[]; topK: number; presets: RawPreset[]; training: RawTraining; embeddingMap: RawMapItem[]; wpeSlice: number[][]; streamNorms: number[]; leftOnly: { left: string; top: { s: string; p: number }[] }[] }
+interface Raw { model: string; tGrid: number[]; topK: number; presets: RawPreset[]; training: RawTraining; embeddingMap: RawMapItem[]; wpeSlice: number[][]; streamNorms: number[]; leftOnly: { left: string; top: { s: string; p: number }[] }[]; kv: KvSlice }
 const R = raw as unknown as Raw
 
 export const VOCAB = 50257
@@ -201,3 +201,6 @@ export const wpeSlice = (): number[][] => R.wpeSlice
 export const streamNorms = (): number[] => R.streamNorms
 /** GPT-2's next-token guesses from only the words before a blank (the BERT page's examples). */
 export const leftOnly = () => R.leftOnly
+/** One real attention head for the KV cache page: q, k, v rows (64 each) for a prompt plus its first generated token. */
+export interface KvSlice { ids: number[]; syms: string[]; layer: number; head: number; q: number[][]; k: number[][]; v: number[][]; attn: number[] }
+export const kvSlice = () => R.kv

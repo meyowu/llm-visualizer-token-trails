@@ -21,6 +21,7 @@ The atlas follows a model's life in six parts: **Anatomy** (GPT-2 taken apart), 
 - **Lineage / Transformer (2017)**: the original encoder–decoder as a diff against GPT-2: why attention replaced RNNs (one step instead of n), the encoder and decoder stacks, translating “I have seen the cat.” token by token, the three attentions and their masks, cross-attention as a target × source GEMM, post-LN vs pre-LN with GPT-2's real residual-stream lengths, and sinusoidal positions next to GPT-2's real learned W_P.
 - **Lineage / LLaMA**: LLaMA 3 as a diff against GPT-2: the two blocks side by side, then RoPE (rotating q/k pairs by position, and why only the offset matters), RMSNorm vs LayerNorm, the gated SwiGLU MLP, and MHA vs GQA vs MQA with real KV-cache sizes.
 - **Lineage / Mamba**: no attention: one mixer per block around a selective state-space scan; memory as the text grows (GPT-2's KV cache against Mamba's fixed 1.3 MiB state); a toy scan whose state is coloured by the tokens it holds, driven by the real step sizes Δ of Mamba-130m (names get the largest steps); and real next-token guesses from Mamba-130m next to GPT-2 small's.
+- **Serving / KV Cache**: why generation caches keys and values (n² rows of work become n), prefill filling the cache, one decode step with a real GPT-2 head (q · Kᵀ, softmax, · V), how big the cache gets for GPT-2, LLaMA 3 and DeepSeek-V3, and the roofline that makes decoding memory-bound.
 - **Lineage / Diffusion Transformer**: a Transformer that predicts noise: the exact DDPM noising of a toy image with DiT's schedule, latent 2 × 2 patches, adaLN-Zero with DiT-XL/2's real gates and scales across timesteps (block 28's MLP is nearly switched off), and a 250-step sampling run that uses the true noise, next to the compute it costs.
 - **Lineage / CLIP**: two encoders, an image ViT and a GPT-2-like text Transformer, meeting in one 512-dimensional space; everything real (CLIP ViT-B/32 on four drawn shapes and their captions): the embeddings and their principal directions (the modality gap), the image × caption matrix with both softmaxes and the loss, zero-shot classification by shape and by colour, and the learned temperature of 100.
 - **Lineage / Vision Transformer**: an image cut into 14 × 14 patches that become the tokens, the patch embedding as one shared matrix product next to the real ViT-B/16 filters' principal components, the real position embeddings, whose similarities rediscover the 2D grid, and a head that reads only [CLS].
@@ -89,6 +90,8 @@ src/
       clip.ts             CLIP compared with GPT-2
       dit.ts              DiT-XL/2 compared with GPT-2
       mamba.ts            Mamba-130m compared with GPT-2
+    serving/
+      kvcache.ts          the KV cache: prefill, decode, size, roofline
 scripts/
   gpt2-export.ts          offline GPT-2 small forward pass that writes src/data/gpt2.json
   bert-export.ts          offline BERT-base forward pass that writes src/data/bert.json

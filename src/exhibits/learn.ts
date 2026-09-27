@@ -481,6 +481,31 @@ const LEARN: Record<string, Learn> = {
       'Its work grows linearly with the length of the text and its memory stays constant.',
     ],
   },
+  kvcache: {
+    refs: [["Pope et al. 2022, Efficiently Scaling Transformer Inference", "https://arxiv.org/abs/2211.05102"], ["Williams et al. 2009, Roofline: an insightful visual performance model", "https://doi.org/10.1145/1498765.1498785"]],
+    code: {
+      lines: [
+        '# prefill: the whole prompt in one pass; every layer keeps its K and V',
+        'k, v = ln_1(x) @ W_k + b_k, ln_1(x) @ W_v + b_v      # (prompt_len, 64) per head',
+        'cache[layer] = (k, v)',
+        '# decode: one token per step',
+        'q, k_new, v_new = (ln_1(x_t) @ W) .split(768)          # just the new token',
+        'K = torch.cat([cache_k, k_new]); V = torch.cat([cache_v, v_new])',
+        'w = F.softmax(q @ K.T / 8, dim=-1)                    # one row of scores',
+        'out = w @ V',
+      ],
+      at: { loop: [2, 5], prefill: [0, 1, 2], step: [3, 4, 5, 6, 7], size: [2], bound: [1, 4] },
+    },
+    checks: [
+      { phase: 'step', q: 'During a decode step, how many rows of keys does each layer and head compute?', options: ['One, for the new token; the rest come from the cache', 'One for every token so far', 'None', 'One for each prompt token'], answer: 0, why: 'Earlier tokens’ keys and values do not change, so only the new token’s are computed and appended.' },
+      { phase: 'bound', q: 'Why is a decode step at batch size 1 limited by memory rather than compute?', options: ['It reads every weight to produce one token, so it does few FLOPs per byte', 'It needs more FLOPs than prefill', 'The cache lives on disk', 'Softmax is slow'], answer: 0, why: 'About 2 FLOPs per 2-byte weight: 1 FLOP per byte, far below the 156 an A100 needs to be compute-bound.' },
+    ],
+    recap: [
+      'A KV cache keeps every earlier token’s keys and values, so each new token computes only its own.',
+      'Prefill runs the prompt in one pass; each decode step attends one new query over the whole cache.',
+      'The cache grows with every token and layer, and decoding is limited by memory bandwidth, not arithmetic.',
+    ],
+  },
   llama: {
     refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {
