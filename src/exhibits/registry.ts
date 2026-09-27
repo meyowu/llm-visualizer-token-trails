@@ -1,6 +1,7 @@
 import { mountBert } from './lineage/bert'
 import { mountDeepseek } from './lineage/deepseek'
 import { mountLlama } from './lineage/llama'
+import { mountT5 } from './lineage/t5'
 import { mountMixtral } from './lineage/mixtral'
 import { mountTransformer2017 } from './lineage/transformer2017'
 import { mountLoss } from './training/loss'
@@ -75,7 +76,7 @@ export const CATEGORIES: Category[] = [
       { heading: 'Encoder' },
       { name: 'BERT', tag: 'bidirectional mask', route: 'lineage/bert', mount: mountBert },
       { heading: 'Encoder–decoder' },
-      { name: 'T5', tag: '+ cross-attention' },
+      { name: 'T5', tag: 'text to text · relative buckets', route: 'lineage/t5', mount: mountT5 },
       { heading: 'Vision & diffusion' },
       { name: 'Vision Transformer', tag: 'tokens → 16×16 patches' },
       { name: 'CLIP', tag: 'image ↔ text embeddings' },

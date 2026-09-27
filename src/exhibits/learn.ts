@@ -346,6 +346,35 @@ const LEARN: Record<string, Learn> = {
       'It is used to read and classify text, through the [CLS] vector, rather than to write it.',
     ],
   },
+  t5: {
+    refs: [["Raffel et al. 2019, Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer (T5)", "https://arxiv.org/abs/1910.10683"], ["Shaw et al. 2018, Self-Attention with Relative Position Representations", "https://arxiv.org/abs/1803.02155"], ["google-t5/t5-small, the weights behind the real numbers", "https://huggingface.co/google-t5/t5-small"]],
+    code: {
+      lines: [
+        '# every task is a string in and a string out',
+        'ids = tok("translate English to German: I have seen the cat.").input_ids',
+        'out = model.generate(ids)          # "Ich habe die Katze gesehen."',
+        '# pretraining: drop spans, mark them with sentinels, write them back',
+        'inp = "Thank you <extra_id_0> me to your party <extra_id_1> week."',
+        'tgt = "<extra_id_0> for inviting <extra_id_1> last <extra_id_2>"',
+        '# the block: norm first, scale only (RMSNorm), no biases anywhere',
+        'x = x + self_attn(rms_norm(x), position_bias)',
+        'x = x + ffn(rms_norm(x))                        # ReLU in T5 v1.0',
+        '# one learned number per (bucket, head), added to every score',
+        'position_bias = rel_bias[bucket(key_pos - query_pos)]',
+        'scores = q @ k.transpose(-1, -2) + position_bias  # no ÷ √d in T5',
+      ],
+      at: { tasks: [0, 1, 2], spans: [3, 4, 5], blocks: [6, 7, 8], buckets: [9, 10], bias: [9, 10, 11] },
+    },
+    checks: [
+      { phase: 'spans', q: 'In span corruption, what does the decoder have to write?', options: ['Only the dropped spans, each after its sentinel', 'The whole sentence again', 'One word per sentinel', 'The next sentence'], answer: 0, why: 'The target lists each sentinel followed by the words it replaced, so it is much shorter than the input.' },
+      { phase: 'bias', q: 'Why can T5 read inputs longer than any it was trained on?', options: ['Position is a bias per relative-distance bucket, and all far distances share one bucket', 'It has a learned vector for every position up to a million', 'It uses no position information at all', 'Its sinusoids repeat'], answer: 0, why: 'Nothing depends on the absolute position: any pair farther apart than 90 tokens simply uses the last bucket.' },
+    ],
+    recap: [
+      'T5 casts every task as text in, text out, named by a prefix such as “translate English to German:”.',
+      'It is pretrained by span corruption: sentinels replace dropped spans, and the decoder writes the spans back.',
+      'Position enters as a learned bias per bucket of relative distance and per head, added to the attention scores.',
+    ],
+  },
   llama: {
     refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {
