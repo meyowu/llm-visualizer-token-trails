@@ -202,7 +202,7 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
     if (tailA > 0) {
       const tx0 = ch.x0 + 8 + K6 * ch.slot + 14, tx1 = ch.x1, l0 = Math.log(K6 + 1), l1 = Math.log(VOCAB)
       const rankX = (r: number) => lerp(tx0, tx1, (Math.log(r) - l0) / (l1 - l0))
-      ctx.font = F.mono(10.5); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.faint, a * tailA); ctx.fillText('⋯', tx0 - 8, ch.y1 - 8)
+      ctx.font = F.mono(10.5); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.mute, a * tailA); ctx.fillText('⋯', tx0 - 8, ch.y1 - 8)
       ctx.fillStyle = rgba(C.ink, 0.35 * a * tailA)
       for (let xpx = tx0; xpx < tx1; xpx += 2) {
         const r = Math.round(Math.exp(lerp(l0, l1, (xpx - tx0) / (tx1 - tx0)))), g = (zAtRank(r) - zTop) / T

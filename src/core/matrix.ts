@@ -104,7 +104,10 @@ export class MatrixKit {
   pin: Cell | null = null
 
   /** sink: shows the formula line and note, e.g. frame.setFormula. */
-  constructor(private stage: Stage, private tokens: TokLike[], private sink: (segs: Seg[] | null, note?: string) => void) {
+  /** Set by a keyboard move, so the next formula is read out. */
+  private announce = false
+
+  constructor(private stage: Stage, private tokens: TokLike[], private sink: (segs: Seg[] | null, note?: string, announce?: boolean) => void) {
     const cv = stage.canvas
     cv.addEventListener('pointermove', (e) => {
       const [x, y] = stage.local(e)
@@ -134,6 +137,19 @@ export class MatrixKit {
       if (e.key === 'Escape') this.pin = null
     }
     document.addEventListener('keydown', onKey)
+    // keyboard inspection: focus the drawing, then arrow keys walk the result cells (the pinned cell)
+    cv.tabIndex = 0
+    cv.setAttribute('role', 'application')
+    cv.setAttribute('aria-label', `${cv.getAttribute('aria-label') ?? ''} Arrow keys move between result cells and read out how each is computed; Escape lets go.`)
+    cv.addEventListener('keydown', (e) => {
+      const d = ({ ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] } as Record<string, number[]>)[e.key]
+      if (!d || !this.hits.length || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
+      e.preventDefault() // the player leaves arrows alone once they are used here
+      const at = this.pin && this.hits.find((h) => h.key === this.pin!.key)
+      if (!at || !this.pin) { const h = this.hits[this.hits.length - 1]; this.pin = { key: h.key, i: 0, j: 0 } }
+      else this.pin = { key: at.key, i: clamp(this.pin.i + d[0], 0, at.rows - 1), j: clamp(this.pin.j + d[1], 0, at.cols - 1) }
+      this.announce = true
+    })
   }
 
   private get ctx() { return this.stage.ctx }
@@ -331,7 +347,8 @@ export class MatrixKit {
   /** Hand this frame's formula (or none) to the strip under the stage. */
   drawFormula() {
     const pinned = !this.hover && this.pin && this.formula ? ' Pinned: click the cell again or press Esc to let go.' : ''
-    this.sink(this.formula?.segs ?? null, this.formula ? (this.formula.note ?? '') + pinned : undefined)
+    this.sink(this.formula?.segs ?? null, this.formula ? (this.formula.note ?? '') + pinned : undefined, this.announce)
+    this.announce = false
   }
 
 }

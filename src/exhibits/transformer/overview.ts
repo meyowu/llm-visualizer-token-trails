@@ -350,7 +350,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     ctx.font = F.small; ctx.textAlign = 'right'; ctx.textBaseline = 'top'
     ctx.fillStyle = rgba(C.ink2, a); ctx.fillText(`block ${S.layer + 1} · head ${S.head + 1}`, x0 - 12, y0)
     ctx.fillStyle = rgba(C.mute, a); ctx.fillText(kind === 'mixed' ? 'mixed head' : `${kind} head`, x0 - 12, y0 + 15)
-    ctx.fillStyle = rgba(C.faint, a); ctx.fillText('click for next head', x0 - 12, y0 + 30)
+    ctx.fillStyle = rgba(C.mute, a); ctx.fillText('click for next head', x0 - 12, y0 + 30)
   }
   function drawAttention(ys: number[], sp: number, pa: number, a: number) {
     if (pa <= 0) return

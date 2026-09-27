@@ -120,6 +120,7 @@ export class Player {
     const pace = cycle('Pacing', () => (this.guided ? ['Step ⏸', 'Pause after each step (click for Auto)'] : ['Auto ▶', 'Play straight through (click for Step)']), () => {
       this.guided = !this.guided
       pref.set('pace', this.guided ? 'step' : 'auto')
+      this.syncLive()
     })
     const speed = cycle('Speed', () => [this.speed + '×', `Speed ${this.speed}× (click to change)`], () => {
       this.speed = SPEEDS[(SPEEDS.indexOf(this.speed) + 1) % SPEEDS.length]
@@ -180,8 +181,14 @@ export class Player {
     if (v && !this.onEnd && this.t >= this.total) this.t = 0
     this.setHeld(false)
     this.playing = v
+    this.syncLive()
     this.icon.setAttribute('d', v ? PAUSE_ICON : PLAY_ICON)
     this.btn.setAttribute('aria-label', v ? 'Pause' : 'Play')
+  }
+
+  /** Captions are announced when the reader is in charge (paused, or stepping), not during Auto playback. */
+  private syncLive() {
+    this.btn.closest('.view')?.querySelector('.caption')?.setAttribute('aria-live', this.playing && !this.guided ? 'off' : 'polite')
   }
 
   private setHeld(v: boolean) {

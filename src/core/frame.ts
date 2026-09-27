@@ -34,8 +34,8 @@ export interface Frame {
   /** title: phase name; sub: optional short form (hidden when equal to title). */
   setCaption(title: string, sub: string, text: string, shape: string): void
   setSubtitle(s: string): void
-  /** Show a formula line and note under the stage (null clears it). */
-  setFormula(segs: FormulaSeg[] | null, note?: string): void
+  /** Show a formula line and note under the stage (null clears it); `announce` also reads it to screen readers. */
+  setFormula(segs: FormulaSeg[] | null, note?: string, announce?: boolean): void
 }
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
@@ -62,18 +62,30 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
     </header>
     <section class="stage"></section>
     ${o.formula ? `<section class="formula"><div class="f-line"></div><div class="f-note"></div><p class="f-hint">${esc(o.formulaHint ?? 'Hover a result cell to see how it is computed; click or tap it to pin it.')}</p></section>` : ''}
-    <section class="caption" aria-live="polite">
+    <section class="caption" aria-live="polite" aria-atomic="true">
       <div class="cap-title"><b></b><em></em></div>
       <p class="cap-text"></p>
-      <code class="cap-shape"></code>
+      <code class="cap-shape" aria-hidden="true"></code>
     </section>
     <section class="controls" aria-label="Playback"></section>`
   if (o.back) root.querySelector('.back')!.addEventListener('click', o.back.onClick)
   // how to read the pictures, under the controls; open by itself on a first visit
   const legend = document.createElement('details')
   legend.className = 'legend-d'
-  legend.innerHTML = `<summary>How to read the pictures</summary>${legendList()}<p class="legend-note">In the header, a plain number is what the drawing uses and “GPT-2 768” is the real model’s size.</p>`
+  legend.innerHTML = `<summary>How to read the pictures</summary>${legendList()}<label class="legend-opts"><input type="checkbox"> Colour-blind-safe token colours</label><p class="legend-note">In the header, a plain number is what the drawing uses and “GPT-2 768” is the real model’s size.</p>`
   root.querySelector('.controls')!.appendChild(legend)
+  const cvd = legend.querySelector('input')!
+  cvd.checked = document.documentElement.dataset.palette === 'cvd'
+  cvd.addEventListener('change', () => {
+    if (cvd.checked) document.documentElement.dataset.palette = 'cvd'
+    else delete document.documentElement.dataset.palette
+    pref.set('palette', cvd.checked ? 'cvd' : '')
+  })
+  // what a keyboard or touch inspection finds, read out to screen readers
+  const live = document.createElement('p')
+  live.className = 'sr-live'
+  live.setAttribute('aria-live', 'polite')
+  root.appendChild(live)
   if (!pref.get('legend-seen')) { legend.open = true; pref.set('legend-seen', '1') }
   const q = <T extends HTMLElement>(s: string) => root.querySelector(s) as T
   const title = q('.cap-title b'), short = q('.cap-title em'), text = q('.cap-text'), shape = q('.cap-shape'), sub = q('h1 .sub')
@@ -95,7 +107,8 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
       const html = rich(s)
       if (sub.innerHTML !== html) sub.innerHTML = html
     },
-    setFormula(segs, note = '') {
+    setFormula(segs, note = '', announce = false) {
+      if (announce && segs) live.textContent = segs.map((g) => g[0]).join('') + '. ' + note
       if (!fLine || !fNote) return
       const line = (segs ?? []).map(([t, c, a]) => {
         const role = ROLE(c), op = a !== undefined && a < 1 ? `opacity:${a.toFixed(2)};` : ''

@@ -9,6 +9,7 @@ import { reducedMotion } from './core/util'
 import { ALIASES, CATEGORIES, DEFAULT_ROUTE, GLOSSARY, ROUTES, START, exhibitsOf, isHeading, type Exhibit } from './exhibits/registry'
 
 registerFonts()
+if (pref.get('palette') === 'cvd') document.documentElement.dataset.palette = 'cvd'
 watchTheme(poke)
 // canvases drawn before a font arrived redraw with it
 document.fonts?.addEventListener('loadingdone', poke)
@@ -63,6 +64,9 @@ function exhibitLink(ex: Exhibit, active: string): HTMLElement {
 }
 
 function renderRail(active: string) {
+  // the rail is rebuilt, so remember what had focus in it and give focus back afterwards
+  const had = railNav.contains(document.activeElement) ? document.activeElement as HTMLElement : null
+  const key = had?.getAttribute('href') ?? (had?.dataset.cat ? 'cat:' + had.dataset.cat : null)
   railNav.innerHTML = ''
   const start = document.createElement('ul')
   start.className = 'start-link'
@@ -81,6 +85,7 @@ function renderRail(active: string) {
     h.innerHTML = '<span class="chev" aria-hidden="true"></span><span class="t"></span><span class="n"></span>'
     h.querySelector('.t')!.textContent = cat.title
     h.querySelector('.n')!.textContent = `${live} / ${all.length}`
+    h.dataset.cat = cat.id
     h.addEventListener('click', () => { if (open.has(cat.id)) open.delete(cat.id); else open.add(cat.id); renderRail(active) })
     const ul = document.createElement('ul')
     ul.hidden = !isOpen
@@ -95,6 +100,7 @@ function renderRail(active: string) {
     sec.append(h, ul)
     railNav.appendChild(sec)
   }
+  if (key) (railNav.querySelector(key.startsWith('cat:') ? `[data-cat="${key.slice(4)}"]` : `[href="${key}"]`) as HTMLElement | null)?.focus()
 }
 
 /* ---------- the tour: previous / next ---------- */
@@ -169,7 +175,13 @@ function go(target: string, origin?: { x: number; y: number }, push = true) {
   document.title = route === 'start' ? 'Token Trails' : [nameOf(route), CATEGORIES.find((c) => exhibitsOf(c).some((e) => e.route === route))?.title, 'Token Trails'].filter(Boolean).join(' · ')
   app.classList.remove('menu-open'); syncRailBtn()
   renderRail(route)
-  if (old) transition(old, root, depth(route) >= depth(old.route) ? 'in' : 'out', origin)
+  if (old) {
+    old.root.inert = true // the leaving view can no longer take focus or be read
+    // move focus to the new page's title so keyboard and screen-reader users land on it
+    const h1 = root.querySelector('h1')
+    if (h1 && push) { h1.tabIndex = -1; h1.focus({ preventScroll: true }) }
+    transition(old, root, depth(route) >= depth(old.route) ? 'in' : 'out', origin)
+  }
 }
 
 /** Zoom the old stage toward the clicked point (or away from it) while the views crossfade. */

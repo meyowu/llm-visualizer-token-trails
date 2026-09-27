@@ -224,7 +224,7 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
     ctx.fillStyle = rgba(C.mute, a); ctx.fillText('MERGES THAT FIRED', x, G.rulesY); spaced(false)
     const from = Math.max(0, k + 1 - rows)
     let y = G.rulesY + 26
-    if (from > 0) { ctx.font = F.mono(11); ctx.fillStyle = rgba(C.faint, a); ctx.fillText(`⋮ ${from} earlier`, x + 10, y - 4); y += lh }
+    if (from > 0) { ctx.font = F.mono(11); ctx.fillStyle = rgba(C.mute, a); ctx.fillText(`⋮ ${from} earlier`, x + 10, y - 4); y += lh }
     for (let i = from; i <= Math.min(k, fired.length - 1); i++) {
       const st = pieces[fired[i].piece].steps[fired[i].step], on = i === k
       if (on) { rr(x - 8, y - 15, rulesW, 21, 4); ctx.fillStyle = rgba(C.ink, 0.1 * a); ctx.fill() }
@@ -272,7 +272,7 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
         ctx.font = F.mono(10.5); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'
         for (let k = 0; k < w.length - 1; k++) {
           const r = bpe!.rankOf(w[k], w[k + 1]), gx = cb[pi][k].x + cb[pi][k].w + GAP / 2, win = r === st.rank
-          ctx.fillStyle = rgba(win ? C.ink : r === undefined ? C.faint : C.mute, la)
+          ctx.fillStyle = rgba(win ? C.ink : C.mute, (r === undefined ? 0.7 : 1) * la)
           ctx.fillText(r === undefined ? '–' : '#' + r, gx, b0(cb[pi][k].y) - 4 - (k % 2) * 13) // staggered so neighbours never overlap
           if (win) { ctx.strokeStyle = rgba(C.ink, la); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cb[pi][k].x + 4, b0(cb[pi][k].y) - 2); ctx.lineTo(cb[pi][k + 1].x + cb[pi][k + 1].w - 4, b0(cb[pi][k].y) - 2); ctx.stroke() }
         }

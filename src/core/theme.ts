@@ -39,7 +39,7 @@ export function watchTheme(onChange: () => void = () => {}) {
   const update = () => { readTheme(); onChange() }
   update()
   matchMedia('(prefers-color-scheme: light)').addEventListener('change', update)
-  new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+  new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-palette'] })
 }
 
 export const rgba = (c: RGB, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${clamp(a)})`
