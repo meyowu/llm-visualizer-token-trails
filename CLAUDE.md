@@ -108,6 +108,8 @@ src/exhibits/serving/
                             with real toy arithmetic checked against standard attention, HBM traffic and N × N memory
   paged.ts                  toy allocator simulation (256 slots, blocks of 4): contiguous reservations vs blocks on demand with
                             block tables, the kernel gathering blocks, sharing with copy-on-write, batch size and steps for both
+  batching.ts               why batch (throughput vs batch size on real sizes), static vs continuous Gantt charts from a toy
+                            scheduler, wait/latency/throughput, chunked prefill step times
 ```
 
 ## Adding an exhibit or detail view

@@ -1,3 +1,4 @@
+import { mountContinuousBatching } from './serving/batching'
 import { mountFlashAttention } from './serving/flashattention'
 import { mountKvCache } from './serving/kvcache'
 import { mountPagedAttention } from './serving/paged'
@@ -124,7 +125,7 @@ export const CATEGORIES: Category[] = [
       { name: 'KV Cache', tag: 'prefill / decode', route: 'serving/kv-cache', mount: mountKvCache },
       { name: 'FlashAttention', tag: 'tiled · on-chip', route: 'serving/flashattention', mount: mountFlashAttention },
       { name: 'PagedAttention', tag: 'block tables', route: 'serving/pagedattention', mount: mountPagedAttention },
-      { name: 'Continuous Batching', tag: 'iteration-level' },
+      { name: 'Continuous Batching', tag: 'iteration-level', route: 'serving/continuous-batching', mount: mountContinuousBatching },
       { name: 'Speculative Decoding', tag: 'draft → verify' },
       { name: 'Quantization', tag: 'int4 · fp8' },
     ],

@@ -563,6 +563,33 @@ const LEARN: Record<string, Learn> = {
       'Blocks can be shared between sequences with copy-on-write, and the saved memory becomes a larger batch.',
     ],
   },
+  batching: {
+    refs: [["Yu et al. 2022, Orca: A Distributed Serving System for Transformer-Based Generative Models (OSDI)", "https://www.usenix.org/conference/osdi22/presentation/yu"], ["Agrawal et al. 2023, SARATHI: chunked prefills", "https://arxiv.org/abs/2308.16369"], ["Kwon et al. 2023, vLLM", "https://arxiv.org/abs/2309.06180"]],
+    code: {
+      lines: [
+        '# static batching: run a batch to completion',
+        'while batch: step(batch); batch = [r for r in batch if not r.done] or next_batch()',
+        '# continuous batching: reschedule every iteration',
+        'while True:',
+        '    running = [r for r in running if not r.done]           # finished ones leave now',
+        '    while waiting and len(running) < max_batch and fits(waiting[0]):',
+        '        running.append(waiting.pop(0))                     # its prefill joins this step',
+        '    step(running)                                          # one token for each',
+        '# chunked prefill: cap the prompt tokens per step',
+        'budget = 128; chunk = prompt[done:done + budget]',
+      ],
+      at: { why: [7], static: [0, 1], continuous: [2, 3, 4, 5, 6, 7], compare: [4, 5, 6], chunked: [8, 9] },
+    },
+    checks: [
+      { phase: 'why', q: 'Why does a decode step for 32 sequences take about as long as one for a single sequence?', options: ['Both read all the weights once, and that reading dominates the time', 'The GPU runs 32 copies of the model', 'Longer batches skip layers', 'It does not: it takes 32 times as long'], answer: 0, why: 'Decoding is memory-bound: the weights are read once per step whatever the batch size, and the extra arithmetic fits in the time the read takes.' },
+      { phase: 'continuous', q: 'What does continuous batching change?', options: ['A finished request leaves and a waiting one joins after every step', 'Every request gets its own GPU', 'Requests are sorted by length first', 'The batch size grows every step'], answer: 0, why: 'Scheduling at the level of single iterations keeps every slot doing useful work and lets new requests start almost at once.' },
+    ],
+    recap: [
+      'A decode step reads all the weights once, so batching many sequences multiplies throughput almost for free.',
+      'Static batching waits for a whole batch to finish; continuous batching refills free slots after every step.',
+      'Long prompts are prefilled in chunks so they do not stall the tokens of requests already running.',
+    ],
+  },
   llama: {
     refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {
