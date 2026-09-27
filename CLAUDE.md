@@ -2,7 +2,7 @@
 
 A portfolio of interactive, animated visualizations of AI concepts, built step by step (Transformer first, then architecture variants, inference engines and agents). Vite + TypeScript with no UI framework; every exhibit draws on a 2D canvas.
 
-**Language:** everything in the repo is English: code, comments, UI copy (captions, canvas labels, aria labels), docs and commit messages. The user chats in Chinese; answer them in Chinese, but never write Chinese into the repo.
+**Language:** the repo is English: code, identifiers, comments, docs, commit messages, and the source UI copy (captions, canvas labels, aria labels). The site itself is bilingual with an EN / 中文 switch; the only Chinese in the repo is translated UI strings, kept in locale files and keyed to the English source, which stays the reference. The user chats in Chinese; answer them in Chinese.
 
 ## Commands
 
