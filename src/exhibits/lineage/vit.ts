@@ -71,7 +71,7 @@ const CAPS: Record<string, [string, string]> = {
 export function mountVit(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
-      formulaHint: 'Hover a patch, a matrix cell or a position map to read it; click or tap to pin it.',
+      formulaHint: '',
       eyebrow: 'Lineage · Vision & diffusion',
       title: 'Vision Transformer',
       subtitle: 'ViT-B/16 · image patches as tokens',
@@ -89,6 +89,12 @@ export function mountVit(root: HTMLElement, nav: Nav): () => void {
     aria: 'The Vision Transformer compared with GPT-2: an image is cut into 16 by 16 patches that become the tokens, each patch is embedded by one matrix product, learned 1D positions end up encoding the 2D grid, and a class token is classified.',
     phases: PHASES, learn: 'vit', tokens: SEQ, compare: COMPARE, caps: CAPS,
     still: ['positions', 9],
+    hints: {
+      blocks: 'Click a dark label on the drawing to jump to that part.',
+      patches: 'Hover a patch to see its place in the sequence; click or tap to pin it.',
+      embed: 'Hover a cell of x to see how it is computed; click or tap to pin it.',
+      positions: 'Hover a small map or a cell of the large one; click or tap to pin it.',
+    },
     scenes,
   })
 }

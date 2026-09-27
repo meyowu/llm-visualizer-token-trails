@@ -41,6 +41,7 @@ const CAPS: Record<string, [string, string]> = {
 export function mountLlama(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
+      formulaHint: '',
       eyebrow: 'Lineage · Decoder-only',
       title: 'LLaMA',
       subtitle: 'LLaMA 3 8B · what changed since GPT-2',
@@ -58,6 +59,10 @@ export function mountLlama(root: HTMLElement, nav: Nav): () => void {
     aria: 'LLaMA compared with GPT-2: rotary position embeddings inside attention, RMSNorm instead of LayerNorm, a gated SwiGLU MLP, and grouped-query attention that shares keys and values across query heads.',
     phases: PHASES, learn: 'llama', tokens: promptTokens(), compare: COMPARE, caps: CAPS,
     still: ['rope', 6],
+    hints: {
+      blocks: 'Click a dark label on the drawing to jump to that part.',
+      rope: 'Pick the query, the key and a shift with the controls below.',
+    },
     scenes,
   })
 }

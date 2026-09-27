@@ -54,7 +54,7 @@ const CAPS: Record<string, [string, string]> = {
 export function mountKvCache(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
-      formulaHint: 'Hover a score or an output cell to see how it is computed; click or tap to pin it.',
+      formulaHint: '',
       eyebrow: 'Serving · Memory',
       title: 'KV Cache',
       subtitle: 'prefill once, then one token per step',
@@ -69,6 +69,10 @@ export function mountKvCache(root: HTMLElement, nav: Nav): () => void {
     aria: 'The KV cache: generation keeps the keys and values of all earlier tokens so each new token computes only its own; prefill fills the cache in one pass and each decode step attends over it. Real GPT-2 numbers for one attention head.',
     phases: PHASES, learn: 'kvcache', tokens: TOKS, compare: COMPARE, caps: CAPS,
     still: ['step', 12],
+    hints: {
+      prefill: 'Hover a cell of K or V to read it; click or tap to pin it.',
+      step: 'Hover a score or an output cell to see how it is computed; click or tap to pin it.',
+    },
     scenes,
   })
 }

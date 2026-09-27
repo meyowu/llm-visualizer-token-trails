@@ -86,7 +86,7 @@ const CAPS: Record<string, [string, string]> = {
 export function mountTransformer2017(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
-      formulaHint: 'Hover a cell of an attention matrix or a position map to read it; click or tap to pin it.',
+      formulaHint: '',
       eyebrow: 'Lineage · Origin',
       title: 'Transformer (2017)',
       subtitle: 'Vaswani et al., “Attention Is All You Need” · what GPT-2 changed',
@@ -104,6 +104,12 @@ export function mountTransformer2017(root: HTMLElement, nav: Nav): () => void {
     aria: 'The original 2017 Transformer compared with GPT-2: an encoder reads the source sentence and a decoder writes the translation token by token through cross-attention; LayerNorm comes after each residual add; positions are fixed sine and cosine waves.',
     phases: PHASES, learn: 'transformer2017', tokens: SRC, compare: COMPARE, caps: CAPS,
     still: ['cross', 11],
+    hints: {
+      blocks: 'Click a dark label on the drawing to jump to that part.',
+      masks: 'Hover a cell to read its weight; click or tap to pin it.',
+      cross: 'Hover a cell to see how it is computed; click or tap to pin it.',
+      pos: 'Hover a cell of either map to read it; click or tap to pin it.',
+    },
     scenes,
   })
 }

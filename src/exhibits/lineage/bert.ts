@@ -66,7 +66,7 @@ const CAPS: Record<string, [string, string]> = {
 export function mountBert(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
-      formulaHint: 'Hover a cell of an attention map or a bar to read it; click or tap to pin it.',
+      formulaHint: '',
       eyebrow: 'Lineage · Encoder',
       title: 'BERT',
       subtitle: 'BERT-base · the same shape as GPT-2, reading both ways',
@@ -84,6 +84,12 @@ export function mountBert(root: HTMLElement, nav: Nav): () => void {
     aria: 'BERT compared with GPT-2: the same size, but no causal mask, so every token sees the whole sentence; it is trained to fill in masked words from both sides and used to classify text through its [CLS] vector.',
     phases: PHASES, learn: 'bert', tokens: SEQ, compare: COMPARE, caps: CAPS,
     still: ['mlm', 10],
+    hints: {
+      blocks: 'Click a dark label on the drawing to jump to that part.',
+      masks: 'Hover a cell of either map to read its weight; click or tap to pin it.',
+      mlm: 'Switch sentences with the arrows below.',
+      use: 'Hover a score to see how it is computed; click or tap to pin it.',
+    },
     scenes,
   })
 }

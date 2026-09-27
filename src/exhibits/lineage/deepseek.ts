@@ -93,7 +93,7 @@ const CAPS: Record<string, [string, string]> = {
 export function mountDeepseek(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
-      formulaHint: 'Hover a cell of the latent attention or an expert to see its value; click or tap to pin it.',
+      formulaHint: '',
       eyebrow: 'Lineage · Decoder-only',
       title: 'DeepSeek',
       subtitle: 'DeepSeek-V3 · latent attention and fine-grained experts',
@@ -111,6 +111,11 @@ export function mountDeepseek(root: HTMLElement, nav: Nav): () => void {
     aria: 'DeepSeek-V3 compared with GPT-2: multi-head latent attention caches one small latent per token instead of all keys and values, and each MLP becomes a shared expert plus 8 of 256 small routed experts, balanced by a per-expert bias.',
     phases: PHASES, learn: 'deepseek', tokens: TOKS, compare: COMPARE, caps: CAPS,
     still: ['mla', 11],
+    hints: {
+      blocks: 'Click a dark label on the drawing to jump to that part.',
+      mla: 'Hover a cell of c, K or V to see how it is computed; click or tap to pin it.',
+      moe: 'Hover an expert to read its affinity; click or tap to pin it.',
+    },
     scenes,
   })
 }

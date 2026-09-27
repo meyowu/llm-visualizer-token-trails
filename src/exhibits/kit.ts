@@ -67,6 +67,11 @@ export interface ExhibitOptions {
   scenes: (env: Env) => Record<string, (p: number) => void>
   /** Where to open when motion is reduced: a phase and seconds into it. */
   still: [string, number]
+  /**
+   * The hint under the formula strip per phase, so it only offers what that phase has (hover targets,
+   * labels to click, controls). Phases not listed show none. Without it, frame.formulaHint is shown throughout.
+   */
+  hints?: Record<string, string>
 }
 
 export function mountExhibit(root: HTMLElement, nav: Nav, o: ExhibitOptions): () => void {
@@ -172,6 +177,7 @@ export function mountExhibit(root: HTMLElement, nav: Nav, o: ExhibitOptions): ()
     if (compare.textContent !== cmp) compare.textContent = cmp
     const [t, s] = o.caps[cur.id]
     frame.setCaption(cur.name, cur.short ?? cur.name, t, s)
+    if (o.hints) frame.setHint(o.hints[cur.id] ?? '')
   }, () => !player.playing)
   return () => { stop(); player.destroy(); stage.destroy() }
 }

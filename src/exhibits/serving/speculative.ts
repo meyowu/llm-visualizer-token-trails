@@ -45,7 +45,7 @@ const CAPS: Record<string, [string, string]> = {
 export function mountSpeculative(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
-      formulaHint: 'Real run: distilgpt2 drafts for GPT-2 small; hover the probability bars to read them.',
+      formulaHint: 'A real run: distilgpt2 drafts for GPT-2 small, and every number shown comes from the two models.',
       eyebrow: 'Serving · Decoding',
       title: 'Speculative Decoding',
       subtitle: 'draft with a small model, verify with the large one',

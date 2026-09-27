@@ -72,7 +72,7 @@ const CAPS: Record<string, [string, string]> = {
 export function mountDit(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
-      formulaHint: 'Hover the charts to read the real values; click or tap to pin.',
+      formulaHint: '',
       eyebrow: 'Lineage · Vision & diffusion',
       title: 'Diffusion Transformer',
       subtitle: 'DiT-XL/2 · predicting noise instead of the next token',
@@ -89,6 +89,10 @@ export function mountDit(root: HTMLElement, nav: Nav): () => void {
     aria: 'The Diffusion Transformer compared with GPT-2: a Transformer over noisy latent image patches that predicts the added noise, with the timestep and class setting every LayerNorm’s scale, shift and gate, and hundreds of passes to make one image.',
     phases: PHASES, learn: 'dit', tokens: SEQ, compare: COMPARE, caps: CAPS,
     still: ['adaln', 11],
+    hints: {
+      blocks: 'Click a dark label on the drawing to jump to that part.',
+      adaln: 'Hover the gate chart to read the values at a timestep; click or tap to pin it.',
+    },
     scenes,
   })
 }

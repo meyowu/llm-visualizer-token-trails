@@ -48,7 +48,7 @@ const CAPS: Record<string, [string, string]> = {
 export function mountClip(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
-      formulaHint: 'Hover a cell of the similarity matrices to see how it is computed; click or tap to pin it.',
+      formulaHint: '',
       eyebrow: 'Lineage · Vision & diffusion',
       title: 'CLIP',
       subtitle: 'CLIP ViT-B/32 · images and text in one space',
@@ -65,6 +65,11 @@ export function mountClip(root: HTMLElement, nav: Nav): () => void {
     aria: 'CLIP compared with GPT-2: an image encoder and a text encoder map pictures and captions into one shared space, trained so that each image is most similar to its own caption; real CLIP similarities for four drawn shapes.',
     phases: PHASES, learn: 'clip', tokens: TOKS, compare: COMPARE, caps: CAPS,
     still: ['matrix', 11],
+    hints: {
+      towers: 'Click a dark label on the drawing to jump to that part.',
+      matrix: 'Hover a cell of S to see how it is computed; click or tap to pin it.',
+      zeroshot: 'Hover a cell to read its cosine and probability; click or tap to pin it.',
+    },
     scenes,
   })
 }

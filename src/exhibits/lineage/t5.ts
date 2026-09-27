@@ -44,7 +44,7 @@ const CAPS: Record<string, [string, string]> = {
 export function mountT5(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
-      formulaHint: 'Hover a bucket or a bias cell to read it; click or tap to pin it.',
+      formulaHint: '',
       eyebrow: 'Lineage · Encoder–decoder',
       title: 'T5',
       subtitle: 'T5-small · every task as text in, text out',
@@ -62,6 +62,11 @@ export function mountT5(root: HTMLElement, nav: Nav): () => void {
     aria: 'T5 compared with GPT-2: an encoder–decoder that treats every task as text in and text out, pretrained by filling in dropped spans, with position given as a learned bias per bucket of relative distance.',
     phases: PHASES, learn: 't5', tokens: SEQ, compare: COMPARE, caps: CAPS,
     still: ['tasks', 11.5],
+    hints: {
+      blocks: 'Click a dark label on the drawing to jump to that part.',
+      buckets: 'Hover a distance to see its bucket; click or tap to pin it.',
+      bias: 'Hover a cell to read its bias; click or tap to pin it.',
+    },
     scenes,
   })
 }

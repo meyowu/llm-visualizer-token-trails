@@ -63,7 +63,7 @@ const CAPS: Record<string, [string, string]> = {
 export function mountMixtral(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
-      formulaHint: 'Hover a router score or gate to see how it is computed; click or tap to pin it.',
+      formulaHint: '',
       eyebrow: 'Lineage · Decoder-only',
       title: 'Mixtral',
       subtitle: 'Mixtral 8x7B · a mixture of experts in place of the MLP',
@@ -81,6 +81,10 @@ export function mountMixtral(root: HTMLElement, nav: Nav): () => void {
     aria: 'Mixtral compared with GPT-2: the MLP of each block becomes eight expert MLPs and a router that sends each token to the two best-scoring experts, so the model stores 46.7 billion parameters but uses 12.9 billion per token.',
     phases: PHASES, learn: 'mixtral', tokens: TOKS, compare: COMPARE, caps: CAPS,
     still: ['dispatch', 9],
+    hints: {
+      blocks: 'Click a dark label on the drawing to jump to that part.',
+      route: 'Hover a score or a gate to see how it is computed; click or tap to pin it.',
+    },
     scenes,
   })
 }

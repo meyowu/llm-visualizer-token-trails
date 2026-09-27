@@ -62,7 +62,7 @@ const CAPS: Record<string, [string, string]> = {
 export function mountMamba(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
-      formulaHint: 'Hover a state cell or a Δ cell to read it; click or tap to pin it.',
+      formulaHint: '',
       eyebrow: 'Lineage · Beyond attention',
       title: 'Mamba',
       subtitle: 'Mamba-130m · a selective state-space model',
@@ -79,6 +79,11 @@ export function mountMamba(root: HTMLElement, nav: Nav): () => void {
     aria: 'Mamba compared with GPT-2: no attention; each block runs a selective state-space scan that carries a fixed-size state from token to token, with a step size that depends on the input; real step sizes and next-token guesses from Mamba-130m.',
     phases: PHASES, learn: 'mamba', tokens: TOKS, compare: COMPARE, caps: CAPS,
     still: ['select', 11],
+    hints: {
+      blocks: 'Click a dark label on the drawing to jump to that part.',
+      scan: 'Hover a state cell to see how it is computed; click or tap to pin it.',
+      select: 'Hover a state cell or a cell of the Δ map; click or tap to pin it.',
+    },
     scenes,
   })
 }

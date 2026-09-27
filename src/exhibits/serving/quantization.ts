@@ -42,7 +42,7 @@ const CAPS: Record<string, [string, string]> = {
 export function mountQuantization(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
-      formulaHint: 'Real GPT-2 weights and activations; hover a value to read it.',
+      formulaHint: '',
       eyebrow: 'Serving · Memory',
       title: 'Quantization',
       subtitle: 'weights in 8 and 4 bits, on the real GPT-2',
@@ -58,6 +58,9 @@ export function mountQuantization(root: HTMLElement, nav: Nav): () => void {
     aria: 'Quantization: storing a model’s weights in 8 or 4 bits by rounding them onto a grid with a scale; real GPT-2 weights, activations and results show that int8 is nearly free, int4 needs small groups, and a few large activations make activations hard to quantize.',
     phases: PHASES, learn: 'quantization', tokens: TOKS, compare: COMPARE, caps: CAPS,
     still: ['round', 10],
+    hints: {
+      round: 'Hover a weight to see its code and rounding error; click or tap to pin it.',
+    },
     scenes,
   })
 }

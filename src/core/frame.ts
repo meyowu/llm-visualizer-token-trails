@@ -36,6 +36,8 @@ export interface Frame {
   setSubtitle(s: string): void
   /** Show a formula line and note under the stage (null clears it); `announce` also reads it to screen readers. */
   setFormula(segs: FormulaSeg[] | null, note?: string, announce?: boolean): void
+  /** Replace the hint under the formula strip ('' hides it), e.g. per phase. */
+  setHint(s: string): void
 }
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
@@ -61,7 +63,7 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
       </dl>
     </header>
     <section class="stage"></section>
-    ${o.formula ? `<section class="formula"><div class="f-line"></div><div class="f-note"></div>${o.formulaHint === '' ? '' : `<p class="f-hint">${esc(o.formulaHint ?? 'Hover a result cell to see how it is computed; click or tap it to pin it.')}</p>`}</section>` : ''}
+    ${o.formula ? `<section class="formula"><div class="f-line"></div><div class="f-note"></div><p class="f-hint"${o.formulaHint === '' ? ' hidden' : ''}>${esc(o.formulaHint ?? 'Hover a result cell to see how it is computed; click or tap it to pin it.')}</p></section>` : ''}
     <section class="caption" aria-live="polite" aria-atomic="true">
       <div class="cap-title"><b></b><em></em></div>
       <p class="cap-text"></p>
@@ -89,7 +91,7 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
   if (!pref.get('legend-seen')) { legend.open = true; pref.set('legend-seen', '1') }
   const q = <T extends HTMLElement>(s: string) => root.querySelector(s) as T
   const title = q('.cap-title b'), short = q('.cap-title em'), text = q('.cap-text'), shape = q('.cap-shape'), sub = q('.titlebar .sub')
-  const fLine = root.querySelector('.f-line'), fNote = root.querySelector('.f-note')
+  const fLine = root.querySelector('.f-line'), fNote = root.querySelector('.f-note'), fHint = root.querySelector<HTMLElement>('.f-hint')
   let last = '', lastF = '', lastFAt = 0
   let pendingF: (() => void) | null = null
   return {
@@ -103,6 +105,11 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
       short.innerHTML = b === a ? '' : rich(b)
       text.innerHTML = withTerms(rich(c))
       shape.innerHTML = rich(d)
+    },
+    setHint(s) {
+      if (!fHint || (fHint.textContent === s && fHint.hidden === !s)) return
+      fHint.textContent = s
+      fHint.hidden = !s
     },
     setSubtitle(s) {
       const html = rich(s)
