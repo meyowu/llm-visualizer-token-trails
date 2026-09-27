@@ -35,6 +35,8 @@ src/exhibits/transformer/
   attention.ts              attention detail view, every GEMM animated cell by cell
   mlp.ts                    MLP detail view: up-projection, GELU curve, down-projection, residual
   unembed.ts                ln_f, logits = x · W_Eᵀ (tied), temperature, softmax, sampling strategies
+src/exhibits/lineage/
+  llama.ts                  LLaMA 3 vs GPT-2: blocks, RoPE, RMSNorm, SwiGLU, GQA (real numbers are LLaMA 3 8B)
 ```
 
 ## Adding an exhibit or detail view

@@ -1,3 +1,4 @@
+import { mountLlama } from './lineage/llama'
 import { mountAttention } from './transformer/attention'
 import { mountEmbedding } from './transformer/embedding'
 import { mountLayerNorm } from './transformer/layernorm'
@@ -57,7 +58,7 @@ export const CATEGORIES: Category[] = [
     title: 'Lineage',
     entries: [
       { heading: 'Decoder-only' },
-      { name: 'LLaMA', tag: 'RoPE · RMSNorm · SwiGLU · GQA' },
+      { name: 'LLaMA', tag: 'RoPE · RMSNorm · SwiGLU · GQA', route: 'lineage/llama', mount: mountLlama },
       { name: 'Mixtral', tag: 'MLP → 8 experts, top-2' },
       { name: 'DeepSeek', tag: 'MLA · fine-grained MoE' },
       { heading: 'Encoder' },

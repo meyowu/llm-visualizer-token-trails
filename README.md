@@ -14,6 +14,7 @@ The atlas follows a model's life in five parts: **Anatomy** (GPT-2 taken apart),
   - **MLP**: the feed-forward block at toy scale (d_model 8 → d_ff 32, the same 4× as GPT-2): X·W_fc + b → GELU (each activation plotted on the curve) → ·W_proj + b → residual add.
 
   - **Unembed & Sampling**: ln_f on the last position, logits as x · W_Eᵀ (tied to the embedding) drawn as a GEMM over the six real candidates plus the 50,251-token tail, temperature, softmax, and sampling strategies (sample, greedy, top-k, top-p) with a resample button.
+- **Lineage / LLaMA**: LLaMA 3 as a diff against GPT-2: the two blocks side by side, then RoPE (rotating q/k pairs by position, and why only the offset matters), RMSNorm vs LayerNorm, the gated SwiGLU MLP, and MHA vs GQA vs MQA with real KV-cache sizes.
 
 On the overview, click a part marked ↗ (the tokens, the embedding strips, the attn, mlp, ln_f and W_U plates, the next-token bars) to zoom into its detail view.
 
@@ -50,6 +51,8 @@ src/
       attention.ts        attention detail view
       mlp.ts              MLP detail view
       unembed.ts          unembed & sampling detail view
+    lineage/
+      llama.ts            LLaMA 3 compared with GPT-2
 ```
 
 To add an exhibit, write a `mount(root, nav) => destroy` function under `exhibits/` and give its entry in `registry.ts` a `route` and `mount`.
