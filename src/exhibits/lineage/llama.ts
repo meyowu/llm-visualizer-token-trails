@@ -1,12 +1,9 @@
-import { F, chipW, drawChip, fillRich, plate, rr, serifAt, spaced, upper, useCtx } from '../../core/draw'
-import { createFrame } from '../../core/frame'
-import { MatrixKit, fmt } from '../../core/matrix'
-import { Player } from '../../core/player'
-import { Stage, runLoop } from '../../core/stage'
+import { F, chipW, drawChip, fillRich, rr, serifAt } from '../../core/draw'
+import { fmt } from '../../core/matrix'
 import { C, rgba, type RGB } from '../../core/theme'
-import { clamp, eio, eout, gauss, lerp, reducedMotion, rng } from '../../core/util'
-import { teach } from '../learn'
+import { clamp, eio, eout, gauss, lerp, rng } from '../../core/util'
 import type { Nav } from '../registry'
+import { mountLineage, type Env } from './kit'
 import { embedRow, gelu, promptTokens } from '../transformer/model'
 
 /*
@@ -28,30 +25,46 @@ const theta = (j: number) => Math.pow(BASE, (-2 * j) / DH)
 const XR = 4
 const silu = (x: number) => x / (1 + Math.exp(-x))
 
+const COMPARE: Record<string, [string, string]> = {
+  blocks: ['GPT-2’s block', 'anatomy/layernorm?phase=stream'], rope: ['GPT-2’s positions', 'anatomy/embedding?phase=pos'],
+  rms: ['GPT-2’s LayerNorm', 'anatomy/layernorm?phase=mean'], swiglu: ['GPT-2’s MLP', 'anatomy/mlp'], gqa: ['GPT-2’s attention', 'anatomy/attention'],
+}
+
+const CAPS: Record<string, [string, string]> = {
+  blocks: ['LLaMA keeps GPT-2\'s block: pre-norm, residual adds, causal attention. Four parts change, marked in the lower row; click one to jump to it. Also different: no bias terms anywhere, an untied output matrix (not W_Eᵀ), RMSNorm as the final norm, and a 128K-token vocabulary.', '4 changes · same block'],
+  rope: ['GPT-2 adds a learned position vector once at the input. LLaMA instead rotates each pair of query and key numbers by an angle that grows with position, inside every attention layer. Use the q, k and shift controls below to test it.', 'θⱼ = base^(−2j / d_head)'],
+  rms: ['LayerNorm centres each token and scales it to unit spread. RMSNorm only rescales by the root mean square: simpler, slightly faster, and just as stable.', 'x / √(mean(x²) + ε)'],
+  swiglu: ['GPT-2\'s MLP widens, applies GELU and narrows. LLaMA\'s runs two projections side by side and lets one gate the other, a pattern called SwiGLU.', '(SiLU(x·W_gate) ⊙ x·W_up) · W_down'],
+  gqa: ['While generating, the keys and values of past tokens are kept in a KV cache so they are not recomputed; it grows with every token and layer. In GPT-2 every head has its own keys and values; LLaMA 3 shares each key/value head between 4 query heads, so the cache that limits context length and batch size is 4× smaller.', '32 q heads · 8 kv heads'],
+}
+
 export function mountLlama(root: HTMLElement, nav: Nav): () => void {
-  const reduced = reducedMotion()
-  const seq = promptTokens(), N = seq.length, D = 8
-  const frame = createFrame(root, {
-    formula: true,
-    eyebrow: 'Lineage · Decoder-only',
-    title: 'LLaMA',
-    subtitle: 'LLaMA 3 8B · what changed since GPT-2',
-    specs: [
-      { label: 'compared', value: 'LLaMA 3 8B', real: 'GPT-2 small', realLabel: 'vs' },
-      { label: 'layers', value: '32', real: '12' },
-      { label: 'd_model', value: '4,096', real: '768' },
-      { label: 'heads', value: '32 q · 8 kv', real: '12' },
-      { label: 'd_ff', value: '14,336', real: '3,072' },
-      { label: 'vocab', value: '128,256', real: '50,257' },
-      { label: 'context', value: '8,192', real: '1,024' },
-    ],
+  return mountLineage(root, nav, {
+    frame: {
+      eyebrow: 'Lineage · Decoder-only',
+      title: 'LLaMA',
+      subtitle: 'LLaMA 3 8B · what changed since GPT-2',
+      specs: [
+        { label: 'compared', value: 'LLaMA 3 8B', real: 'GPT-2 small', realLabel: 'vs' },
+        { label: 'layers', value: '32', real: '12' },
+        { label: 'd_model', value: '4,096', real: '768' },
+        { label: 'heads', value: '32 q · 8 kv', real: '12' },
+        { label: 'd_ff', value: '14,336', real: '3,072' },
+        { label: 'vocab', value: '128,256', real: '50,257' },
+        { label: 'context', value: '8,192', real: '1,024' },
+      ],
+    },
+    size: [1040, 470],
+    aria: 'LLaMA compared with GPT-2: rotary position embeddings inside attention, RMSNorm instead of LayerNorm, a gated SwiGLU MLP, and grouped-query attention that shares keys and values across query heads.',
+    phases: PHASES, learn: 'llama', tokens: promptTokens(), compare: COMPARE, caps: CAPS,
+    still: ['rope', 6],
+    scenes,
   })
-  const stage = new Stage(frame.stageHost, 1040, 470, 'LLaMA compared with GPT-2: rotary position embeddings inside attention, RMSNorm instead of LayerNorm, a gated SwiGLU MLP, and grouped-query attention that shares keys and values across query heads.')
-  const ctx = stage.ctx
-  const player = new Player(PHASES, frame.controls, { playing: !reduced })
-  teach(player, 'llama')
-  const prog = (id: string) => player.prog(id)
-  const mk = new MatrixKit(stage, seq, frame.setFormula)
+}
+
+function scenes({ stage, ctx, mk, k, player, onFrame }: Env) {
+  const { pill, addNode, caption, title, glass } = k
+  const seq = promptTokens(), N = seq.length, D = 8
   const hue = (i: number): RGB => C.tok[seq[i].c % 7]
   const pad = 36, top = 56, bot = 46
 
@@ -79,40 +92,10 @@ export function mountLlama(root: HTMLElement, nav: Nav): () => void {
   for (const el of [qSel, kSel, shiftIn]) el.addEventListener('input', manual)
   ropeCtl.hidden = true
   player.meta.prepend(ropeCtl)
-  // each step links back to the GPT-2 part it changes
-  const COMPARE: Record<string, [string, string]> = {
-    blocks: ['GPT-2’s block', 'anatomy/layernorm?phase=stream'], rope: ['GPT-2’s positions', 'anatomy/embedding?phase=pos'],
-    rms: ['GPT-2’s LayerNorm', 'anatomy/layernorm?phase=mean'], swiglu: ['GPT-2’s MLP', 'anatomy/mlp'], gqa: ['GPT-2’s attention', 'anatomy/attention'],
-  }
-  const compare = document.createElement('button')
-  compare.type = 'button'; compare.className = 'compare'
-  compare.addEventListener('click', () => nav(COMPARE[player.cur().id][1]))
-  player.meta.prepend(compare)
-
-  /* ---------- helpers ---------- */
-  let pills: { x: number; y: number; w: number; h: number; phase: string }[] = []
-  let hoverPill = ''
-  function pill(t: string, x: number, y: number, phase: string, a: number) {
-    ctx.font = F.mono(11, 500)
-    const w = ctx.measureText(t).width + 16, hv = hoverPill === phase
-    rr(x - w / 2, y - 10, w, 20, 10)
-    ctx.fillStyle = rgba(C.ink, (hv ? 1 : 0.9) * a); ctx.fill()
-    ctx.fillStyle = rgba(C.bg, a); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-    ctx.fillText(t, x, y + 0.5)
-    pills.push({ x: x - w / 2, y: y - 10, w, h: 20, phase })
-  }
-  function addNode(x: number, y: number, a: number) {
-    ctx.fillStyle = rgba(C.bg, a); ctx.beginPath(); ctx.arc(x, y, 9, 0, 7); ctx.fill()
-    ctx.strokeStyle = rgba(C.ink, 0.8 * a); ctx.lineWidth = 1.2; ctx.stroke()
-    ctx.beginPath(); ctx.moveTo(x - 4.5, y); ctx.lineTo(x + 4.5, y); ctx.moveTo(x, y - 4.5); ctx.lineTo(x, y + 4.5); ctx.stroke()
-  }
-  function caption(t: string, x: number, y: number, a: number, col: RGB = C.mute, align: CanvasTextAlign = 'center') {
-    ctx.font = F.small; ctx.textAlign = align; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(col, a); fillRich(t, x, y)
-  }
-  function title(t: string, x: number, y: number, a: number) {
-    ctx.font = F.label; spaced(true); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.mute, a)
-    fillRich(upper(t), x, y); spaced(false)
-  }
+  onFrame(() => {
+    const inRope = player.cur().id === 'rope'
+    if (ropeCtl.hidden === inRope) ropeCtl.hidden = !inRope
+  })
 
   /* ---------- scene 1: the two blocks ---------- */
   function sceneBlocks(p: number) {
@@ -139,7 +122,7 @@ export function mountLlama(root: HTMLElement, nav: Nav): () => void {
         caption('learned positions', X.pos, y + 44, a)
       } else caption('no position vector', X.pos, y + 44, a, C.faint)
       const at = [X.n1, X.at, X.n2, X.ml]
-      at.forEach((x, k) => { plate(x, y - 26, y + 26, r === 1 ? 0.55 : 0.2, { w: 8, d: 9 }); caption(labs[k], x, y + 44, a, r === 1 ? C.ink2 : C.mute) })
+      at.forEach((x, j) => { glass(x, y - 26, y + 26, r === 1 ? 0.55 : 0.2, { w: 8, d: 9 }, a); caption(labs[j], x, y + 44, a, r === 1 ? C.ink2 : C.mute) })
       addNode(X.a1, y, a); addNode(X.a2, y, a)
     })
     // what changed: dashed links between the rows, then pills on the LLaMA row
@@ -354,51 +337,5 @@ export function mountLlama(root: HTMLElement, nav: Nav): () => void {
     mk.formula = { segs: [['KV cache / token  =  2 × n_kv × d_head × layers × 2 bytes  =  2 × 8 × 128 × 32 × 2  =  128 KiB', C.ink]], note: 'Queries keep all 32 heads; keys and values are shared by groups of 4. Quality stays close to MHA while the cache is 4× smaller. GPT-2 small (MHA, 12 layers) needs 36 KiB per token.' }
   }
 
-  /* ---------- frame ---------- */
-  function draw() {
-    useCtx(ctx)
-    stage.begin()
-    mk.begin()
-    pills = []
-    const pr = prog('rope'), pm = prog('rms'), ps = prog('swiglu'), pg = prog('gqa')
-    if (pr <= 0) sceneBlocks(prog('blocks'))
-    else if (pm <= 0) sceneRope(pr)
-    else if (ps <= 0) sceneRms(pm)
-    else if (pg <= 0) sceneSwiglu(ps)
-    else sceneGqa(pg)
-    mk.drawFormula()
-  }
-
-  stage.canvas.addEventListener('pointermove', (e) => {
-    const [x, y] = stage.local(e), hit = pills.find((b) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h)
-    hoverPill = hit?.phase ?? ''
-    stage.canvas.style.cursor = hit ? 'pointer' : 'default'
-  })
-  stage.canvas.addEventListener('click', (e) => {
-    const [x, y] = stage.local(e), hit = pills.find((b) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h)
-    if (hit) player.t = player.start(hit.phase) + 0.001
-  })
-
-  const CAPS: Record<string, [string, string]> = {
-    blocks: ['LLaMA keeps GPT-2\'s block: pre-norm, residual adds, causal attention. Four parts change, marked in the lower row; click one to jump to it. Also different: no bias terms anywhere, an untied output matrix (not W_Eᵀ), RMSNorm as the final norm, and a 128K-token vocabulary.', '4 changes · same block'],
-    rope: ['GPT-2 adds a learned position vector once at the input. LLaMA instead rotates each pair of query and key numbers by an angle that grows with position, inside every attention layer. Use the q, k and shift controls below to test it.', 'θⱼ = base^(−2j / d_head)'],
-    rms: ['LayerNorm centres each token and scales it to unit spread. RMSNorm only rescales by the root mean square: simpler, slightly faster, and just as stable.', 'x / √(mean(x²) + ε)'],
-    swiglu: ['GPT-2\'s MLP widens, applies GELU and narrows. LLaMA\'s runs two projections side by side and lets one gate the other, a pattern called SwiGLU.', '(SiLU(x·W_gate) ⊙ x·W_up) · W_down'],
-    gqa: ['While generating, the keys and values of past tokens are kept in a KV cache so they are not recomputed; it grows with every token and layer. In GPT-2 every head has its own keys and values; LLaMA 3 shares each key/value head between 4 query heads, so the cache that limits context length and batch size is 4× smaller.', '32 q heads · 8 kv heads'],
-  }
-
-  if (reduced && player.t === 0) player.t = player.start('rope') + 6
-  player.describe = (i) => CAPS[PHASES[i].id]
-  const stop = runLoop((dt) => {
-    player.tick(dt)
-    draw()
-    player.updateUI()
-    const inRope = player.cur().id === 'rope'
-    if (ropeCtl.hidden === inRope) ropeCtl.hidden = !inRope
-    const cmp = `Compare: ${COMPARE[player.cur().id][0]} ↗`
-    if (compare.textContent !== cmp) compare.textContent = cmp
-    const cur = player.cur(), [t, s] = CAPS[cur.id]
-    frame.setCaption(cur.name, cur.short ?? cur.name, t, s)
-  }, () => !player.playing)
-  return () => { stop(); player.destroy(); stage.destroy() }
+  return { blocks: sceneBlocks, rope: sceneRope, rms: sceneRms, swiglu: sceneSwiglu, gqa: sceneGqa }
 }

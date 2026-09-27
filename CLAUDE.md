@@ -60,6 +60,8 @@ src/exhibits/transformer/
 src/exhibits/training/
   loss.ts                   next-token loss on a real GPT-2 run (per-position p, −log p), gradient p − y, a toy step
 src/exhibits/lineage/
+  kit.ts                    mountLineage(): the shared frame of a Lineage page (scenes per phase, Compare button,
+                            pills that jump to a phase, onFrame hooks) and canvas helpers (Kit: pill, lane, glass, arrow…)
   transformer2017.ts        the 2017 Transformer vs GPT-2: RNN → attention, encoder + decoder, a toy EN → DE
                             translation, the three attentions, cross-attention GEMM, post-LN (real GPT-2 stream
                             lengths), sinusoids vs GPT-2's real W_P
@@ -70,6 +72,7 @@ src/exhibits/lineage/
 
 1. Write `mountX(root, nav): () => void`: `createFrame` (with `formula: true` for a detail view) → `new Stage` → `new Player(PHASES, frame.controls)` → `new MatrixKit(stage, tokens, frame.setFormula)` → set `player.describe` (caption per phase, for All steps) → `teach(player, page)` with an entry in `learn.ts` → `runLoop(step, () => !player.playing)` that ticks, draws, updates the timeline UI and sets the caption. Only set an initial `player.t` when it is still 0 (a `?phase=` link may have placed it). Return a destroy that stops the loop and calls `player.destroy()` and `stage.destroy()`.
 2. Register it in `registry.ts` (`route` + `mount`), and add it to `TOUR` in `main.ts` if it belongs to the reading order. Steps of an exhibit go in its `children` with a deeper route (`anatomy/mlp`), which opens with a zoom-in. Routes are hash-based (`#/anatomy/attention`, `#/lineage/llama`); old ones keep working through `ALIASES`.
+   A Lineage page (an architecture as a diff against GPT-2) uses `mountLineage()` from `lineage/kit.ts` instead: pass the frame options, phases, captions, a Compare route per phase and a `scenes(env)` factory.
 3. To open a detail view from the overview, add its plate to `plateAt` / `PLATE_ROUTES` in `overview.ts` (hover highlight and `drawOpenHint` follow). Mention the click in that phase's caption.
 
 ## Conventions

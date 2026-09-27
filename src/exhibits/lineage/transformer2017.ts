@@ -1,13 +1,10 @@
-import { F, chipW, drawChip, fillRich, mathRun, plate, rr, serifAt, spaced, upper, useCtx, type TokLike } from '../../core/draw'
-import { createFrame } from '../../core/frame'
-import { MatrixKit, fmt, fmtF, gemm, type Rect } from '../../core/matrix'
-import { Player } from '../../core/player'
-import { Stage, runLoop } from '../../core/stage'
+import { F, chipW, drawChip, fillRich, mathRun, rr, serifAt, type TokLike } from '../../core/draw'
+import { fmt, fmtF, gemm, type Rect } from '../../core/matrix'
 import { C, blend, mixc, rgba, type RGB } from '../../core/theme'
-import { clamp, eio, eout, gauss, lerp, reducedMotion, rng } from '../../core/util'
+import { clamp, eio, eout, gauss, lerp, rng } from '../../core/util'
 import { streamNorms, wpeSlice } from '../../lib/gpt2/data'
-import { teach } from '../learn'
 import type { Nav } from '../registry'
+import { mountLineage, type Env } from './kit'
 
 /*
  * The original Transformer (Vaswani et al. 2017) as a diff against GPT-2. Two stacks instead of
@@ -70,98 +67,56 @@ const pe = (pos: number, dim: number) => {
 }
 const MAP = 64
 
+const COMPARE: Record<string, [string, string]> = {
+  rnn: ['GPT-2’s attention', 'anatomy/attention'], blocks: ['GPT-2’s block', 'anatomy/layernorm?phase=stream'],
+  translate: ['GPT-2’s sampling', 'anatomy/unembed?phase=sample'], masks: ['GPT-2’s causal mask', 'anatomy/attention?phase=mask'],
+  cross: ['GPT-2’s scores', 'anatomy/attention?phase=scores'], postln: ['GPT-2’s pre-LN', 'anatomy/layernorm?phase=stream'],
+  pos: ['GPT-2’s positions', 'anatomy/embedding?phase=pos'],
+}
+
+const CAPS: Record<string, [string, string]> = {
+  rnn: ['Before 2017, translation models were recurrent neural networks (RNNs): they read a sentence one token at a time, and each step needs the result of the one before, so a GPU cannot run the steps side by side. Self-attention links every pair of positions in one matrix product, so a whole sentence is processed at once.', 'RNN: n steps · attention: 1'],
+  blocks: ['GPT-2 is one stack. The 2017 Transformer has two: an encoder that reads the source sentence and a decoder that writes the translation, reading the encoder’s output through cross-attention. It also normalises after each residual add, uses fixed sinusoids for positions and ReLU in the MLP. Click a label to jump to that change.', '6 encoder + 6 decoder layers · d_model 512'],
+  translate: ['The encoder reads the English sentence once. The decoder then writes German one token at a time, like GPT-2, and each pass reads the encoder’s output. In training, the correct translation is fed in (teacher forcing) and the causal mask hides the future, so all positions run in one pass.', 'encoder once · decoder once per token'],
+  masks: ['There are three attentions, and they all compute softmax(Q·Kᵀ / √d_k) · V. The encoder sees the whole source, the decoder sees only earlier target tokens, and cross-attention lets each target token see the whole source. GPT-2 has only the middle kind.', 'source × source · target × target · target × source'],
+  cross: ['In cross-attention the queries come from the decoder and the keys and values from the encoder output, so the score matrix is target × source and is not square. Each row looks for the source word it needs next: ‘gesehen’ goes back to ‘seen’, although German moves it to the end. Hover the cells.', 'Q 7 × d_k · Kᵀ d_k × 6 → 7 × 6'],
+  postln: ['The 2017 model normalises after each residual add (post-LN), so LayerNorm sits on the stream’s main path. Deep post-LN models train poorly without a long learning-rate warmup (4,000 steps in the paper). GPT-2 normalises the copy each sub-layer reads (pre-LN) instead: the main path only adds, the stream grows, and one final LayerNorm, ln_f, tidies it up.', 'LN(x + f(x)) → x + f(LN(x))'],
+  pos: ['Attention ignores order, so both models add a position vector to each token. The 2017 model computes it from sine and cosine waves: no parameters, and a vector for any position. GPT-2 learns a table of 1,024 rows instead. Each sin/cos pair turns like a clock hand, so a shift by k positions is a fixed rotation, the idea RoPE later moved into attention.', 'PE(pos, 2i) = sin(pos / 10000^(2i/d_model))'],
+}
+
 export function mountTransformer2017(root: HTMLElement, nav: Nav): () => void {
-  const reduced = reducedMotion()
-  const frame = createFrame(root, {
-    formula: true,
-    formulaHint: 'Hover a cell of an attention matrix or a position map to read it; click or tap to pin it.',
-    eyebrow: 'Lineage · Origin',
-    title: 'Transformer (2017)',
-    subtitle: 'Vaswani et al., “Attention Is All You Need” · what GPT-2 changed',
-    specs: [
-      { label: 'compared', value: 'base 2017', real: 'GPT-2 small', realLabel: 'vs' },
-      { label: 'layers', value: '6 enc + 6 dec', real: '12' },
-      { label: 'd_model', value: '512', real: '768' },
-      { label: 'heads', value: '8', real: '12' },
-      { label: 'd_ff', value: '2,048', real: '3,072' },
-      { label: 'vocab', value: '~37,000 shared', real: '50,257' },
-      { label: 'params', value: '65M', real: '124M' },
-    ],
+  return mountLineage(root, nav, {
+    frame: {
+      formulaHint: 'Hover a cell of an attention matrix or a position map to read it; click or tap to pin it.',
+      eyebrow: 'Lineage · Origin',
+      title: 'Transformer (2017)',
+      subtitle: 'Vaswani et al., “Attention Is All You Need” · what GPT-2 changed',
+      specs: [
+        { label: 'compared', value: 'base 2017', real: 'GPT-2 small', realLabel: 'vs' },
+        { label: 'layers', value: '6 enc + 6 dec', real: '12' },
+        { label: 'd_model', value: '512', real: '768' },
+        { label: 'heads', value: '8', real: '12' },
+        { label: 'd_ff', value: '2,048', real: '3,072' },
+        { label: 'vocab', value: '~37,000 shared', real: '50,257' },
+        { label: 'params', value: '65M', real: '124M' },
+      ],
+    },
+    size: [1040, 480],
+    aria: 'The original 2017 Transformer compared with GPT-2: an encoder reads the source sentence and a decoder writes the translation token by token through cross-attention; LayerNorm comes after each residual add; positions are fixed sine and cosine waves.',
+    phases: PHASES, learn: 'transformer2017', tokens: SRC, compare: COMPARE, caps: CAPS,
+    still: ['cross', 11],
+    scenes,
   })
-  const stage = new Stage(frame.stageHost, 1040, 480, 'The original 2017 Transformer compared with GPT-2: an encoder reads the source sentence and a decoder writes the translation token by token through cross-attention; LayerNorm comes after each residual add; positions are fixed sine and cosine waves.')
-  const ctx = stage.ctx
-  const player = new Player(PHASES, frame.controls, { playing: !reduced })
-  teach(player, 'transformer2017')
-  const prog = (id: string) => player.prog(id)
-  const mk = new MatrixKit(stage, SRC, frame.setFormula)
+}
+
+function scenes({ stage, ctx, mk, k }: Env) {
+  const { pill, addNode, caption, title, arrow, lane, glass } = k
   const hue = (i: number): RGB => C.tok[i % 7]
   const pad = 36, top = 56, bot = 46
   /** What a target row reads from the source: the source hues blended by its cross-attention weights. */
   const readCol = (j: number) => blend(SRC.map((_, i) => hue(i)), TOY.A[j])
   const memCol = (i: number) => blend(SRC.map((_, k) => hue(k)), TOY.Aenc[i].map((w, k) => 0.5 * w + (k === i ? 0.5 : 0)))
-
-  // each step links back to the GPT-2 part it changes
-  const COMPARE: Record<string, [string, string]> = {
-    rnn: ['GPT-2’s attention', 'anatomy/attention'], blocks: ['GPT-2’s block', 'anatomy/layernorm?phase=stream'],
-    translate: ['GPT-2’s sampling', 'anatomy/unembed?phase=sample'], masks: ['GPT-2’s causal mask', 'anatomy/attention?phase=mask'],
-    cross: ['GPT-2’s scores', 'anatomy/attention?phase=scores'], postln: ['GPT-2’s pre-LN', 'anatomy/layernorm?phase=stream'],
-    pos: ['GPT-2’s positions', 'anatomy/embedding?phase=pos'],
-  }
-  const compare = document.createElement('button')
-  compare.type = 'button'; compare.className = 'compare'
-  compare.addEventListener('click', () => nav(COMPARE[player.cur().id][1]))
-  player.meta.prepend(compare)
-
-  /* ---------- helpers ---------- */
-  let pills: { x: number; y: number; w: number; h: number; phase: string }[] = []
-  let hoverPill = ''
-  function pill(t: string, x: number, y: number, phase: string, a: number) {
-    ctx.font = F.mono(11, 500)
-    const w = ctx.measureText(t).width + 16, hv = hoverPill === phase
-    rr(x - w / 2, y - 10, w, 20, 10)
-    ctx.fillStyle = rgba(C.ink, (hv ? 1 : 0.9) * a); ctx.fill()
-    ctx.fillStyle = rgba(C.bg, a); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-    ctx.fillText(t, x, y + 0.5)
-    pills.push({ x: x - w / 2, y: y - 10, w, h: 20, phase })
-  }
-  function addNode(x: number, y: number, a: number) {
-    ctx.fillStyle = rgba(C.bg, a); ctx.beginPath(); ctx.arc(x, y, 9, 0, 7); ctx.fill()
-    ctx.strokeStyle = rgba(C.ink, 0.8 * a); ctx.lineWidth = 1.2; ctx.stroke()
-    ctx.beginPath(); ctx.moveTo(x - 4.5, y); ctx.lineTo(x + 4.5, y); ctx.moveTo(x, y - 4.5); ctx.lineTo(x, y + 4.5); ctx.stroke()
-  }
-  function caption(t: string, x: number, y: number, a: number, col: RGB = C.mute, align: CanvasTextAlign = 'center') {
-    ctx.font = F.small; ctx.textAlign = align; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(col, a); fillRich(t, x, y)
-  }
-  function title(t: string, x: number, y: number, a: number, align: CanvasTextAlign = 'left') {
-    ctx.font = F.label; spaced(true); ctx.textAlign = align; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.mute, a)
-    fillRich(upper(t), x, y); spaced(false)
-  }
-  function rowName(name: string, sub: string, y: number, a: number) {
-    ctx.font = serifAt(24); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.ink, a); ctx.fillText(name, pad, y + 2)
-    ctx.font = F.small; ctx.fillStyle = rgba(C.mute, a); ctx.fillText(sub, pad, y + 20)
-  }
-  /** A polyline ending in an arrowhead. */
-  function arrow(pts: [number, number][], a: number, dash = false, col: RGB = C.ink) {
-    if (a <= 0) return
-    ctx.strokeStyle = rgba(col, 0.55 * a); ctx.lineWidth = 1
-    if (dash) ctx.setLineDash([3, 4])
-    ctx.beginPath(); pts.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke()
-    ctx.setLineDash([])
-    const [x1, y1] = pts[pts.length - 1], [x0, y0] = pts[pts.length - 2], ang = Math.atan2(y1 - y0, x1 - x0)
-    ctx.beginPath()
-    ctx.moveTo(x1 - 6 * Math.cos(ang - 0.45), y1 - 6 * Math.sin(ang - 0.45)); ctx.lineTo(x1, y1); ctx.lineTo(x1 - 6 * Math.cos(ang + 0.45), y1 - 6 * Math.sin(ang + 0.45))
-    ctx.stroke()
-  }
-  /** A glass plate that fades with the rest of the scene. */
-  function glass(x: number, y0: number, y1: number, act: number, o: { w?: number; d?: number }, a: number) {
-    if (a <= 0.01) return
-    ctx.globalAlpha = a; plate(x, y0, y1, act, o); ctx.globalAlpha = 1
-  }
-  function lane(x0: number, x1: number, y: number, col: RGB, a: number, w = 1.3) {
-    if (a <= 0 || x1 <= x0) return
-    ctx.strokeStyle = rgba(col, 0.8 * a); ctx.lineWidth = w
-    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke()
-  }
+  const rowName = (name: string, sub: string, y: number, a: number) => k.rowName(name, sub, pad, y, a)
   const chipAt = (t: TokLike, cx: number, y: number, a: number, h = 18, hl = false) => drawChip(cx - chipW(t.text) / 2, y, t, a, h, hl)
 
   /* ---------- scene 1: RNN, one step at a time, vs attention, all at once ---------- */
@@ -571,49 +526,5 @@ export function mountTransformer2017(root: HTMLElement, nav: Nav): () => void {
     else mk.formula = { segs: [['PE(pos, 2i) = sin(pos / 10000^(2i / d_model))', C.ink], ['     ·     ', C.mute], ['PE(pos, 2i+1) = cos(…)', C.ink]], note: 'Wavelengths grow from 2π to 10,000 · 2π across the dimensions. Vaswani et al. also tried learned positions and got nearly the same results; they kept sinusoids in the hope that they extend to sentences longer than any seen in training.' }
   }
 
-  /* ---------- frame ---------- */
-  const SCENES: Record<string, (p: number) => void> = { rnn: sceneRnn, blocks: sceneBlocks, translate: sceneTranslate, masks: sceneMasks, cross: sceneCross, postln: scenePostLn, pos: scenePos }
-  function draw() {
-    useCtx(ctx)
-    stage.begin()
-    mk.begin()
-    pills = []
-    let id = PHASES[0].id
-    for (const ph of PHASES) if (prog(ph.id) > 0) id = ph.id
-    SCENES[id](prog(id))
-    mk.drawFormula()
-  }
-
-  stage.canvas.addEventListener('pointermove', (e) => {
-    const [x, y] = stage.local(e), hit = pills.find((b) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h)
-    hoverPill = hit?.phase ?? ''
-    if (hit) stage.canvas.style.cursor = 'pointer'
-  })
-  stage.canvas.addEventListener('click', (e) => {
-    const [x, y] = stage.local(e), hit = pills.find((b) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h)
-    if (hit) player.t = player.start(hit.phase) + 0.001
-  })
-
-  const CAPS: Record<string, [string, string]> = {
-    rnn: ['Before 2017, translation models were recurrent neural networks (RNNs): they read a sentence one token at a time, and each step needs the result of the one before, so a GPU cannot run the steps side by side. Self-attention links every pair of positions in one matrix product, so a whole sentence is processed at once.', 'RNN: n steps · attention: 1'],
-    blocks: ['GPT-2 is one stack. The 2017 Transformer has two: an encoder that reads the source sentence and a decoder that writes the translation, reading the encoder’s output through cross-attention. It also normalises after each residual add, uses fixed sinusoids for positions and ReLU in the MLP. Click a label to jump to that change.', '6 encoder + 6 decoder layers · d_model 512'],
-    translate: ['The encoder reads the English sentence once. The decoder then writes German one token at a time, like GPT-2, and each pass reads the encoder’s output. In training, the correct translation is fed in (teacher forcing) and the causal mask hides the future, so all positions run in one pass.', 'encoder once · decoder once per token'],
-    masks: ['There are three attentions, and they all compute softmax(Q·Kᵀ / √d_k) · V. The encoder sees the whole source, the decoder sees only earlier target tokens, and cross-attention lets each target token see the whole source. GPT-2 has only the middle kind.', 'source × source · target × target · target × source'],
-    cross: ['In cross-attention the queries come from the decoder and the keys and values from the encoder output, so the score matrix is target × source and is not square. Each row looks for the source word it needs next: ‘gesehen’ goes back to ‘seen’, although German moves it to the end. Hover the cells.', 'Q 7 × d_k · Kᵀ d_k × 6 → 7 × 6'],
-    postln: ['The 2017 model normalises after each residual add (post-LN), so LayerNorm sits on the stream’s main path. Deep post-LN models train poorly without a long learning-rate warmup (4,000 steps in the paper). GPT-2 normalises the copy each sub-layer reads (pre-LN) instead: the main path only adds, the stream grows, and one final LayerNorm, ln_f, tidies it up.', 'LN(x + f(x)) → x + f(LN(x))'],
-    pos: ['Attention ignores order, so both models add a position vector to each token. The 2017 model computes it from sine and cosine waves: no parameters, and a vector for any position. GPT-2 learns a table of 1,024 rows instead. Each sin/cos pair turns like a clock hand, so a shift by k positions is a fixed rotation, the idea RoPE later moved into attention.', 'PE(pos, 2i) = sin(pos / 10000^(2i/d_model))'],
-  }
-
-  if (reduced && player.t === 0) player.t = player.start('cross') + 11
-  player.describe = (i) => CAPS[PHASES[i].id]
-  const stop = runLoop((dt) => {
-    player.tick(dt)
-    draw()
-    player.updateUI()
-    const cmp = `Compare: ${COMPARE[player.cur().id][0]} ↗`
-    if (compare.textContent !== cmp) compare.textContent = cmp
-    const cur = player.cur(), [t, s] = CAPS[cur.id]
-    frame.setCaption(cur.name, cur.short ?? cur.name, t, s)
-  }, () => !player.playing)
-  return () => { stop(); player.destroy(); stage.destroy() }
+  return { rnn: sceneRnn, blocks: sceneBlocks, translate: sceneTranslate, masks: sceneMasks, cross: sceneCross, postln: scenePostLn, pos: scenePos }
 }
