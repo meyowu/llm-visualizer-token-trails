@@ -427,6 +427,33 @@ const LEARN: Record<string, Learn> = {
       'Classes can be written as captions, which gives zero-shot classification; a learned temperature of 100 sharpens the softmax.',
     ],
   },
+  dit: {
+    refs: [["Peebles & Xie 2022, Scalable Diffusion Models with Transformers (DiT)", "https://arxiv.org/abs/2212.09748"], ["Ho et al. 2020, Denoising Diffusion Probabilistic Models", "https://arxiv.org/abs/2006.11239"], ["Ho & Salimans 2022, Classifier-Free Diffusion Guidance", "https://arxiv.org/abs/2207.12598"], ["facebook/DiT-XL-2-256, the weights behind the real numbers", "https://huggingface.co/facebook/DiT-XL-2-256"]],
+    code: {
+      lines: [
+        '# the DiT block: the timestep and class set LayerNorm\'s scale and shift, and a gate',
+        'c = t_embedder(t) + y_embedder(y)                        # (1152,)',
+        'shift1, scale1, gate1, shift2, scale2, gate2 = adaLN_modulation(c).chunk(6)',
+        'x = x + gate1 * attn(layer_norm(x) * (1 + scale1) + shift1)',
+        'x = x + gate2 * mlp(layer_norm(x) * (1 + scale2) + shift2)',
+        '# training: add noise at a random t, predict it',
+        'x_t = alpha_bar[t].sqrt() * x0 + (1 - alpha_bar[t]).sqrt() * eps',
+        'loss = F.mse_loss(model(x_t, t, y), eps)',
+        '# sampling: 250 steps, each a full forward pass (twice with guidance)',
+        'for t in reversed(steps): x = p_sample(model, x, t, y)',
+      ],
+      at: { blocks: [0, 1, 2, 3, 4], noise: [5, 6, 7], latent: [], adaln: [0, 1, 2, 3, 4], sample: [8, 9] },
+    },
+    checks: [
+      { phase: 'noise', q: 'What does DiT learn to predict?', options: ['The noise that was added to the image', 'The next token', 'The image’s class', 'A caption for the image'], answer: 0, why: 'The loss compares the model’s output with the noise ε that was mixed in; knowing the noise, you can remove it.' },
+      { phase: 'adaln', q: 'In DiT, what sets each LayerNorm’s scale and shift?', options: ['A small network reading the timestep and the class', 'Fixed learned constants, as in GPT-2', 'The previous patch', 'Nothing: DiT has no LayerNorm'], answer: 0, why: 'adaLN-Zero computes γ, β and a gate α from c = emb(t) + emb(class), separately in every block.' },
+    ],
+    recap: [
+      'DiT is a Transformer over latent image patches that predicts the noise in them, not the next token.',
+      'The timestep and class enter through adaLN-Zero: they set every block’s LayerNorm scale and shift and a gate on each sub-layer.',
+      'One image takes many full passes (250 here), each removing a little noise.',
+    ],
+  },
   llama: {
     refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {

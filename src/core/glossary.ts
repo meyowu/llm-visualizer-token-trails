@@ -11,16 +11,19 @@ export interface Term {
 }
 
 export const TERMS: Term[] = [
+  { term: 'adaLN-Zero', match: ['adaln-zero', 'adaln'], def: 'DiT’s conditioning: the timestep and class set each block’s LayerNorm scale and shift and a gate on each sub-layer’s output; the gates start at zero, so blocks start as the identity.' },
   { term: 'Attention', match: [], def: 'Lets each position mix in information from itself and earlier positions, weighted by how well its query matches their keys.' },
   { term: 'Attention head', match: [], def: 'One of several attention computations run side by side, each on its own slice of the vector (64 of 768 numbers in GPT-2), free to track a different relation.' },
   { term: 'Attention sink', match: ['attention sink'], def: 'Many heads park spare attention on the first token, whose value adds almost nothing; the overview colours treat that attention as a no-op.' },
   { term: 'BPE', match: ['bpe'], def: 'Byte-pair encoding: a tokenizer that starts from bytes and repeatedly merges the most frequent adjacent pair seen in training text. GPT-2 learned 50,000 merges this way.' },
   { term: 'Causal mask', match: ['causal mask'], def: 'Hides later positions from each position, so the model cannot peek at the tokens it is learning to predict.' },
+  { term: 'Classifier-free guidance', match: ['classifier-free guidance'], def: 'At sampling time, running a diffusion model with and without the condition and moving further in the direction the condition adds, for images that match it more strongly.' },
   { term: 'Contrastive learning', match: ['contrastive'], def: 'Training by comparison: matching pairs (an image and its caption) are pulled together and every mismatched pair in the batch is pushed apart.' },
   { term: 'Cross-attention', match: ['cross-attention'], def: 'Attention whose queries come from one sequence and keys and values from another: in a translation model, the decoder (target) reads the encoder’s output (source).' },
   { term: 'Encoder and decoder', match: ['encoder', 'decoder'], def: 'In the 2017 Transformer, the encoder reads the whole source sentence at once; the decoder writes the output one token at a time, under a causal mask, reading the encoder’s output through cross-attention.' },
   { term: 'Decoder-only', match: ['decoder-only'], def: 'A Transformer that reads left to right under a causal mask and predicts the next token. GPT-2 and LLaMA are decoder-only.' },
   { term: 'Encoder-only', match: ['encoder-only'], def: 'A Transformer with no causal mask that reads a whole text at once and outputs a vector per token, for understanding rather than generating text. BERT is encoder-only.' },
+  { term: 'Diffusion model', match: ['diffusion'], def: 'A model trained to remove noise from data; generating means starting from pure noise and denoising step by step.' },
   { term: 'Embedding', match: ['embedding matrix'], def: 'A learned vector of numbers (768 in GPT-2) that stands for a token or a position; tokens used in similar ways end up with similar vectors.' },
   { term: 'FLOPs', match: ['flops'], def: 'Floating-point operations. One multiply-add counts as two.' },
   { term: 'Fine-tuning', match: ['fine-tuned', 'fine-tuning'], def: 'Training a pretrained model a little further, on a smaller dataset for one task, usually with a small new output layer on top.' },

@@ -1,6 +1,7 @@
 import { mountBert } from './lineage/bert'
 import { mountClip } from './lineage/clip'
 import { mountDeepseek } from './lineage/deepseek'
+import { mountDit } from './lineage/dit'
 import { mountLlama } from './lineage/llama'
 import { mountT5 } from './lineage/t5'
 import { mountVit } from './lineage/vit'
@@ -82,7 +83,7 @@ export const CATEGORIES: Category[] = [
       { heading: 'Vision & diffusion' },
       { name: 'Vision Transformer', tag: 'tokens → 16×16 patches', route: 'lineage/vit', mount: mountVit },
       { name: 'CLIP', tag: 'image ↔ text embeddings', route: 'lineage/clip', mount: mountClip },
-      { name: 'Diffusion Transformer', tag: 'denoising · DiT' },
+      { name: 'Diffusion Transformer', tag: 'denoising · DiT', route: 'lineage/dit', mount: mountDit },
       { heading: 'Beyond attention' },
       { name: 'Mamba', tag: 'attention → selective SSM' },
     ],
