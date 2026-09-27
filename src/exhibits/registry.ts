@@ -4,6 +4,7 @@ import { mountLayerNorm } from './transformer/layernorm'
 import { mountMlp } from './transformer/mlp'
 import { mountOverview } from './transformer/overview'
 import { mountTokenizer } from './transformer/tokenizer'
+import { mountUnembed } from './transformer/unembed'
 
 /** Navigate to a route; `origin` (client coords) is where the zoom transition starts. */
 export type Nav = (route: string, origin?: { x: number; y: number }) => void
@@ -35,7 +36,7 @@ export const CATEGORIES: Category[] = [
       { name: 'Attention', tag: 'QKᵀ · softmax · V', route: 'transformer/attention', mount: mountAttention },
       { name: 'MLP', tag: '768 → 3072 → 768', route: 'transformer/mlp', mount: mountMlp },
       { name: 'LayerNorm & Residual', tag: 'pre-LN stream', route: 'transformer/layernorm', mount: mountLayerNorm },
-      { name: 'Unembed & Sampling', tag: 'logits · temperature' },
+      { name: 'Unembed & Sampling', tag: 'logits · temperature', route: 'transformer/unembed', mount: mountUnembed },
     ],
   },
   {

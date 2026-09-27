@@ -11,7 +11,9 @@ Follow the tokens through AI systems: animated, explorable walk-throughs of the 
 - **Transformer / Attention**: every matrix product in one attention head, computed with real arithmetic at toy scale (d_model 8, d_head 4) and animated cell by cell: X·W_Q/K/V → Q·Kᵀ → ÷√d → mask → softmax → A·V → concat·W_O → residual add. Hover any result cell to see which row and column produced it.
 - **Transformer / MLP**: the feed-forward block at toy scale (d_model 8 → d_ff 32, the same 4× as GPT-2): X·W_fc + b → GELU (each activation plotted on the curve) → ·W_proj + b → residual add.
 
-On the overview, click a part marked ↗ (the tokens, the embedding strips, the attn, mlp and ln_f plates) to zoom into its detail view.
+- **Transformer / Unembed & Sampling**: ln_f on the last position, logits as x · W_Eᵀ (tied to the embedding) drawn as a GEMM over the six real candidates plus the 50,251-token tail, temperature, softmax, and sampling strategies (sample, greedy, top-k, top-p) with a resample button.
+
+On the overview, click a part marked ↗ (the tokens, the embedding strips, the attn, mlp, ln_f and W_U plates, the next-token bars) to zoom into its detail view.
 
 ## Development
 
@@ -45,6 +47,7 @@ src/
       layernorm.ts        layernorm & residual detail view
       attention.ts        attention detail view
       mlp.ts              MLP detail view
+      unembed.ts          unembed & sampling detail view
 ```
 
 To add an exhibit, write a `mount(root, nav) => destroy` function under `exhibits/` and give its entry in `registry.ts` a `route` and `mount`.

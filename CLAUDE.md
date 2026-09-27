@@ -33,6 +33,7 @@ src/exhibits/transformer/
   layernorm.ts              pre-LN stream schematic, then ln_1 as dots on number lines (μ, σ, γ, β)
   attention.ts              attention detail view, every GEMM animated cell by cell
   mlp.ts                    MLP detail view: up-projection, GELU curve, down-projection, residual
+  unembed.ts                ln_f, logits = x · W_Eᵀ (tied), temperature, softmax, sampling strategies
 ```
 
 ## Adding an exhibit or detail view

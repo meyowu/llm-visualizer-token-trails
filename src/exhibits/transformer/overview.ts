@@ -85,6 +85,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     distW: 0, xDist0: 0, xWU: 0, xLn: 0, xAttn: 0, xMlp: 0, xS0: 0, xS1: 0, stack: [] as number[], rowH: 0,
     chipEnd: [] as number[], mat: null as null | { x: number; y: number; w: number; h: number },
     plateY: [0, 0] as [number, number],
+    wuY: [0, 0] as [number, number],
   }
   function geom() {
     const { W, H } = stage
@@ -430,7 +431,9 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     const lnAct = pu > 0 && pu < 1 ? clamp(1 - Math.abs(pu - 0.2) / 0.2) : 0, wuAct = pu > 0 && pu < 1 ? clamp(1 - Math.abs(pu - 0.55) / 0.3) : 0
     const hovL = S.hoverPlate === 'ln'
     plate(G.xLn, py0, py1, Math.max(lnAct, hovL ? 0.8 : 0)); subLabel(hovL ? 'ln_f ↗' : 'ln_f', G.xLn, G.labY + 32, lnAct > 0.1 || hovL)
-    plate(G.xWU, wu0, wu1, wuAct, { w: 11, d: 11, hatch: 34 }); subLabel('W_U', G.xWU, G.labY + 32, wuAct > 0.1)
+    const hovW = S.hoverPlate === 'wu'
+    plate(G.xWU, wu0, wu1, Math.max(wuAct, hovW ? 0.8 : 0), { w: 11, d: 11, hatch: 34 }); subLabel(hovW ? 'W_U ↗' : 'W_U', G.xWU, G.labY + 32, wuAct > 0.1 || hovW)
+    G.wuY = [wu0, wu1]
 
     drawEmb(ys, sp, pe, isLast ? 1 - endFade : 1)
     drawAttention(ys, sp, pa, compA)
@@ -444,6 +447,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     if (S.hoverPlate === 'tok') drawOpenHint(G.xTok + 56, py0 - 4)
     if (S.hoverPlate === 'emb') drawOpenHint((G.xEmb0 + G.xEmb1) / 2, py0 - 4)
     if (hovL) drawOpenHint(G.xLn, py0 - 4)
+    if (hovW) drawOpenHint(G.xWU, wu0 - 4)
   }
 
   /* ---------- captions ---------- */
@@ -460,7 +464,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
       case 'unembed': return { t: 'Only the last position is used: after ln_f it is dotted with every vocabulary vector, giving 50,257 logits. GPT-2 ties W_U to W_E.', s: '[1 × 768] · W_Eᵀ → [1 × 50,257]' }
       default: {
         const p = S.pick, pp = p.d[p.idx].p
-        return { t: 'softmax(logit / T) turns scores into probabilities; one token is drawn, appended, and the next pass begins. Drag T: lower is more decisive, higher leaks probability into the long tail.', s: `u ${p.u.toFixed(2)} → ${tokLabel(p.text)} · ${(pp * 100).toFixed(1)}%` }
+        return { t: 'softmax(logit / T) turns scores into probabilities; one token is drawn, appended, and the next pass begins. Drag T: lower is more decisive, higher leaks probability into the long tail. Click W_U or the bars to see sampling strategies.', s: `u ${p.u.toFixed(2)} → ${tokLabel(p.text)} · ${(pp * 100).toFixed(1)}%` }
       }
     }
   }
@@ -469,6 +473,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   const inMat = (x: number, y: number) => { const m = G.mat; return !!m && prog('attn') > 0 && x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h }
   /** Plates that open a detail view, keyed by the route they open. */
   const plateAt = (x: number, y: number) => {
+    if ((Math.abs(x - G.xWU) < 16 && y > G.wuY[0] - 14 && y < G.wuY[1] + 14) || (x >= G.xDist0 - 10 && y > G.wuY[0] - 20 && y < G.wuY[1] + 30)) return 'wu'
     if (y < G.plateY[0] - 14 || y > G.plateY[1] + 14) return ''
     if (Math.abs(x - G.xAttn) < 14) return 'attn'
     if (Math.abs(x - G.xMlp) < 14) return 'mlp'
@@ -477,7 +482,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     if (Math.abs(x - G.xLn) < 14) return 'ln'
     return ''
   }
-  const PLATE_ROUTES: Record<string, string> = { attn: 'transformer/attention', mlp: 'transformer/mlp', tok: 'transformer/tokenizer', emb: 'transformer/embedding', ln: 'transformer/layernorm' }
+  const PLATE_ROUTES: Record<string, string> = { attn: 'transformer/attention', mlp: 'transformer/mlp', tok: 'transformer/tokenizer', emb: 'transformer/embedding', ln: 'transformer/layernorm', wu: 'transformer/unembed' }
   const cv = stage.canvas
   cv.addEventListener('pointermove', (e) => {
     const [x, y] = stage.local(e), { sp, ys } = curYs()

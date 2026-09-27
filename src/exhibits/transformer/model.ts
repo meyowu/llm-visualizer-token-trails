@@ -15,7 +15,7 @@ export const PROMPT = ['The', ' cat', ' sat', ' on', ' the']
 const IDS: Record<string, number> = {
   'The': 464, ' cat': 3797, ' sat': 3332, ' on': 319, ' the': 262, ' mat': 2603, ' floor': 4314, ' bed': 3996,
   ' ground': 2323, '.': 13, ',': 11, ' and': 290, ' in': 287, ' with': 351, ' while': 981, ' It': 632, ' The': 383,
-  ' She': 1375, ' He': 679, '\n': 198, ' was': 373,
+  ' She': 1375, ' He': 679, '\n': 198, ' was': 373, ' couch': 18507, ' edge': 5743,
 }
 export const tokId = (t: string) => IDS[t] ?? 1000 + (hash(t) % 40000)
 export const promptTokens = (): Tok[] => PROMPT.map((t, i) => ({ text: t, id: tokId(t), c: i % 7 }))
@@ -43,6 +43,11 @@ export interface DistRow {
 }
 
 /** Top-6 candidates plus one row for the remaining 50,251 vocabulary entries. */
+/** Toy logit shared by every token outside the top 6; the "others" row is 50,251 × exp(−11 / T). */
+export const TAIL_LOGIT = -11
+/** The canned top-6 logits after `last`, highest first. */
+export const topLogits = (last: string) => nextLogits(last).slice().sort((a, b) => b[1] - a[1])
+
 export function dist(last: string, T: number): DistRow[] {
   const L = nextLogits(last)
   const ex = L.map(([, l]) => Math.exp(l / T))
