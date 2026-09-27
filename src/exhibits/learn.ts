@@ -230,6 +230,37 @@ const LEARN: Record<string, Learn> = {
       'Its gradient on the logits is p − onehot(target); backpropagation carries it to every weight.',
     ],
   },
+  transformer2017: {
+    refs: [["Vaswani et al. 2017, Attention Is All You Need", "https://arxiv.org/abs/1706.03762"], ["Bahdanau et al. 2014, Neural Machine Translation by Jointly Learning to Align and Translate", "https://arxiv.org/abs/1409.0473"], ["Xiong et al. 2020, On Layer Normalization in the Transformer Architecture", "https://arxiv.org/abs/2002.04745"], ["Rush et al., The Annotated Transformer", "https://nlp.seas.harvard.edu/annotated-transformer/"]],
+    code: {
+      lines: [
+        '# positions: fixed sine and cosine waves, added to embeddings scaled by √d_model',
+        'pe[:, 0::2] = torch.sin(pos * 10000 ** (-i2 / d_model))',
+        'pe[:, 1::2] = torch.cos(pos * 10000 ** (-i2 / d_model))',
+        'x = embed(src) * math.sqrt(d_model) + pe[:len(src)]',
+        '# encoder layer, 6 times: LayerNorm after each residual add (post-LN)',
+        'x = norm1(x + self_attn(x, x, x))                     # no mask',
+        'x = norm2(x + ffn(x))                                 # ReLU',
+        '# decoder layer, 6 times',
+        'y = norm1(y + self_attn(y, y, y, mask=causal))',
+        'y = norm2(y + cross_attn(q=y, k=memory, v=memory))    # memory = encoder output',
+        'y = norm3(y + ffn(y))',
+        '# GPT-2, for comparison: pre-LN',
+        'h = x + attn(ln_1(x)); out = h + mlp(ln_2(h))',
+      ],
+      at: { blocks: [4, 5, 6, 7, 8, 9, 10], translate: [3, 9], masks: [5, 8, 9], cross: [9], postln: [5, 6, 11, 12], pos: [0, 1, 2, 3] },
+    },
+    checks: [
+      { phase: 'rnn', q: 'Why could the Transformer train much faster than an RNN on the same GPU?', options: ['It computes all positions at once instead of one step after another', 'It has fewer parameters', 'It uses a smaller vocabulary', 'It needs no position information'], answer: 0, why: 'Each RNN step needs the previous hidden state. Attention compares all positions in one matrix product, so the sequence is not a chain of steps.' },
+      { phase: 'cross', q: 'In cross-attention, where do the queries, keys and values come from?', options: ['Queries from the decoder; keys and values from the encoder output', 'Queries from the encoder; keys and values from the decoder', 'All three from the decoder, under a causal mask', 'All three from the encoder'], answer: 0, why: 'Each target position asks (query) what it needs; the source offers keys and values. That is why the score matrix is target × source.' },
+      { phase: 'postln', q: 'Where does the 2017 Transformer apply LayerNorm?', options: ['After each residual add, on the stream itself', 'Before each sub-layer, on the copy it reads', 'Only once, after the last layer', 'Only in the decoder'], answer: 0, why: 'Post-LN: x = LN(x + f(x)). GPT-2 uses pre-LN, x = x + f(LN(x)), plus one final ln_f.' },
+    ],
+    recap: [
+      'The 2017 Transformer is an encoder–decoder: the encoder reads the source once, the decoder writes the target token by token.',
+      'Cross-attention takes queries from the decoder and keys and values from the encoder output.',
+      'It normalises after each residual add and adds fixed sinusoids; GPT-2 moved to pre-LN and learned positions.',
+    ],
+  },
   llama: {
     refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {

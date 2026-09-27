@@ -1,4 +1,5 @@
 import { mountLlama } from './lineage/llama'
+import { mountTransformer2017 } from './lineage/transformer2017'
 import { mountLoss } from './training/loss'
 import { mountFoundations } from './foundations'
 import { mountGlossary } from './glossary'
@@ -62,6 +63,8 @@ export const CATEGORIES: Category[] = [
     id: 'lineage',
     title: 'Lineage',
     entries: [
+      { heading: 'Origin' },
+      { name: 'Transformer (2017)', tag: 'encoder–decoder · post-LN · sinusoids', route: 'lineage/transformer-2017', mount: mountTransformer2017 },
       { heading: 'Decoder-only' },
       { name: 'LLaMA', tag: 'RoPE · RMSNorm · SwiGLU · GQA', route: 'lineage/llama', mount: mountLlama },
       { name: 'Mixtral', tag: 'MLP → 8 experts, top-2' },

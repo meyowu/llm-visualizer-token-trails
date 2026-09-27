@@ -18,6 +18,7 @@ The atlas follows a model's life in six parts: **Anatomy** (GPT-2 taken apart), 
 - **Foundations**: a warm-up on the four pieces of math the rest uses: the dot product as a similarity score, the matrix product in the site's layout, softmax, and one-hot times a matrix.
 - **Training / Next-token loss**: "The cat sat on the floor" scored the way training scores it, with GPT-2's real probabilities: five examples at once, −log p per position, the gradient p − y on the logits, and a toy step downhill.
 - **Glossary**: every term of art in plain words; captions mark first mentions with their definition.
+- **Lineage / Transformer (2017)**: the original encoder–decoder as a diff against GPT-2: why attention replaced RNNs (one step instead of n), the encoder and decoder stacks, translating “I have seen the cat.” token by token, the three attentions and their masks, cross-attention as a target × source GEMM, post-LN vs pre-LN with GPT-2's real residual-stream lengths, and sinusoidal positions next to GPT-2's real learned W_P.
 - **Lineage / LLaMA**: LLaMA 3 as a diff against GPT-2: the two blocks side by side, then RoPE (rotating q/k pairs by position, and why only the offset matters), RMSNorm vs LayerNorm, the gated SwiGLU MLP, and MHA vs GQA vs MQA with real KV-cache sizes.
 
 Every page has an All steps list, a Code drawer with the matching PyTorch, a Go deeper reading list, a question or two to answer before key steps, and a recap at the end. It pauses at the end of each step so there is time to read (switch to Auto to play straight through); ← and → move between steps. On the overview, click a part marked ↗ (the tokens, the embedding strips, the attn, mlp, ln_f and W_U plates, the next-token bars) to zoom into its detail view.
@@ -64,6 +65,7 @@ src/
       mlp.ts              MLP detail view
       unembed.ts          unembed & sampling detail view
     lineage/
+      transformer2017.ts  the 2017 Transformer compared with GPT-2
       llama.ts            LLaMA 3 compared with GPT-2
 scripts/
   gpt2-export.ts          offline GPT-2 small forward pass that writes src/data/gpt2.json

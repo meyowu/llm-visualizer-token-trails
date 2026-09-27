@@ -43,7 +43,8 @@ src/exhibits/registry.ts    categories (Anatomy, Lineage, Training, Interpretabi
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
-  data.ts                   decodes src/data/gpt2.json: presets, nextDist() at any T, headKind(), mixing() (lane colours)
+  data.ts                   decodes src/data/gpt2.json: presets, nextDist() at any T, headKind(), mixing() (lane colours),
+                            wpeSlice() and streamNorms() for the 2017 Transformer page
 src/data/gpt2.json          real GPT-2 small activations for 3 prompts × 3 greedy passes, and one sentence scored per position
                             for training (made by scripts/gpt2-export.ts)
 scripts/gpt2-export.ts      offline GPT-2 small forward pass in plain TS (Node 23+); weights in ~/.cache/token-trails/gpt2
@@ -59,6 +60,9 @@ src/exhibits/transformer/
 src/exhibits/training/
   loss.ts                   next-token loss on a real GPT-2 run (per-position p, −log p), gradient p − y, a toy step
 src/exhibits/lineage/
+  transformer2017.ts        the 2017 Transformer vs GPT-2: RNN → attention, encoder + decoder, a toy EN → DE
+                            translation, the three attentions, cross-attention GEMM, post-LN (real GPT-2 stream
+                            lengths), sinusoids vs GPT-2's real W_P
   llama.ts                  LLaMA 3 vs GPT-2: blocks, RoPE, RMSNorm, SwiGLU, GQA (real numbers are LLaMA 3 8B)
 ```
 

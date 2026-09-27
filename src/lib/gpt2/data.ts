@@ -15,7 +15,7 @@ interface RawPass {
 interface RawPreset { key: string; text: string; note: string; passes: RawPass[] }
 interface RawTraining { text: string; ids: number[]; syms: string[]; positions: { target: number; p: number; top: { id: number; s: string; p: number }[] }[] }
 interface RawMapItem { s: string; cat: string; x: number; y: number; nn: [string, number][] }
-interface Raw { model: string; tGrid: number[]; topK: number; presets: RawPreset[]; training: RawTraining; embeddingMap: RawMapItem[] }
+interface Raw { model: string; tGrid: number[]; topK: number; presets: RawPreset[]; training: RawTraining; embeddingMap: RawMapItem[]; wpeSlice: number[][]; streamNorms: number[] }
 const R = raw as unknown as Raw
 
 export const VOCAB = 50257
@@ -194,3 +194,8 @@ export function trainingRun(): TrainingRun {
 export interface MapItem { text: string; cat: string; x: number; y: number; near: { text: string; cos: number }[] }
 export const embeddingMap = (): MapItem[] =>
   R.embeddingMap.map((m) => ({ text: symbolText(m.s), cat: m.cat, x: m.x, y: m.y, near: m.nn.map(([s, cos]) => ({ text: symbolText(s), cos })) }))
+
+/** GPT-2's learned position rows 0–63, dimensions 0–63. */
+export const wpeSlice = (): number[][] => R.wpeSlice
+/** Mean length of GPT-2's residual stream on the training text: after the embedding, then after each of the 12 blocks. */
+export const streamNorms = (): number[] => R.streamNorms

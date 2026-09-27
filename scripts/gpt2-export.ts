@@ -85,11 +85,15 @@ interface Forward {
   mlp0: Float32Array[]
   /** The final residual stream at every position (before ln_f). */
   last: Float32Array[]
+  /** Mean length of the residual stream over positions 1… (position 0 is an outlier), after the embedding and after each block. */
+  norms: number[]
 }
 function forward(ids: number[]): Forward {
   const N = ids.length
   let x = ids.map((id, p) => { const v = new Float32Array(D); for (let k = 0; k < D; k++) v[k] = wte[id * D + k] + wpe[p * D + k]; return v })
   const att: number[][][][] = [], resid: Float32Array[] = []
+  const meanNorm = () => x.slice(1).reduce((s, r) => s + Math.hypot(...r), 0) / Math.max(1, N - 1)
+  const norms = [meanNorm()]
   let mlp0: Float32Array[] = []
   for (let l = 0; l < L; l++) {
     const P = `h.${l}.`
@@ -125,9 +129,10 @@ function forward(ids: number[]): Forward {
     })
     if (l === 0) mlp0 = hids
     resid.push(x[N - 1])
+    norms.push(meanNorm())
   }
   const xf = layerNorm(x[N - 1], w('ln_f.weight'), w('ln_f.bias'))
-  return { att, resid, xf, logits: logitsOf(xf), mlp0, last: x }
+  return { att, resid, xf, logits: logitsOf(xf), mlp0, last: x, norms }
 }
 
 /* ---------- export helpers ---------- */
@@ -226,6 +231,9 @@ for (const pr of PRESETS) {
     return { target, p: Math.exp(z[target] - m) / Z, top: top.top.map((t) => ({ id: t.id, s: t.s, p: r3(t.p) })) }
   })
   out.training = { text, ids, syms: ids.map(sym), positions }
+  // how long the (pre-LN) residual stream gets, layer by layer, on the same text
+  out.streamNorms = f.norms.map((v) => Math.round(v * 10) / 10)
+  console.log('stream norms:', out.streamNorms.join(' '))
   console.log('training:', positions.map((q) => `${sym(q.target)} ${(q.p * 100).toFixed(1)}%`).join(' · '))
 }
 // a map of token embeddings: words from a few everyday categories, projected on the first two
@@ -270,5 +278,7 @@ for (const pr of PRESETS) {
   })
   console.log('map:', items.length, 'words;', out.embeddingMap.find((m: any) => m.s === 'Ġcat').nn.map((n: any) => n[0]).join(' '))
 }
+// the first 64 learned position rows, first 64 dimensions, to set beside the 2017 sinusoids
+out.wpeSlice = Array.from({ length: 64 }, (_, pos) => Array.from(wpe.subarray(pos * D, pos * D + 64), r3))
 writeFileSync(new URL('../src/data/gpt2.json', import.meta.url), JSON.stringify(out))
 console.log('wrote src/data/gpt2.json')
