@@ -79,7 +79,7 @@ export function mountContinuousBatching(root: HTMLElement, nav: Nav): () => void
     },
     size: [1040, 480],
     aria: 'Continuous batching: because a decode step costs about the same for one sequence or many, servers batch requests; refilling free slots after every step instead of waiting for the whole batch cuts waiting time and raises throughput, and long prompts are prefilled in chunks.',
-    phases: PHASES, learn: 'batching', tokens: TOKS, compare: COMPARE, caps: CAPS,
+    phases: PHASES, learn: 'batching', tokens: TOKS, compare: COMPARE, compareLabel: 'Related', caps: CAPS,
     still: ['continuous', 10],
     scenes,
   })

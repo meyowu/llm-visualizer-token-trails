@@ -15,6 +15,8 @@ const PATH: [string, string, string][] = [
   ['anatomy/mlp', 'MLP', 'How each token is then transformed on its own.'],
   ['anatomy/unembed', 'Unembed & Sampling', 'How the last vector becomes probabilities, and one next token.'],
   ['training/loss', 'Next-token loss', 'Where the numbers come from: the loss every weight is trained on.'],
+  ['lineage/transformer-2017', 'Lineage', 'Where GPT-2 came from and what followed: ten architectures drawn as changes to it, from the 2017 Transformer to Mamba.'],
+  ['serving/kv-cache', 'Serving', 'How a trained model is run fast and cheaply: the KV cache, FlashAttention, batching, speculative decoding, quantization.'],
 ]
 
 
@@ -83,7 +85,7 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
   const ol = q('.st-path ol')
   PATH.forEach(([route, name, what], i) => {
     const li = document.createElement('li')
-    const n = route === 'foundations' ? 'prep' : route === 'anatomy' ? 'map' : route.startsWith('training') ? 'then' : String(i - 1).padStart(2, '0')
+    const n = route === 'foundations' ? 'prep' : route === 'anatomy' ? 'map' : route.startsWith('training') ? 'then' : route.startsWith('lineage') || route.startsWith('serving') ? 'more' : String(i - 1).padStart(2, '0')
     li.innerHTML = `<a href="#/${route}"><span class="n">${n}</span><b></b><small></small></a>`
     li.querySelector('b')!.textContent = name
     li.querySelector('small')!.textContent = what

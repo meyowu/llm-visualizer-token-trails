@@ -81,7 +81,7 @@ export function mountPagedAttention(root: HTMLElement, nav: Nav): () => void {
     },
     size: [1040, 480],
     aria: 'PagedAttention: the KV cache is split into small blocks given out on demand and found through a block table, so far less memory is reserved but unused, blocks can be shared between sequences, and more requests fit in a batch.',
-    phases: PHASES, learn: 'pagedattention', tokens: TOKS, compare: COMPARE, caps: CAPS,
+    phases: PHASES, learn: 'pagedattention', tokens: TOKS, compare: COMPARE, compareLabel: 'Related', caps: CAPS,
     still: ['blocks', 11],
     scenes,
   })

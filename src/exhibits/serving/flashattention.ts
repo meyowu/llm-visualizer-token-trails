@@ -90,7 +90,7 @@ export function mountFlashAttention(root: HTMLElement, nav: Nav): () => void {
     },
     size: [1040, 480],
     aria: 'FlashAttention: attention computed tile by tile in the GPU’s fast on-chip memory with an online softmax, so the large score matrix is never written to slow memory; the result is exactly the same as ordinary attention.',
-    phases: PHASES, learn: 'flashattention', tokens: TOKS, compare: COMPARE, caps: CAPS,
+    phases: PHASES, learn: 'flashattention', tokens: TOKS, compare: COMPARE, compareLabel: 'Related', caps: CAPS,
     still: ['tiles', 13],
     hints: {
       tiles: 'Hover a cell of S or O to read it; click or tap to pin it.',

@@ -56,7 +56,7 @@ export function mountQuantization(root: HTMLElement, nav: Nav): () => void {
     },
     size: [1040, 480],
     aria: 'Quantization: storing a model’s weights in 8 or 4 bits by rounding them onto a grid with a scale; real GPT-2 weights, activations and results show that int8 is nearly free, int4 needs small groups, and a few large activations make activations hard to quantize.',
-    phases: PHASES, learn: 'quantization', tokens: TOKS, compare: COMPARE, caps: CAPS,
+    phases: PHASES, learn: 'quantization', tokens: TOKS, compare: COMPARE, compareLabel: 'Related', caps: CAPS,
     still: ['round', 10],
     hints: {
       round: 'Hover a weight to see its code and rounding error; click or tap to pin it.',

@@ -59,8 +59,10 @@ export interface ExhibitOptions {
   learn: string
   /** Tokens the MatrixKit colours rows and columns by. */
   tokens: TokLike[]
-  /** Per phase: the GPT-2 part it changes, as [label, route]. */
+  /** Per phase: the GPT-2 part it changes (or a related page), as [label, route]. */
   compare: Record<string, [string, string]>
+  /** The word before the link: 'Compare' (the default) for diffs against GPT-2, 'Related' otherwise. */
+  compareLabel?: string
   /** Per phase: caption text and its short shape line. */
   caps: Record<string, [string, string]>
   /** Builds the scenes, one per phase id, each drawing at progress p ∈ [0, 1]. */
@@ -173,7 +175,7 @@ export function mountExhibit(root: HTMLElement, nav: Nav, o: ExhibitOptions): ()
     draw()
     player.updateUI()
     for (const fn of hooks) fn()
-    const cur = player.cur(), cmp = `Compare: ${o.compare[cur.id][0]} ↗`
+    const cur = player.cur(), cmp = `${o.compareLabel ?? 'Compare'}: ${o.compare[cur.id][0]} ↗`
     if (compare.textContent !== cmp) compare.textContent = cmp
     const [t, s] = o.caps[cur.id]
     frame.setCaption(cur.name, cur.short ?? cur.name, t, s)

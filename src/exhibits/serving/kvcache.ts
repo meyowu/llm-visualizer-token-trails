@@ -67,7 +67,7 @@ export function mountKvCache(root: HTMLElement, nav: Nav): () => void {
     },
     size: [1040, 480],
     aria: 'The KV cache: generation keeps the keys and values of all earlier tokens so each new token computes only its own; prefill fills the cache in one pass and each decode step attends over it. Real GPT-2 numbers for one attention head.',
-    phases: PHASES, learn: 'kvcache', tokens: TOKS, compare: COMPARE, caps: CAPS,
+    phases: PHASES, learn: 'kvcache', tokens: TOKS, compare: COMPARE, compareLabel: 'Related', caps: CAPS,
     still: ['step', 12],
     hints: {
       prefill: 'Hover a cell of K or V to read it; click or tap to pin it.',

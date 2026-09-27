@@ -59,7 +59,7 @@ export function mountSpeculative(root: HTMLElement, nav: Nav): () => void {
     },
     size: [1040, 480],
     aria: 'Speculative decoding: a small draft model proposes several tokens, the large model checks them all in one pass and keeps the longest agreeing prefix plus one token of its own; a real run of distilgpt2 drafting for GPT-2 small produces exactly GPT-2’s text in fewer passes.',
-    phases: PHASES, learn: 'speculative', tokens: PROMPT_T, compare: COMPARE, caps: CAPS,
+    phases: PHASES, learn: 'speculative', tokens: PROMPT_T, compare: COMPARE, compareLabel: 'Related', caps: CAPS,
     still: ['round', 11],
     scenes,
   })
