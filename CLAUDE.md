@@ -106,6 +106,8 @@ src/exhibits/serving/
                             cache sizes across models, the roofline (prefill compute-bound, decode memory-bound)
   flashattention.ts         SRAM vs HBM, standard attention's HBM round trips, the online softmax on one row, the tiled loop
                             with real toy arithmetic checked against standard attention, HBM traffic and N × N memory
+  paged.ts                  toy allocator simulation (256 slots, blocks of 4): contiguous reservations vs blocks on demand with
+                            block tables, the kernel gathering blocks, sharing with copy-on-write, batch size and steps for both
 ```
 
 ## Adding an exhibit or detail view

@@ -536,6 +536,33 @@ const LEARN: Record<string, Learn> = {
       'The result is exact, the N × N matrices are never stored, and much less data crosses to HBM.',
     ],
   },
+  pagedattention: {
+    refs: [["Kwon et al. 2023, Efficient Memory Management for Large Language Model Serving with PagedAttention (vLLM)", "https://arxiv.org/abs/2309.06180"]],
+    code: {
+      lines: [
+        '# the KV cache as a pool of fixed-size blocks',
+        'free = list(range(num_blocks)); block_table = {seq: [] for seq in running}',
+        '# before writing token t of a sequence, make sure its block exists',
+        'if t % BLOCK == 0: block_table[seq].append(free.pop())',
+        'b = block_table[seq][t // BLOCK]; kv[b, t % BLOCK] = (k, v)',
+        '# attention gathers the sequence\'s blocks through its table',
+        'K = torch.cat([kv_k[b] for b in block_table[seq]])',
+        '# sharing: forked sequences copy the table, not the blocks',
+        'block_table[child] = list(block_table[parent]); ref[b] += 1 for each b',
+        'if ref[b] > 1 and writing: b = copy_block(b); ref[b_old] -= 1',
+      ],
+      at: { waste: [], blocks: [0, 1, 2, 3, 4], kernel: [5, 6], share: [7, 8, 9], sim: [1, 3] },
+    },
+    checks: [
+      { phase: 'blocks', q: 'With PagedAttention, how much KV memory can a request waste?', options: ['At most the unfilled part of its last block', 'Its maximum length minus its current length', 'Nothing at all', 'Half of its blocks'], answer: 0, why: 'Blocks are handed out one at a time as the sequence grows, so only the last, partly filled block has empty slots.' },
+      { phase: 'share', q: 'Two samples share a prompt block that is only partly full. What happens when one of them writes its next token?', options: ['It copies the block first, then writes into its own copy', 'It overwrites the shared block', 'Both samples stop', 'The prompt is recomputed'], answer: 0, why: 'Copy-on-write: a block with a reference count above 1 is copied before it is changed, so the other sample still sees the original.' },
+    ],
+    recap: [
+      'Reserving each request’s maximum length wastes most of the KV cache and limits how many requests run at once.',
+      'PagedAttention stores the cache in small blocks allocated on demand and found through a block table.',
+      'Blocks can be shared between sequences with copy-on-write, and the saved memory becomes a larger batch.',
+    ],
+  },
   llama: {
     refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {
