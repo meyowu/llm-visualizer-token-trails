@@ -264,7 +264,7 @@ export function mountLayerNorm(root: HTMLElement, nav: Nav): () => void {
   })
 
   const CAPS: Record<string, [string, string]> = {
-    stream: ['The residual stream runs straight through every block. Each sub-layer reads a normalised copy of it and adds its result back, so information is only ever added. That direct path from input to output is what keeps training stable through many blocks. The 2017 Transformer normalised after each add (post-LN); GPT-2 normalises the copy before each sub-layer (pre-LN), which trains more stably. Click attn or mlp to open them.', 'GPT-2: pre-LN, 12 blocks'],
+    stream: ['The residual stream runs straight through every block: each sub-layer reads a normalised copy and adds its result back, so information is only ever added, and that direct path keeps training stable. GPT-2 normalises before each sub-layer (pre-LN); the 2017 Transformer normalised after each add. Click attn or mlp to open them.', 'GPT-2: pre-LN, 12 blocks'],
     mean: ['LayerNorm works on one token at a time, over its features. First the mean of the token\'s features is subtracted, so they centre on 0. (BatchNorm, common in vision, normalises each feature across a batch instead; a token\'s result would then depend on the other sequences in the batch, so Transformers use LayerNorm.)', 'μ over 768 features'],
     scale: ['Then everything is divided by the standard deviation, so every token\'s features have the same spread no matter how large the stream has grown. That keeps each sub-layer\'s input in a range it was trained on.', 'σ = √(var + ε)'],
     affine: ['Finally each feature is scaled by γ and shifted by β, both learned. The result X is what the attention layer receives.', 'X = γ ⊙ x̂ + β'],

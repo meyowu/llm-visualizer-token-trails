@@ -370,7 +370,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
   }
 
   const CAPS: Record<string, [string, string]> = {
-    qkv: ['X (after ln_1) is multiplied by W_Q, W_K and W_V (GPT-2 adds biases too; the toy leaves them out). A query is what a token is looking for, a key is what it offers, and a value is what it hands over when chosen. For example, Ġthe might look for the noun it belongs to. GPT-2 does all three in one GEMM, X · W_qkv.', 'GPT-2 [N×768]·[768×2304] + b · 3.5 MFLOPs / token'],
+    qkv: ['X (after ln_1) is multiplied by W_Q, W_K and W_V; GPT-2 adds biases, the toy leaves them out. A query is what a token looks for, a key what it offers, a value what it hands over when chosen. GPT-2 does all three in one GEMM, X · W_qkv.', 'GPT-2 [N×768]·[768×2304] + b · 3.5 MFLOPs / token'],
     scores: ["Q times K transposed. Row i, column j is the dot product of token i's query with token j's key: how much i should attend to j. Each head works in its own slice of d_model / heads numbers (64 in GPT-2, 4 here). The grid is N × N: 25 cells here, over a million per head at 1,024 tokens, so doubling the context quadruples this step.", 'GPT-2 12 × [N×64]·[64×N]'],
     scale: ['Divide by √d_head. Dot products grow with dimension; scaling keeps softmax from saturating from the start.', 'toy ÷ 2 · GPT-2 ÷ 8'],
     mask: ['Position i predicts token i + 1, so it may only look at positions ≤ i: the upper triangle is set to −∞. In training every position is predicted at once, and without the mask each could just read the next word.', 'causal: j > i → −∞'],

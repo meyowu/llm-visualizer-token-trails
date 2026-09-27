@@ -74,13 +74,13 @@ const COMPARE: Record<string, [string, string]> = {
 }
 
 const CAPS: Record<string, [string, string]> = {
-  rnn: ['Before 2017, translation models were recurrent neural networks (RNNs): they read a sentence one token at a time, and each step needs the result of the one before, so a GPU cannot run the steps side by side. Self-attention links every pair of positions in one matrix product, so a whole sentence is processed at once.', 'RNN: n steps · attention: 1'],
+  rnn: ['Before 2017, translation models were recurrent neural networks (RNNs) that read a sentence one token at a time: each step needs the one before, so a GPU cannot run them side by side. Self-attention links every pair of positions in one matrix product.', 'RNN: n steps · attention: 1'],
   blocks: ['GPT-2 is one stack. The 2017 Transformer has two: an encoder that reads the source sentence and a decoder that writes the translation, reading the encoder’s output through cross-attention. It also normalises after each residual add, uses fixed sinusoids for positions and ReLU in the MLP. Click a label to jump to that change.', '6 encoder + 6 decoder layers · d_model 512'],
   translate: ['The encoder reads the English sentence once. The decoder then writes German one token at a time, like GPT-2, and each pass reads the encoder’s output. In training, the correct translation is fed in (teacher forcing) and the causal mask hides the future, so all positions run in one pass.', 'encoder once · decoder once per token'],
   masks: ['There are three attentions, and they all compute softmax(Q·Kᵀ / √d_k) · V. The encoder sees the whole source, the decoder sees only earlier target tokens, and cross-attention lets each target token see the whole source. GPT-2 has only the middle kind.', 'source × source · target × target · target × source'],
   cross: ['In cross-attention the queries come from the decoder and the keys and values from the encoder output, so the score matrix is target × source and is not square. Each row looks for the source word it needs next: ‘gesehen’ goes back to ‘seen’, although German moves it to the end. Hover the cells.', 'Q 7 × d_k · Kᵀ d_k × 6 → 7 × 6'],
-  postln: ['The 2017 model normalises after each residual add (post-LN), so LayerNorm sits on the stream’s main path. Deep post-LN models train poorly without a long learning-rate warmup (4,000 steps in the paper). GPT-2 normalises the copy each sub-layer reads (pre-LN) instead: the main path only adds, the stream grows, and one final LayerNorm, ln_f, tidies it up.', 'LN(x + f(x)) → x + f(LN(x))'],
-  pos: ['Attention ignores order, so both models add a position vector to each token. The 2017 model computes it from sine and cosine waves: no parameters, and a vector for any position. GPT-2 learns a table of 1,024 rows instead. Each sin/cos pair turns like a clock hand, so a shift by k positions is a fixed rotation, the idea RoPE later moved into attention.', 'PE(pos, 2i) = sin(pos / 10000^(2i/d_model))'],
+  postln: ['The 2017 model normalises after each residual add (post-LN), which puts LayerNorm on the stream’s main path; deep post-LN models need a long learning-rate warmup (4,000 steps in the paper). GPT-2 normalises the copy each sub-layer reads (pre-LN), so the main path only adds.', 'LN(x + f(x)) → x + f(LN(x))'],
+  pos: ['Attention ignores order, so both models add a position vector to each token. The 2017 model computes it from sine and cosine waves, with no parameters and for any position; GPT-2 learns a table of 1,024 rows. Moving k positions turns each sin/cos pair by a fixed angle.', 'PE(pos, 2i) = sin(pos / 10000^(2i/d_model))'],
 }
 
 export function mountTransformer2017(root: HTMLElement, nav: Nav): () => void {
@@ -461,7 +461,7 @@ function scenes({ stage, ctx, mk, k }: Env) {
       caption(`post-LN ${fmt(flat)}`, X(12) + 10, Y(flat) + 4, pa, C.ink2, 'left')
       caption('= √768, γ = 1', X(12) + 10, Y(flat) + 20, pa, C.mute, 'left')
     }
-    mk.formula = { segs: [['pre-LN  x + f(LN(x))', C.ink2], ['     ·     ', C.mute], ['post-LN  LN(x + f(x))', C.ink]], note: 'The GPT-2 line is real: the mean length of its residual stream on “The cat sat on the floor”, after the embedding and after each block (the first position left out). Post-LN resets the length after every sub-layer; the dashed line assumes γ = 1 at GPT-2’s width.' }
+    mk.formula = { segs: [['pre-LN  x + f(LN(x))', C.ink2], ['     ·     ', C.mute], ['post-LN  LN(x + f(x))', C.ink]], note: 'Because its main path is never normalised, GPT-2 adds one final LayerNorm, ln_f, before the output. The GPT-2 line is real: the mean length of its residual stream on “The cat sat on the floor”, after the embedding and after each block (the first position left out). Post-LN resets the length after every sub-layer; the dashed line assumes γ = 1 at GPT-2’s width.' }
   }
 
   /* ---------- scene 7: sinusoids vs learned positions ---------- */
@@ -528,7 +528,7 @@ function scenes({ stage, ctx, mk, k }: Env) {
       const dim = peDim(f.j), i2 = dim - (dim & 1)
       mk.formula = { segs: [[`PE[${f.i}, ${dim}]`, C.ink], ['  =  ', C.mute], [`${dim & 1 ? 'cos' : 'sin'}(${f.i} / 10000^(${i2}/512))`, C.ink2], ['  =  ', C.mute], [fmtF(PEV[f.i][f.j]), C.ink]], note: 'Computed, not learned: the same formula gives a vector for any position, with no parameters.' }
     } else if (f) mk.formula = { segs: [[`W_P[${f.i}, ${f.j}]`, C.ink], ['  =  ', C.mute], [fmtF(WP[f.i][f.j]), C.ink]], note: 'Learned during training, one row per position up to 1,023. Row 0 has a few very large values (drawn at full strength).' }
-    else mk.formula = { segs: [['PE(pos, 2i) = sin(pos / 10000^(2i / d_model))', C.ink], ['     ·     ', C.mute], ['PE(pos, 2i+1) = cos(…)', C.ink]], note: 'Wavelengths grow from 2π to 10,000 · 2π across the dimensions. Vaswani et al. also tried learned positions and got nearly the same results; they kept sinusoids in the hope that they extend to sentences longer than any seen in training.' }
+    else mk.formula = { segs: [['PE(pos, 2i) = sin(pos / 10000^(2i / d_model))', C.ink], ['     ·     ', C.mute], ['PE(pos, 2i+1) = cos(…)', C.ink]], note: 'Wavelengths grow from 2π to 10,000 · 2π across the dimensions. Vaswani et al. also tried learned positions and got nearly the same results; they kept sinusoids in the hope that they extend to sentences longer than any seen in training. The same rotation idea became RoPE (LLaMA), applied inside attention.' }
   }
 
   return { rnn: sceneRnn, blocks: sceneBlocks, translate: sceneTranslate, masks: sceneMasks, cross: sceneCross, postln: scenePostLn, pos: scenePos }
