@@ -200,7 +200,8 @@ window.addEventListener('keydown', (e) => {
 /** "Save frame": the drawing as it is now, as a PNG. */
 function saveButton(route: string, root: HTMLElement) {
   const cv = root.querySelector('.stage canvas') as HTMLCanvasElement | null, meta = root.querySelector('.controls .meta')
-  if (!cv || !meta) return
+  // the single-file preview runs where pages may not download files, so it has no Save button
+  if (!cv || !meta || import.meta.env.MODE === 'artifact') return
   const b = document.createElement('button')
   b.type = 'button'; b.className = 'cycle'; b.textContent = 'Save frame'; b.title = 'Download the drawing as a PNG'
   b.addEventListener('click', () => cv.toBlob((blob) => {
