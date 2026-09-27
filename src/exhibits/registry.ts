@@ -1,4 +1,5 @@
 import { mountAttention } from './transformer/attention'
+import { mountMlp } from './transformer/mlp'
 import { mountOverview } from './transformer/overview'
 
 /** Navigate to a route; `origin` (client coords) is where the zoom transition starts. */
@@ -29,7 +30,7 @@ export const CATEGORIES: Category[] = [
       { name: 'Tokenizer', tag: 'byte-level BPE' },
       { name: 'Embedding', tag: 'W_E · positions' },
       { name: 'Attention', tag: 'QKᵀ · softmax · V', route: 'transformer/attention', mount: mountAttention },
-      { name: 'MLP', tag: '768 → 3072 → 768' },
+      { name: 'MLP', tag: '768 → 3072 → 768', route: 'transformer/mlp', mount: mountMlp },
       { name: 'LayerNorm & Residual', tag: 'pre-LN stream' },
       { name: 'Unembed & Sampling', tag: 'logits · temperature' },
     ],

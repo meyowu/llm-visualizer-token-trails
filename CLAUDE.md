@@ -22,19 +22,21 @@ src/core/stage.ts           Stage: DPR-aware canvas (min size, scrolls horizonta
 src/core/player.ts          Player: phases, t, play/pause, speed, scrubbable timeline, keyboard shortcuts
 src/core/frame.ts           createFrame(): header/specs, stage host, caption line, controls; toggle()
 src/core/draw.ts            primitives: chips, plate(), bracketLabel(), mathName()/mathRun(), fonts F
+src/core/matrix.ts          MatrixKit: drawMat (slabs), gemm() schedules, gemmOverlay, hover hits, formula line
 src/core/theme.ts           canvas palette C (read from CSS tokens), rgba/mixc/blend/pop
 src/exhibits/registry.ts    categories + exhibits; an item is live when it has `route` and `mount`
 src/exhibits/transformer/
-  model.ts                  GPT-2 ids, canned next-token distribution, toy attention block, overview pass data
-  overview.ts               forward pass, tokenizer → sampling
+  model.ts                  GPT-2 ids, canned next-token distribution, toy attention + MLP blocks, overview pass data
+  overview.ts               forward pass, tokenizer → sampling; attn/mlp plates open the detail views
   attention.ts              attention detail view, every GEMM animated cell by cell
+  mlp.ts                    MLP detail view: up-projection, GELU curve, down-projection, residual
 ```
 
 ## Adding an exhibit or detail view
 
 1. Write `mountX(root, nav): () => void`: `createFrame` → `new Stage` → `new Player(PHASES, frame.controls)` → `runLoop` that ticks, draws, updates the timeline UI and sets the caption. Return a destroy that stops the loop and calls `player.destroy()` and `stage.destroy()`.
 2. Register it in `registry.ts` (`route` + `mount`). A route one level deeper than the current one (`transformer/mlp`) opens with a zoom-in.
-3. To open a detail view from the overview, hit-test its plate in `overview.ts` (see `onAttnPlate`), highlight it on hover with `drawOpenHint`, and call `nav(route, {x: e.clientX, y: e.clientY})`. Mention the click in that phase's caption.
+3. To open a detail view from the overview, add its plate to `plateAt` / `PLATE_ROUTES` in `overview.ts` (hover highlight and `drawOpenHint` follow). Mention the click in that phase's caption.
 
 ## Conventions
 
@@ -43,9 +45,9 @@ src/exhibits/transformer/
 - **Detail-view pattern** (follow `attention.ts`):
   - One `sceneX(p)` per group of phases.
   - Each scene has a layout computed in `geom()`, laid out so that a GEMM's A row i lines up with C row i and B column j lines up with C column j (A left, B above, C at the intersection). Transitions lerp matrix rects between scene layouts.
-  - `gemm(p, m, n, K, 'slow'|'fast')` schedules cells. `resolve()` picks the hovered cell or the animated one. `gemmOverlay()` draws the row/column highlights and the dashed guides, and sets the formula line at the bottom.
-  - Register hoverable result matrices in `hits` every frame.
-- **Toy vs real scale.** Compute real arithmetic at toy size (`TOY` in `model.ts`: d_model 8, d_head 4, 2 heads). Always show the GPT-2 small shape next to it (`real` on matrices, `N × 768` etc., and `value / real` in the header specs).
+  - Use `MatrixKit` from `core/matrix.ts`: `gemm(p, m, n, K, 'slow'|'fast')` schedules cells, `mk.resolve()` picks the hovered cell or the animated one, `mk.gemmOverlay()` draws the highlights and guides and sets the formula line. It supports a transposed B (`bT`, used for W_projᵀ in `mlp.ts`) and bias vectors.
+  - Call `mk.begin()` each frame and register hoverable result matrices with `mk.hit()`.
+- **Toy vs real scale.** Compute real arithmetic at toy size (`TOY` in `model.ts`: d_model 8, d_head 4, 2 heads; `TOY_FF` 32). Always show the GPT-2 small shape next to it (`real` on matrices, `N × 768` etc., and `value / real` in the header specs).
 - **Visual language is fixed.** The user approved it; don't redesign it.
   - Colors come only from `C` / the CSS tokens. Never hard-code hex in drawing code, and check both themes.
   - Each token keeps its hue (`--t0…--t6`, token i → `i % 7`) everywhere. Information mixing between tokens is shown by blending hues, and the blend must match the overview's lanes (`mixStep` / `laneCols`).
@@ -58,4 +60,8 @@ src/exhibits/transformer/
 
 - The browser pane's `preview_start` with the `dev` config has failed to serve before. If :5173 doesn't answer, run `npx vite --port 5174` in the background and navigate there. A hidden pane throttles rAF, so take a fresh screenshot before judging a frozen frame.
 - Unicode subscripts don't render in Newsreader; use `mathRun()` for math with subscripts.
-- The repo is private: github.com/meyowu/token-trails. Commit only when asked, and branch off `main` for larger changes.
+- The repo is private: github.com/meyowu/token-trails.
+
+## Shipping
+
+When a piece of work is finished and verified, ship it without asking: commit on `main`, push, then `npm run build:artifact` and republish `dist-artifact/index.html` to the existing preview Artifact (https://claude.ai/artifact/RbScAmBiuDJhyQ9xvgG9vz) by its `url`.

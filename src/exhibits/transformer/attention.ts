@@ -1,11 +1,12 @@
 import { createFrame, toggle } from '../../core/frame'
 import { Player } from '../../core/player'
 import { Stage, runLoop } from '../../core/stage'
-import { C, blend, rgba, type RGB } from '../../core/theme'
+import { C, blend, rgba } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
-import { F, chipW, drawChip, mathName, mathRun, plate, subLabel, tokLabel, useCtx } from '../../core/draw'
+import { F, chipW, drawChip, mathName, mathRun, plate, subLabel, useCtx } from '../../core/draw'
+import { MatrixKit, fmt, gemm, lr, type M, type Rect } from '../../core/matrix'
 import type { Nav } from '../registry'
-import { TOY, attention, promptTokens, transpose, type M } from './model'
+import { TOY, attention, promptTokens, transpose } from './model'
 
 /*
  * Attention, opened up. One head of block 1 at toy scale (d_model 8, d_head 4), with every
@@ -23,43 +24,12 @@ const PHASES = [
   { id: 'out', name: 'Output projection', short: 'W_O', dur: 6 },
 ]
 
-interface Rect { x: number; y: number; c: number }
-const lr = (a: Rect, b: Rect, t: number): Rect => ({ x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t), c: lerp(a.c, b.c, t) })
-
-type Kind = 'row' | 'col' | 'w' | 'score' | 'attn'
-type Seg = [string, RGB, number?]
-interface Gemm { rev: (i: number, j: number) => number; cur: { i: number; j: number; k: number } | null }
-interface Focus { key: string; i: number; j: number; k: number }
-
-/** Compact numbers for cells: .57, −1.3, 12. */
-const fmt = (v: number) => {
-  if (!isFinite(v)) return v < 0 ? '−∞' : '∞'
-  const s = v < 0 ? '−' : '', a = Math.abs(v)
-  if (a >= 9.95) return s + a.toFixed(0)
-  if (a >= 0.995) return s + a.toFixed(1)
-  return s + a.toFixed(2).slice(1)
-}
 const SUBS = '₀₁₂₃₄₅₆₇₈₉'
-
-/**
- * Cell schedule of one GEMM over progress p ∈ [0,1].
- * slow: the first cell accumulates term by term, the rest of row 0 follows, then rows sweep.
- * fast: rows sweep from the start.
- */
-function gemm(p: number, m: number, n: number, K: number, mode: 'slow' | 'fast'): Gemm {
-  const td = (i: number, j: number) => mode === 'slow'
-    ? i === 0 && j === 0 ? 0.34 : i === 0 ? 0.34 + j * (0.18 / Math.max(1, n - 1)) : 0.52 + (i - 1 + (j + 1) / n) * (0.44 / Math.max(1, m - 1))
-    : ((i + (j + 1) / n) / m) * 0.96
-  let cur: Gemm['cur'] = null, best = Infinity
-  if (p > 0) for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) { const t = td(i, j); if (t > p && t < best) { best = t; cur = { i, j, k: K } } }
-  if (cur && mode === 'slow' && cur.i === 0 && cur.j === 0) cur.k = clamp(p / 0.34) * K
-  return { rev: (i, j) => (p >= td(i, j) ? 1 : 0), cur }
-}
 
 export function mountAttention(root: HTMLElement, nav: Nav): () => void {
   const reduced = reducedMotion()
   const seq = promptTokens(), N = seq.length, R = attention(seq)
-  const S = { head: 0, hover: null as null | { key: string; i: number; j: number } }
+  const S = { head: 0 }
 
   const frame = createFrame(root, {
     eyebrow: 'Transformer · Attention',
@@ -83,8 +53,6 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
   })
   const prog = (id: string) => player.prog(id)
   const hd = () => R.heads[S.head]
-  const tokRGB = (i: number) => C.tok[seq[i].c % 7]
-  const tl = (i: number) => tokLabel(seq[i].text)
 
   /* ---------- layouts, one per scene ---------- */
   const pad = 36, tokW = 76, top = 60, bot = 96
@@ -130,158 +98,11 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
   geom()
 
   /* ---------- matrix drawing ---------- */
-  let hits: { key: string; r: Rect; rows: number; cols: number }[] = []
-  let formula: { segs: Seg[]; note: string } | null = null
-
-  /** The 2.5D slab under a matrix: a right and a bottom face. */
-  function slab(x: number, y: number, w: number, h: number, a: number) {
-    const d = 5
-    ctx.fillStyle = rgba(C.ink, 0.07 * a)
-    ctx.beginPath(); ctx.moveTo(x + w, y); ctx.lineTo(x + w + d, y + d); ctx.lineTo(x + w + d, y + h + d); ctx.lineTo(x + w, y + h); ctx.closePath(); ctx.fill()
-    ctx.fillStyle = rgba(C.ink, 0.045 * a)
-    ctx.beginPath(); ctx.moveTo(x, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w + d, y + h + d); ctx.lineTo(x + d, y + h + d); ctx.closePath(); ctx.fill()
-  }
-  /** Filled = positive, outlined = negative. Returns the fill alpha so text can pick a contrasting colour. */
-  function paintCell(x: number, y: number, c: number, v: number, vmax: number, hue: RGB | null, strength: number, a: number) {
-    const m = Math.min(1, Math.abs(v) / vmax)
-    if (v < 0) {
-      ctx.fillStyle = rgba(C.neg, (0.03 + 0.14 * m) * a); ctx.fillRect(x + 0.5, y + 0.5, c - 1, c - 1)
-      ctx.strokeStyle = rgba(C.neg, (0.18 + 0.5 * m) * a); ctx.lineWidth = 1; ctx.strokeRect(x + 2.5, y + 2.5, c - 5, c - 5)
-      return 0
-    }
-    const fa = hue ? 0.1 + 0.72 * m : 0.05 + strength * m
-    ctx.fillStyle = rgba(hue ?? C.ink, fa * a); ctx.fillRect(x + 0.5, y + 0.5, c - 1, c - 1)
-    return fa
-  }
-  function paintAttn(x: number, y: number, c: number, v: number, hue: RGB, a: number) {
-    const fa = 0.05 + 0.9 * Math.sqrt(Math.max(0, v))
-    ctx.fillStyle = rgba(hue, fa * a); ctx.fillRect(x + 0.5, y + 0.5, c - 1, c - 1)
-    return fa
-  }
-  function hatch(x: number, y: number, c: number, a: number) {
-    ctx.save(); ctx.beginPath(); ctx.rect(x + 0.5, y + 0.5, c - 1, c - 1); ctx.clip()
-    ctx.fillStyle = rgba(C.ink, 0.025 * a); ctx.fillRect(x, y, c, c)
-    ctx.strokeStyle = rgba(C.ink, 0.13 * a); ctx.lineWidth = 1
-    for (let d = -c; d < c; d += 5) { ctx.beginPath(); ctx.moveTo(x + d, y + c); ctx.lineTo(x + d + c, y); ctx.stroke() }
-    ctx.restore()
-  }
-  function cellText(t: string, x: number, y: number, c: number, fa: number, a: number, weak = false) {
-    if (!t || c < 17) return
-    ctx.font = F.mono(clamp(c * 0.3, 8, 11)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-    ctx.fillStyle = rgba(fa > 0.55 ? C.bg : weak ? C.ink2 : C.ink, (weak ? 0.7 : 0.9) * a)
-    ctx.fillText(t, x + c / 2, y + c / 2 + 0.5)
-  }
-
-  interface MatOpts {
-    r: Rect; vals: M; kind: Kind; alpha: number
-    name: string; shape: string; real?: string
-    label?: 'top' | 'bottom' | 'none'; labelAlpha?: number
-    reveal?: (i: number, j: number) => number
-    rowCols?: RGB[]
-    colToks?: boolean
-    /** Custom cell painter; returns fill alpha. */
-    paint?: (x: number, y: number, c: number, i: number, j: number, a: number) => number
-    text?: (i: number, j: number) => string
-  }
-  function drawMat(o: MatOpts) {
-    const { r, vals, alpha } = o
-    if (alpha <= 0.01) return
-    const rows = vals.length, cols = vals[0].length, c = r.c, w = cols * c, h = rows * c
-    const vmax = Math.max(1e-6, ...vals.flat().filter((v) => isFinite(v)).map(Math.abs))
-    slab(r.x, r.y, w, h, alpha)
-    for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++) {
-      const x = r.x + j * c, y = r.y + i * c, rv = o.reveal ? o.reveal(i, j) : 1
-      if (rv <= 0) { ctx.strokeStyle = rgba(C.ink, 0.1 * alpha); ctx.lineWidth = 1; ctx.strokeRect(x + 1.5, y + 1.5, c - 3, c - 3); continue }
-      const a = alpha * rv, v = vals[i][j]
-      let fa: number
-      if (o.paint) fa = o.paint(x, y, c, i, j, a)
-      else if (o.kind === 'attn') fa = paintAttn(x, y, c, v, tokRGB(j), a)
-      else {
-        const hue = o.kind === 'row' ? o.rowCols?.[i] ?? tokRGB(i) : o.kind === 'col' ? tokRGB(j) : null
-        fa = paintCell(x, y, c, v, vmax, hue, o.kind === 'w' ? 0.3 : 0.45, a)
-      }
-      cellText(o.text ? o.text(i, j) : fmt(v), x, y, c, fa, a, o.kind === 'w')
-    }
-    ctx.strokeStyle = rgba(C.ink, 0.22 * alpha); ctx.lineWidth = 1; ctx.strokeRect(r.x + 0.5, r.y + 0.5, w - 1, h - 1)
-    if (o.colToks) {
-      ctx.font = F.mono(10); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'
-      for (let j = 0; j < cols; j++) { ctx.fillStyle = rgba(tokRGB(j), alpha); ctx.fillText(tl(j), r.x + (j + 0.5) * c, r.y - 8) }
-    }
-    if (o.label !== 'none') {
-      const la = alpha * (o.labelAlpha ?? 1)
-      const ly = o.label === 'bottom' ? r.y + h + 24 : r.y - (o.colToks ? 28 : 11)
-      const w1 = mathName(o.name, r.x, ly, la, 18)
-      ctx.font = F.mono(10.5); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'
-      ctx.fillStyle = rgba(C.mute, la); ctx.fillText(o.shape, r.x + w1 + 8, ly)
-      if (o.real) { const w2 = ctx.measureText(o.shape).width; ctx.fillStyle = rgba(C.mute, 0.55 * la); ctx.fillText('· ' + o.real, r.x + w1 + 8 + w2 + 6, ly) }
-    }
-  }
-  /** Token chips to the left of a row-per-token matrix. */
-  function rowChips(r: Rect, a: number, hl = -1) {
-    if (a <= 0.01) return
-    const h = Math.min(20, r.c * 0.72)
-    seq.forEach((t, i) => drawChip(r.x - 10 - chipW(t.text), r.y + (i + 0.5) * r.c, t, a * (hl < 0 || hl === i ? 1 : 0.45), h, hl === i))
-  }
-
-  /* ---------- GEMM focus ---------- */
-  function resolve(states: Record<string, { g: Gemm; K: number }>): Focus | null {
-    const h = S.hover
-    if (h && states[h.key] && states[h.key].g.rev(h.i, h.j)) return { key: h.key, i: h.i, j: h.j, k: states[h.key].K }
-    for (const [key, s] of Object.entries(states)) if (s.g.cur) return { key, ...s.g.cur }
-    return null
-  }
-  function gemmSegs(cN: string, aN: string, bN: string, i: number, j: number, a: number[], b: number[], k: number): Seg[] {
-    const K = a.length, done = k >= K, cur = Math.min(K - 1, Math.floor(k)), upto = done ? K : cur + 1
-    const segs: Seg[] = [[`${cN}[${i},${j}]`, C.ink], ['  =  ', C.mute], [`Σₖ ${aN}[${i},k]·${bN}[k,${j}]`, C.mute], ['  =  ', C.mute]]
-    const idx = [...Array(upto).keys()]
-    const shown = idx.length > 6 ? [...idx.slice(0, 3), -1, ...idx.slice(-2)] : idx
-    shown.forEach((t, n) => {
-      if (n) segs.push([' + ', C.mute])
-      if (t < 0) segs.push(['…', C.mute])
-      else segs.push([`${fmt(a[t])}×${fmt(b[t])}`, !done && t === cur ? C.ink : C.ink2])
-    })
-    let sum = 0
-    for (let t = 0; t < upto; t++) sum += a[t] * b[t]
-    segs.push(['  =  ', C.mute], [fmt(sum) + (done ? '' : ' …'), done ? C.ink : C.mute])
-    return segs
-  }
-  /** Highlight A's row and B's column, the active term pair, and the C cell being written. */
-  function gemmOverlay(o: { A: Rect; Av: M; B: Rect; Bv: M; C: Rect; f: Focus; names: [string, string, string]; note: string }) {
-    const { i, j, k } = o.f, K = o.Av[0].length, done = k >= K, kc = Math.min(K - 1, Math.floor(k))
-    const aRow = o.Av[i], bCol = o.Bv.map((r) => r[j])
-    const Ac = o.A.c, Bc = o.B.c, Cc = o.C.c
-    const ay = o.A.y + (i + 0.5) * Ac, bx = o.B.x + (j + 0.5) * Bc
-    ctx.setLineDash([2, 4]); ctx.strokeStyle = rgba(C.ink, 0.4); ctx.lineWidth = 1
-    ctx.beginPath(); ctx.moveTo(o.A.x + K * Ac + 3, ay); ctx.lineTo(o.C.x + j * Cc - 3, ay); ctx.stroke()
-    ctx.beginPath(); ctx.moveTo(bx, o.B.y + K * Bc + 3); ctx.lineTo(bx, o.C.y + i * Cc - 3); ctx.stroke()
-    ctx.setLineDash([])
-    ctx.strokeStyle = rgba(C.ink, 0.9); ctx.lineWidth = 1.5
-    ctx.strokeRect(o.A.x - 1, o.A.y + i * Ac - 1, K * Ac + 2, Ac + 2)
-    ctx.strokeRect(o.B.x + j * Bc - 1, o.B.y - 1, Bc + 2, K * Bc + 2)
-    if (!done) {
-      ctx.fillStyle = rgba(C.ink, 0.22)
-      ctx.fillRect(o.A.x + kc * Ac, o.A.y + i * Ac, Ac, Ac); ctx.fillRect(o.B.x + j * Bc, o.B.y + kc * Bc, Bc, Bc)
-      ctx.lineWidth = 2
-      ctx.strokeRect(o.A.x + kc * Ac, o.A.y + i * Ac, Ac, Ac); ctx.strokeRect(o.B.x + j * Bc, o.B.y + kc * Bc, Bc, Bc)
-    }
-    const cx = o.C.x + j * Cc, cy = o.C.y + i * Cc
-    if (!done) {
-      let part = 0
-      for (let t = 0; t <= kc; t++) part += aRow[t] * bCol[t]
-      ctx.fillStyle = rgba(C.ink, 0.1); ctx.fillRect(cx, cy, Cc, Cc)
-      cellText(fmt(part), cx, cy, Cc, 0, 1)
-    }
-    ctx.lineWidth = 2; ctx.strokeStyle = rgba(C.ink, 1); ctx.strokeRect(cx, cy, Cc, Cc)
-    formula = { segs: gemmSegs(...o.names, i, j, aRow, bCol, k), note: o.note }
-  }
-  function drawFormula() {
-    if (!formula) return
-    const y = stage.H - 46
-    let x = pad
-    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.font = F.mono(12)
-    for (const [t, col, a] of formula.segs) { ctx.fillStyle = rgba(col, a ?? 1); ctx.fillText(t, x, y); x += ctx.measureText(t).width }
-    if (formula.note) { ctx.font = F.body; ctx.fillStyle = rgba(C.mute); ctx.fillText(formula.note, pad, y + 21) }
-  }
+  const mk = new MatrixKit(stage, seq, pad)
+  const { tokRGB, tl } = mk
+  const drawMat = mk.drawMat.bind(mk), rowChips = mk.rowChips.bind(mk), paintCell = mk.paintCell.bind(mk)
+  const paintAttn = mk.paintAttn.bind(mk), hatch = mk.hatch.bind(mk), cellText = mk.cellText.bind(mk)
+  const resolve = mk.resolve.bind(mk), gemmOverlay = mk.gemmOverlay.bind(mk)
 
   /* ---------- colour of a token after attention (matches the overview's lanes) ---------- */
   const hues = () => seq.map((_, i) => tokRGB(i))
@@ -311,7 +132,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     ;(['Q', 'K', 'V'] as const).forEach((k) => {
       drawMat({ r: Wr[k], vals: W[k], kind: 'w', alpha: pw, name: 'W_' + k, shape: '8 × 4', real: '768 × 64' })
       drawMat({ r: Rr[k], vals: Rm[k], kind: 'row', alpha: pw, name: k, shape: '5 × 4', real: 'N × 64', label: 'bottom', reveal: st[k].g.rev })
-      hits.push({ key: k, r: Rr[k], rows: N, cols: 4 })
+      mk.hit(k, Rr[k], N, 4)
     })
     const f = resolve(st)
     if (f) {
@@ -373,7 +194,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
       },
       text: (i, j) => (maskP(i, j) > 0.5 ? (softR(i) > 0.5 ? '0' : '−∞') : softR(i) > 0.5 ? fmt(h.A[i][j]) : fmt(vals[i][j])),
     })
-    hits.push({ key: 'S', r: L.S, rows: N, cols: N })
+    mk.hit('S', L.S, N, N)
     // row sums once a row has been normalised
     for (let i = 0; i < N; i++) {
       const a = clamp((softR(i) - 0.8) / 0.2)
@@ -392,17 +213,17 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     if (f && pc === 0) {
       gemmOverlay({ A: L.Q, Av: h.Q, B: L.KT, Bv: transpose(h.K), C: L.S, f, names: ['S', 'Q', 'Kᵀ'], note: `${tl(f.i)}'s query · ${tl(f.j)}'s key: the higher the score, the more ${tl(f.i)} attends to ${tl(f.j)}.` })
     } else if (pso > 0) {
-      const i = S.hover?.key === 'S' ? S.hover.i : Math.min(N - 1, Math.floor(clamp(pso / 0.87) * N))
+      const i = mk.hover?.key === 'S' ? mk.hover.i : Math.min(N - 1, Math.floor(clamp(pso / 0.87) * N))
       const row = h.Ss[i].slice(0, i + 1), arow = h.A[i].slice(0, i + 1)
-      formula = {
+      mk.formula = {
         segs: [[`A[${i}]`, C.ink], ['  =  softmax( ', C.mute], [row.map(fmt).join(', '), C.ink2], [' )  =  ', C.mute], [arow.map((v) => v.toFixed(2)).join(', '), C.ink]],
         note: `The ${i + 1} tokens ${tl(i)} can see: exponentiate, divide by the sum. The largest score takes most of the weight.`,
       }
       ctx.strokeStyle = rgba(C.ink, 0.9); ctx.lineWidth = 1.5; ctx.strokeRect(L.S.x - 1, L.S.y + i * c - 1, N * c + 2, c + 2)
     } else if (pm > 0) {
-      formula = { segs: [['S′[i,j]  =  −∞', C.ink], ['    when j > i', C.mute]], note: 'Token i sees only itself and earlier tokens. exp(−∞) = 0, so these weights become 0.' }
+      mk.formula = { segs: [['S′[i,j]  =  −∞', C.ink], ['    when j > i', C.mute]], note: 'Token i sees only itself and earlier tokens. exp(−∞) = 0, so these weights become 0.' }
     } else if (pc > 0) {
-      formula = { segs: [['S′  =  S / √d_head  =  S / ', C.ink], [String(Math.sqrt(TOY.dh)), C.ink]], note: `After scaling, the ${tl(N - 1)} row goes from [${h.S[N - 1].map(fmt).join(', ')}] to [${h.Ss[N - 1].map(fmt).join(', ')}].` }
+      mk.formula = { segs: [['S′  =  S / √d_head  =  S / ', C.ink], [String(Math.sqrt(TOY.dh)), C.ink]], note: `After scaling, the ${tl(N - 1)} row goes from [${h.S[N - 1].map(fmt).join(', ')}] to [${h.Ss[N - 1].map(fmt).join(', ')}].` }
     }
   }
 
@@ -439,7 +260,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
       drawMat({ r: Ls.Q, vals: h.Q, kind: 'row', alpha: 1 - tr, name: 'Q', shape: '5 × 4' })
       drawMat({ r: Ls.KT, vals: transpose(h.K), kind: 'col', alpha: 1 - tr, name: 'Kᵀ', shape: '4 × 5', colToks: true })
     }
-    rowChips(lr(Ls.Q, L.A, tr), 1, S.hover && (S.hover.key === 'A' || S.hover.key === 'O') ? S.hover.i : -1)
+    rowChips(lr(Ls.Q, L.A, tr), 1, mk.hovered('A', 'O')?.i ?? -1)
     drawMat({ r: lr(Ls.S, L.A, tr), vals: h.A, kind: 'attn', alpha: 1, name: 'A', shape: '5 × 5', real: 'N × N', colToks: tr > 0.5, paint: attnPaint(h.A), text: attnText(h.A) })
     const vr = lr(Ls.Vp, L.V, tr)
     drawMat({ r: vr, vals: h.V, kind: 'row', alpha: lerp(0.35, 1, tr), name: 'V', shape: '5 × 4', real: 'N × 64' })
@@ -447,10 +268,10 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     for (let j = 0; j < N; j++) { ctx.fillStyle = rgba(tokRGB(j), tr); ctx.fillText(tl(j), vr.x - 8, vr.y + (j + 0.5) * vr.c) }
     const g = gemm((pav - 0.17) / 0.78, N, TOY.dh, N, 'slow')
     drawMat({ r: L.O, vals: h.O, kind: 'row', alpha: tr, name: 'O', shape: '5 × 4', real: 'N × 64', reveal: g.rev, rowCols: oCols(h.A) })
-    hits.push({ key: 'O', r: L.O, rows: N, cols: TOY.dh }, { key: 'A', r: L.A, rows: N, cols: N })
+    mk.hit('O', L.O, N, TOY.dh); mk.hit('A', L.A, N, N)
     const f = resolve({ O: { g, K: N } })
     if (f) gemmOverlay({ A: L.A, Av: h.A, B: L.V, Bv: h.V, C: L.O, f, names: ['O', 'A', 'V'], note: `${tl(f.i)}'s output, dim ${f.j}: dim ${f.j} of every value, weighted by ${tl(f.i)}'s attention.` })
-    const row = S.hover && (S.hover.key === 'A' || S.hover.key === 'O') ? S.hover.i : f ? f.i : pav >= 0.95 ? N - 1 : -1
+    const row = mk.hovered('A', 'O')?.i ?? (f ? f.i : pav >= 0.95 ? N - 1 : -1)
     if (row >= 0) drawPanel(row, tr)
   }
 
@@ -482,7 +303,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     const g = gemm((po - 0.18) / 0.5, N, TOY.d, TOY.d, 'fast')
     const mixed = R.heads[0].A.map((_, i) => blend(hues(), hues().map((__, k) => (R.heads[0].A[i][k] + R.heads[1].A[i][k]) / 2)))
     drawMat({ r: L.Out, vals: R.out, kind: 'row', alpha: pw, name: 'attn_out', shape: '5 × 8', real: 'N × 768', reveal: g.rev, rowCols: mixed })
-    hits.push({ key: 'Out', r: L.Out, rows: N, cols: TOY.d })
+    mk.hit('Out', L.Out, N, TOY.d)
 
     // residual add, then back into the stream
     const pr = clamp((po - 0.72) / 0.22)
@@ -505,21 +326,20 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
 
     const f = resolve({ Out: { g, K: TOY.d } })
     if (f) gemmOverlay({ A: L.CC, Av: R.concat, B: L.Wo, Bv: R.Wo, C: L.Out, f, names: ['out', 'concat', 'W_O'], note: `${tl(f.i)}'s attention output, dim ${f.j}: W_O mixes what the two heads found.` })
-    else if (pr > 0) formula = { segs: [['h′  =  h + attn_out', C.ink]], note: "The result is added to the residual stream, not substituted for it. Each row's color is what that token gathered from the others." }
+    else if (pr > 0) mk.formula = { segs: [['h′  =  h + attn_out', C.ink]], note: "The result is added to the residual stream, not substituted for it. Each row's color is what that token gathered from the others." }
   }
 
   /* ---------- frame ---------- */
   function draw() {
     useCtx(ctx)
     stage.begin()
-    hits = []
-    formula = null
+    mk.begin()
     const ps = prog('scores'), pav = prog('av'), po = prog('out')
     if (ps <= 0) sceneQKV(prog('qkv'))
     else if (pav <= 0) sceneScores(ps, prog('scale'), prog('mask'), prog('softmax'))
     else if (po <= 0) sceneAV(pav)
     else sceneOut(po)
-    drawFormula()
+    mk.drawFormula()
   }
 
   const CAPS: Record<string, [string, string]> = {
@@ -531,19 +351,6 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     av: ['Weight the rows of V by attention and sum them. Output row i blends the values of every visible token, and its color blends with them. The panel on the right breaks down the current row.', 'GPT-2 12 × [N×N]·[N×64]'],
     out: ["Concatenate the heads' outputs, multiply by W_O to mix them, and add the result back to the residual stream for the MLP.", 'GPT-2 [N×768]·[768×768] · 5.9 MFLOPs'],
   }
-
-  /* ---------- pointer ---------- */
-  const cv = stage.canvas
-  cv.addEventListener('pointermove', (e) => {
-    const [x, y] = stage.local(e)
-    S.hover = null
-    for (const hsp of hits) {
-      const j = Math.floor((x - hsp.r.x) / hsp.r.c), i = Math.floor((y - hsp.r.y) / hsp.r.c)
-      if (i >= 0 && j >= 0 && i < hsp.rows && j < hsp.cols) { S.hover = { key: hsp.key, i, j }; break }
-    }
-    cv.style.cursor = S.hover ? 'crosshair' : 'default'
-  })
-  cv.addEventListener('pointerleave', () => { S.hover = null })
 
   if (reduced) player.t = player.start('av') + 4
   const stop = runLoop((dt) => {

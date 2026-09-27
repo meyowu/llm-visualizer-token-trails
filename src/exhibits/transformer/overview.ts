@@ -422,10 +422,10 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     const sent = drawSentence(pT, pS, endFade, isLast, now)
     drawLanes(ys, pts, front, pu, compA)
 
-    const hovA = S.hoverPlate === 'attn'
-    const aAct = Math.max(pa > 0 && pa < 1 ? 1 : 0, hovA ? 0.8 : 0), mAct = pm > 0 && pm < 1 ? 1 : 0
+    const hovA = S.hoverPlate === 'attn', hovM = S.hoverPlate === 'mlp'
+    const aAct = Math.max(pa > 0 && pa < 1 ? 1 : 0, hovA ? 0.8 : 0), mAct = Math.max(pm > 0 && pm < 1 ? 1 : 0, hovM ? 0.8 : 0)
     plate(G.xAttn, py0, py1, aAct); subLabel(hovA ? 'attn ↗' : 'attn', G.xAttn, G.labY + 32, aAct > 0.5)
-    plate(G.xMlp, py0, py1, mAct); subLabel('mlp', G.xMlp, G.labY + 32, mAct > 0.5)
+    plate(G.xMlp, py0, py1, mAct); subLabel(hovM ? 'mlp ↗' : 'mlp', G.xMlp, G.labY + 32, mAct > 0.5)
     G.stack.forEach((x, k) => plate(x, py0, py1, ps > 0 && ps < 1 ? clamp(1 - Math.abs(ps * 11 - k - 0.5) / 1.3) : 0, { w: 6, d: 8 }))
     const lnAct = pu > 0 && pu < 1 ? clamp(1 - Math.abs(pu - 0.2) / 0.2) : 0, wuAct = pu > 0 && pu < 1 ? clamp(1 - Math.abs(pu - 0.55) / 0.3) : 0
     plate(G.xLn, py0, py1, lnAct); subLabel('ln_f', G.xLn, G.labY + 32, lnAct > 0.1)
@@ -439,6 +439,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     drawDist(ys, pts, pu, pS, 1 - endFade)
     drawFlight(pS, isLast)
     if (hovA) drawOpenHint(G.xAttn, py0 - 4)
+    if (hovM) drawOpenHint(G.xMlp, py0 - 4)
   }
 
   /* ---------- captions ---------- */
@@ -450,7 +451,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
         : { t: 'The token sampled in the last pass is appended to the sequence as is, with no re-tokenizing. There is no KV cache here, so the whole sequence is recomputed from scratch.', s: `${N} tokens · +${P.seq[N - 1].id}` }
       case 'embed': return { t: 'Each id selects one row of the embedding matrix W_E, and the position vector for slot i is added. From here on, every token is a 768-wide residual stream.', s: `[${N} × 768]` }
       case 'attn': return { t: 'Each position compares its query with the keys of every earlier position and pulls in their values, weighted by similarity. The causal mask hides the future. Click the attn plate to open up every matrix product.', s: `12 heads × [${N} × ${N}]` }
-      case 'mlp': return { t: 'Each position is expanded to 3,072 dimensions, passed through GELU, and projected back to 768. Positions exchange no information in this step.', s: `[${N} × 768] → [${N} × 3072]` }
+      case 'mlp': return { t: 'Each position is expanded to 3,072 dimensions, passed through GELU, and projected back to 768. Positions exchange no information in this step. Click the mlp plate to see the matrix products and GELU.', s: `[${N} × 768] → [${N} × 3072]` }
       case 'stack': return { t: 'The same block repeats 11 more times. Each block adds its result to the residual stream instead of replacing it; the blending colors trace information moving between positions.', s: '12 blocks · ≈85M params' }
       case 'unembed': return { t: 'Only the last position is used: after ln_f it is dotted with every vocabulary vector, giving 50,257 logits. GPT-2 ties W_U to W_E.', s: '[1 × 768] · W_Eᵀ → [1 × 50,257]' }
       default: {
@@ -462,11 +463,18 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
 
   /* ---------- pointer ---------- */
   const inMat = (x: number, y: number) => { const m = G.mat; return !!m && prog('attn') > 0 && x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h }
-  const onAttnPlate = (x: number, y: number) => Math.abs(x - G.xAttn) < 14 && y > G.plateY[0] - 14 && y < G.plateY[1] + 14
+  /** Plates that open a detail view, keyed by the route they open. */
+  const plateAt = (x: number, y: number) => {
+    if (y < G.plateY[0] - 14 || y > G.plateY[1] + 14) return ''
+    if (Math.abs(x - G.xAttn) < 14) return 'attn'
+    if (Math.abs(x - G.xMlp) < 14) return 'mlp'
+    return ''
+  }
+  const PLATE_ROUTES: Record<string, string> = { attn: 'transformer/attention', mlp: 'transformer/mlp' }
   const cv = stage.canvas
   cv.addEventListener('pointermove', (e) => {
     const [x, y] = stage.local(e), { sp, ys } = curYs()
-    S.hoverPlate = onAttnPlate(x, y) ? 'attn' : ''
+    S.hoverPlate = plateAt(x, y)
     let h = -1
     if (!S.hoverPlate && x > G.xTok - 8 && x < G.xWU + 20) ys.forEach((yy, i) => { if (Math.abs(y - yy) < sp / 2) h = i })
     S.hover = h
@@ -475,7 +483,8 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   cv.addEventListener('pointerleave', () => { S.hover = -1; S.hoverPlate = '' })
   cv.addEventListener('click', (e) => {
     const [x, y] = stage.local(e)
-    if (onAttnPlate(x, y)) nav('transformer/attention', { x: e.clientX, y: e.clientY })
+    const pl = plateAt(x, y)
+    if (pl) nav(PLATE_ROUTES[pl], { x: e.clientX, y: e.clientY })
     else if (inMat(x, y)) S.head = (S.head + 1) % 12
   })
 

@@ -133,6 +133,47 @@ export function attention(seq: Tok[]): Attn {
   return { h, X, heads, concat, Wo: W.Wo, out, resid: h.map((r, i) => r.map((v, k) => v + out[i][k])) }
 }
 
+/* ---------- toy MLP block ---------- */
+
+/** GPT-2's tanh approximation of GELU ("gelu_new"). */
+export const gelu = (x: number) => 0.5 * x * (1 + Math.tanh(Math.sqrt(2 / Math.PI) * (x + 0.044715 * x ** 3)))
+/** Minimum of GELU, reached near x ≈ −0.75. */
+export const GELU_MIN = -0.17
+
+export const TOY_FF = TOY.d * 4
+
+function mlpWeights() {
+  const r = rng(WEIGHT_SEED * 7919 + 11)
+  const vec = (n: number, s: number) => Array.from({ length: n }, () => gauss(r) * s)
+  return { Wfc: randMat(r, TOY.d, TOY_FF, 0.45), bfc: vec(TOY_FF, 0.3), Wproj: randMat(r, TOY_FF, TOY.d, 0.25), bproj: vec(TOY.d, 0.2) }
+}
+const WM = mlpWeights()
+
+export interface Mlp {
+  /** Residual stream entering the MLP (the attention sub-layer's output). */
+  h: M
+  /** ln_2(h). */
+  X: M
+  Wfc: M; bfc: number[]
+  /** X·W_fc + b_fc, before the activation. */
+  H: M
+  /** GELU(H). */
+  G: M
+  Wproj: M; bproj: number[]
+  /** G·W_proj + b_proj. */
+  Y: M
+  /** h + Y. */
+  out: M
+}
+
+export function mlp(seq: Tok[], att: Attn = attention(seq)): Mlp {
+  const h = att.resid, X = h.map(layerNorm)
+  const H = matmul(X, WM.Wfc).map((r) => r.map((v, j) => v + WM.bfc[j]))
+  const G = H.map((r) => r.map(gelu))
+  const Y = matmul(G, WM.Wproj).map((r) => r.map((v, j) => v + WM.bproj[j]))
+  return { h, X, Wfc: WM.Wfc, bfc: WM.bfc, H, G, Wproj: WM.Wproj, bproj: WM.bproj, Y, out: h.map((r, i) => r.map((v, k) => v + Y[i][k])) }
+}
+
 /* ---------- forward-pass data for the overview ---------- */
 
 export interface Pass {
@@ -143,6 +184,7 @@ export interface Pass {
   att: M[]
   /** Colour-mixing weights after each of the 12 blocks. */
   mix: M[]
+  /** 24 MLP neuron activations per token, in [0, 1]. */
   act: number[][]
 }
 
@@ -172,7 +214,9 @@ export function buildPass(seq: Tok[]): Pass {
   Mx = mixStep(Mx, att[0], 0.45)
   mix.push(Mx)
   for (let l = 1; l < 12; l++) { Mx = mixStep(Mx, att[l], 0.78); mix.push(Mx) }
-  const act = seq.map((t, i) => { const r = rng(t.id * 31 + i * 101); return Array.from({ length: 24 }, () => { const g = gauss(r); return g > 0.35 ? Math.min(1, g * 0.7) : 0 }) })
+  // MLP neurons in the overview are the toy block's first 24 GELU outputs, positive part, normalised
+  const G = mlp(seq, toy).G, gmax = Math.max(...G.flat())
+  const act = G.map((row) => row.slice(0, 24).map((g) => Math.max(0, g) / gmax))
   return { N, seq, emb, att, mix, act }
 }
 
