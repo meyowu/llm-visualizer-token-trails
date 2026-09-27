@@ -228,5 +228,47 @@ for (const pr of PRESETS) {
   out.training = { text, ids, syms: ids.map(sym), positions }
   console.log('training:', positions.map((q) => `${sym(q.target)} ${(q.p * 100).toFixed(1)}%`).join(' · '))
 }
+// a map of token embeddings: words from a few everyday categories, projected on the first two
+// principal components of their (unit-length) W_E rows, with each word's nearest neighbours among
+// the ~12,000 most common word tokens
+{
+  const CATS: Record<string, string[]> = {
+    animals: 'cat dog horse cow pig bird fish mouse rabbit lion tiger bear wolf fox sheep duck'.split(' '),
+    numbers: 'one two three four five six seven eight nine ten hundred thousand million'.split(' '),
+    colours: 'red blue green yellow black white orange purple pink brown'.split(' '),
+    days: 'Monday Tuesday Wednesday Thursday Friday Saturday Sunday'.split(' '),
+    months: 'January February March April May June July August September October November December'.split(' '),
+    family: 'mother father brother sister son daughter wife husband uncle aunt'.split(' '),
+    furniture: 'floor bed couch table chair sofa desk bench ground edge'.split(' '),
+    verbs: 'run walk eat drink sleep write read speak think'.split(' '),
+    'function words': 'the a and of to in is was that it for on with as'.split(' '),
+    countries: 'France Germany Italy Spain China Japan India Russia Canada Mexico'.split(' '),
+  }
+  const unit = (id: number) => { const v = wte.subarray(id * D, id * D + D); let n = 0; for (const x of v) n += x * x; n = Math.sqrt(n); return Float32Array.from(v, (x) => x / n) }
+  const items = Object.entries(CATS).flatMap(([cat, ws]) => ws.map((w) => ({ w, cat, ids: bpe.encode(' ' + w) }))).filter((t) => t.ids.length === 1).map((t) => ({ ...t, id: t.ids[0], v: unit(t.ids[0]) }))
+  const mu = new Float32Array(D)
+  for (const t of items) t.v.forEach((x, k) => (mu[k] += x / items.length))
+  const C = items.map((t) => t.v.map((x, k) => x - mu[k]))
+  const dot = (p: ArrayLike<number>, q: ArrayLike<number>) => { let r = 0; for (let k = 0; k < D; k++) r += p[k] * q[k]; return r }
+  function pc(avoid: Float32Array[]) {
+    let w = Float32Array.from({ length: D }, (_, k) => Math.sin(k * 1.7 + avoid.length))
+    for (let it = 0; it < 100; it++) {
+      const nw = new Float32Array(D)
+      C.forEach((v) => { const s2 = dot(v, w); for (let k = 0; k < D; k++) nw[k] += v[k] * s2 })
+      for (const u of avoid) { const d2 = dot(nw, u); for (let k = 0; k < D; k++) nw[k] -= d2 * u[k] }
+      const n = Math.sqrt(dot(nw, nw)); w = nw.map((x) => x / n)
+    }
+    return w
+  }
+  const p1 = pc([]), p2 = pc([p1])
+  const pool: number[] = []
+  for (let id = 256; id < 50257 && pool.length < 12000; id++) if (/^Ġ[A-Za-z]{2,}$/.test(sym(id))) pool.push(id)
+  const poolV = pool.map(unit)
+  out.embeddingMap = items.map((t, i) => {
+    const sims = pool.map((id, j) => [id, dot(t.v, poolV[j])] as [number, number]).filter(([id]) => id !== t.id).sort((x, y) => y[1] - x[1]).slice(0, 5)
+    return { s: sym(t.id), cat: t.cat, x: r3(dot(C[i], p1)), y: r3(dot(C[i], p2)), nn: sims.map(([id, c]) => [sym(id), r3(c)]) }
+  })
+  console.log('map:', items.length, 'words;', out.embeddingMap.find((m: any) => m.s === 'Ġcat').nn.map((n: any) => n[0]).join(' '))
+}
 writeFileSync(new URL('../src/data/gpt2.json', import.meta.url), JSON.stringify(out))
 console.log('wrote src/data/gpt2.json')

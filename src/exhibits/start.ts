@@ -41,6 +41,12 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
         <p>The model on this site is <b>GPT-2 small</b> (OpenAI, 2019, 124M parameters), a Transformer. It cuts text into tokens, turns each token into a vector of 768 numbers, and passes the vectors through 12 blocks. In each block, <b>attention</b> lets every token read from the tokens before it, and an <b>MLP</b> then works on each token alone. The last token's vector is finally turned into a probability for every possible next token.</p>
         <p><b>Decoder-only</b> means it reads left to right: a token never sees the ones after it. Generating text is just this, repeated: pick a token, append it, run again. LLaMA and most chat models keep the same design with a few changes (see Lineage).</p>
       </section>
+      <section class="st-scale">
+        <h2>Where the 124M numbers live</h2>
+        <div class="st-bar" role="img" aria-label="GPT-2 small parameters: MLPs 56.7 million, token embeddings 38.6 million, attention 28.3 million, positions 0.8 million, LayerNorms 0.04 million"></div>
+        <ul class="st-bar-key"></ul>
+        <p>Running it costs about 2 floating-point operations per weight per token, roughly 250M FLOPs for each new token, plus attention’s share, which grows with the context. Bigger models keep the same parts, only wider and deeper: GPT-2 XL has 1.5B weights, LLaMA 3 has 8B and 70B.</p>
+      </section>
       <section class="st-path" aria-labelledby="st-path-h">
         <h2 id="st-path-h">The path</h2>
         <ol></ol>
@@ -84,6 +90,14 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
     li.querySelector('a')!.addEventListener('click', (e) => { e.preventDefault(); nav(route) })
     ol.appendChild(li)
   })
+  // GPT-2 small's parameters by part (exact counts, biases included)
+  const PARTS: [string, number, string][] = [
+    ['MLPs, 12 × 4.72M', 56_669_184, 'var(--t4)'], ['token embeddings W_E (also the output)', 38_597_376, 'var(--t0)'],
+    ['attention, 12 × 2.36M', 28_348_416, 'var(--t2)'], ['positions W_P', 786_432, 'var(--t3)'], ['LayerNorms', 38_400, 'var(--t5)'],
+  ]
+  const total = PARTS.reduce((a, [, n]) => a + n, 0)
+  q('.st-bar').innerHTML = PARTS.map(([, n, col]) => `<i style="flex:${n} 0 1px;background:${col}"></i>`).join('')
+  q('.st-bar-key').innerHTML = PARTS.map(([name, n, col]) => `<li><i style="background:${col}"></i>${rich(name)} <b>${n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : (n / 1e3).toFixed(0) + 'K'}</b> <small>${((n / total) * 100).toFixed(n / total < 0.01 ? 2 : 0)}%</small></li>`).join('')
   q('.st-go').addEventListener('click', () => nav('anatomy'))
   // pick up where this browser left off
   const last = lastPlace()

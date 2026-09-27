@@ -25,6 +25,8 @@ export const TERMS: Term[] = [
   { term: 'Greedy decoding', match: ['greedy'], def: 'Always picking the most likely next token.' },
   { term: 'Induction head', match: ['induction head'], def: 'A head that finds an earlier copy of the current token and attends to the token that came after it, so a repeated pattern can be continued.' },
   { term: 'KV cache', match: ['kv cache'], def: 'While generating, the keys and values of past tokens are stored so each new token only computes its own. It grows with every token and every layer.' },
+  { term: 'BatchNorm', match: [], def: 'Normalises each feature across the examples in a batch (common in vision). Transformers use LayerNorm instead, which normalises each token on its own.' },
+  { term: 'Post-LN and pre-LN', match: ['pre-ln', 'post-ln'], def: 'Where LayerNorm sits: after each residual add (post-LN, the 2017 Transformer) or on the copy each sub-layer reads (pre-LN, GPT-2 and later), which trains more stably.' },
   { term: 'LayerNorm', match: ['layernorm'], def: 'Rescales each token’s vector to mean 0 and spread 1, then applies a learned scale (γ) and shift (β) per feature.' },
   { term: 'Logit lens', match: ['logit lens'], def: 'Reading a middle layer through the final LayerNorm and the unembedding, to see what the model would predict if it stopped there.' },
   { term: 'Logits', match: ['logits', 'logit'], def: 'Raw, unnormalised scores, one per vocabulary token; softmax turns them into probabilities.' },

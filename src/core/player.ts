@@ -368,6 +368,15 @@ export class Player {
     }
   }
 
+  /** Further reading for this page, in a drawer next to the code. */
+  setRefs(refs: [string, string][]) {
+    if (!refs.length) return
+    const d = document.createElement('details')
+    d.className = 'steps refs-d'
+    d.innerHTML = `<summary>Go deeper</summary><ul>${refs.map(([t, u]) => `<li><a href="${u}" target="_blank" rel="noopener">${t.replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[ch]!)}</a></li>`).join('')}</ul>`
+    this.controls.appendChild(d)
+  }
+
   /** Real code for this view in a drawer; the current step's lines are marked. */
   setCode(code: Code) {
     this.code = code

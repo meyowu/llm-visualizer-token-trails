@@ -332,3 +332,15 @@ abbr.term { text-decoration: underline dotted; text-decoration-color: var(--mute
 .ex .part { color: var(--mute); }
 .st-resume { margin-left: 10px; background: none; color: var(--ink); border-color: var(--line2); }
 .st-resume:hover { background: var(--panel); }
+
+.refs-d { order: 7; }
+.refs-d ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; }
+.refs-d a { color: var(--ink2); }
+.refs-d a:hover { color: var(--ink); }
+
+.st-bar { display: flex; gap: 2px; height: 16px; margin: 4px 0 10px; border-radius: 4px; overflow: hidden; }
+.st-bar i { display: block; min-width: 2px; }
+.st-bar-key { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 4px; font-size: 13px; color: var(--ink2); }
+.st-bar-key i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; vertical-align: -1px; }
+.st-bar-key b { font: 500 12.5px var(--mono); color: var(--ink); }
+.st-bar-key small { font: 400 12px var(--mono); color: var(--mute); }

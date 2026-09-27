@@ -5,10 +5,11 @@ import type { Check, Code, Player } from '../core/player'
  * PyTorch, and the Hugging Face names for LLaMA), predict-then-reveal questions, and a recap.
  */
 
-interface Learn { code: Code; checks: Check[]; recap: string[] }
+interface Learn { code: Code; checks: Check[]; recap: string[]; refs?: [string, string][] }
 
 const LEARN: Record<string, Learn> = {
   overview: {
+    refs: [["Radford et al. 2019, Language Models are Unsupervised Multitask Learners (GPT-2)", "https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf"], ["Karpathy, nanoGPT: the whole model in about 300 lines", "https://github.com/karpathy/nanoGPT"], ["nostalgebraist 2020, interpreting GPT: the logit lens", "https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens"]],
     code: {
       lines: [
         'idx = torch.tensor([enc.encode("The cat sat on the")])   # (1, T) token ids',
@@ -28,6 +29,7 @@ const LEARN: Record<string, Learn> = {
     recap: [],
   },
   tokenizer: {
+    refs: [["Sennrich et al. 2016, Neural Machine Translation of Rare Words with Subword Units (BPE)", "https://arxiv.org/abs/1508.07909"], ["OpenAI, GPT-2 encoder.py: the reference byte-level BPE", "https://github.com/openai/gpt-2/blob/master/src/encoder.py"]],
     code: {
       lines: [
         'import regex as re                  # pip install regex (\\p{L} needs it)',
@@ -44,8 +46,12 @@ const LEARN: Record<string, Learn> = {
         '            word = merge(word, best)                            # every a, b → ab',
         '        ids += [vocab[s] for s in word]                         # 256 + merge rank',
         '    return ids',
+        '',
+        'def decode(ids):',
+        '    data = b"".join(token_bytes[i] for i in ids)        # a lookup and a join',
+        '    return data.decode("utf-8", errors="replace")',
       ],
-      at: { split: [1, 5], bytes: [6], merge: [7, 8, 9, 10, 11], ids: [12, 13] },
+      at: { split: [1, 5], bytes: [6], merge: [7, 8, 9, 10, 11], ids: [12, 13], decode: [15, 16, 17] },
     },
     checks: [
       { phase: 'ids', q: 'Why is Ġthe’s id (262) so much smaller than Ġcat’s (3797)?', options: ['It was merged earlier in training, because it is more common', 'Ids are in alphabetical order', 'Shorter tokens get smaller ids', 'Ids are assigned at random'], answer: 0, why: 'A merged token’s id is 256 + its merge rank, and merges were learned in order of frequency.' },
@@ -57,6 +63,7 @@ const LEARN: Record<string, Learn> = {
     ],
   },
   embedding: {
+    refs: [["Vaswani et al. 2017, Attention Is All You Need, §3.4–3.5 (embeddings, positions)", "https://arxiv.org/abs/1706.03762"]],
     code: {
       lines: [
         '# idx: (B, T) token ids',
@@ -78,6 +85,7 @@ const LEARN: Record<string, Learn> = {
     ],
   },
   layernorm: {
+    refs: [["Ba et al. 2016, Layer Normalization", "https://arxiv.org/abs/1607.06450"], ["Xiong et al. 2020, On Layer Normalization in the Transformer Architecture (pre-LN vs post-LN)", "https://arxiv.org/abs/2002.04745"]],
     code: {
       lines: [
         'class Block(nn.Module):',
@@ -104,6 +112,7 @@ const LEARN: Record<string, Learn> = {
     ],
   },
   attention: {
+    refs: [["Vaswani et al. 2017, Attention Is All You Need, §3.2", "https://arxiv.org/abs/1706.03762"], ["Olsson et al. 2022, In-context Learning and Induction Heads", "https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html"]],
     code: {
       lines: [
         'B, T, C = x.size()                                    # x = ln_1(h)',
@@ -132,6 +141,7 @@ const LEARN: Record<string, Learn> = {
     ],
   },
   mlp: {
+    refs: [["Hendrycks & Gimpel 2016, Gaussian Error Linear Units (GELU)", "https://arxiv.org/abs/1606.08415"], ["Geva et al. 2021, Transformer Feed-Forward Layers Are Key-Value Memories", "https://arxiv.org/abs/2012.14913"]],
     code: {
       lines: [
         'def forward(self, x):          # x = ln_2(h): (B, T, 768)',
@@ -154,6 +164,7 @@ const LEARN: Record<string, Learn> = {
     ],
   },
   unembed: {
+    refs: [["Press & Wolf 2017, Using the Output Embedding to Improve Language Models (weight tying)", "https://arxiv.org/abs/1608.05859"], ["Holtzman et al. 2020, The Curious Case of Neural Text Degeneration (top-p)", "https://arxiv.org/abs/1904.09751"]],
     code: {
       lines: [
         'x = self.transformer.ln_f(x)',
@@ -178,6 +189,7 @@ const LEARN: Record<string, Learn> = {
     ],
   },
   foundations: {
+    refs: [["3Blue1Brown, Essence of linear algebra", "https://www.3blue1brown.com/topics/linear-algebra"]],
     code: {
       lines: [
         'a @ b                        # dot product: (a * b).sum()',
@@ -197,6 +209,7 @@ const LEARN: Record<string, Learn> = {
     ],
   },
   loss: {
+    refs: [["Karpathy, nanoGPT train.py: the training loop", "https://github.com/karpathy/nanoGPT/blob/master/train.py"], ["Radford et al. 2019, Language Models are Unsupervised Multitask Learners", "https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf"]],
     code: {
       lines: [
         'x, y = idx[:, :-1], idx[:, 1:]             # inputs and targets, shifted by one',
@@ -218,6 +231,7 @@ const LEARN: Record<string, Learn> = {
     ],
   },
   llama: {
+    refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {
       lines: [
         '# RMSNorm',
@@ -251,4 +265,5 @@ export function teach(player: Player, page: keyof typeof LEARN) {
   player.checks = l.checks
   player.recap = l.recap
   player.setCode(l.code)
+  player.setRefs(l.refs ?? [])
 }

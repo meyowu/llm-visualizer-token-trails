@@ -14,7 +14,8 @@ interface RawPass {
 }
 interface RawPreset { key: string; text: string; note: string; passes: RawPass[] }
 interface RawTraining { text: string; ids: number[]; syms: string[]; positions: { target: number; p: number; top: { id: number; s: string; p: number }[] }[] }
-interface Raw { model: string; tGrid: number[]; topK: number; presets: RawPreset[]; training: RawTraining }
+interface RawMapItem { s: string; cat: string; x: number; y: number; nn: [string, number][] }
+interface Raw { model: string; tGrid: number[]; topK: number; presets: RawPreset[]; training: RawTraining; embeddingMap: RawMapItem[] }
 const R = raw as unknown as Raw
 
 export const VOCAB = 50257
@@ -188,3 +189,8 @@ export function trainingRun(): TrainingRun {
     positions: t.positions.map((q) => ({ target: q.target, p: q.p, top: q.top.map((g) => ({ id: g.id, text: symbolText(g.s), p: g.p })) })),
   }
 }
+
+/** Words from everyday categories placed by the first two principal components of their W_E rows, with their nearest rows. */
+export interface MapItem { text: string; cat: string; x: number; y: number; near: { text: string; cos: number }[] }
+export const embeddingMap = (): MapItem[] =>
+  R.embeddingMap.map((m) => ({ text: symbolText(m.s), cat: m.cat, x: m.x, y: m.y, near: m.nn.map(([s, cos]) => ({ text: symbolText(s), cos })) }))

@@ -107,6 +107,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     padL: 28, padR: 28, sentY: 50, labY: 96, top: 156, bot: 0, mid: 0, xTok: 28, xEmb0: 0, cell: 6, xEmb1: 0,
     distW: 0, xDist0: 0, xWU: 0, xLn: 0, xLn1: 0, xAttn: 0, xLn2: 0, xMlp: 0, xS0: 0, xS1: 0, stack: [] as number[], rowH: 0,
     chipEnd: [] as number[], mat: null as null | { x: number; y: number; w: number; h: number },
+    thumbs: [] as { x: number; y: number; w: number; h: number; head: number }[],
     plateY: [0, 0] as [number, number],
     wuY: [0, 0] as [number, number],
   }
@@ -422,6 +423,29 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     ctx.fillStyle = rgba(C.ink2, e * a); ctx.fillText('mlp: 768 → 3072 → 768', lx, ly)
     ctx.fillStyle = rgba(C.mute, e * a); ctx.fillText('GELU · 24 neurons shown', lx, ly + 15)
   }
+  /** The 12 heads of the shown block side by side, while attention plays; click one to select it. */
+  function drawThumbs(a: number) {
+    G.thumbs = []
+    if (a <= 0) return
+    const N = V.N, gap = 10, tw = (G.distW - 3 * gap) / 4, cs = Math.max(3, Math.floor(tw / N)), side = cs * N, y0 = G.labY + 68
+    ctx.font = F.label; spaced(true); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.mute, a)
+    ctx.fillText(`BLOCK ${S.layer + 1} · 12 HEADS`, G.xDist0, y0 - 14); spaced(false)
+    for (let h = 0; h < 12; h++) {
+      const A = V.pass.att[S.layer][h], x = G.xDist0 + (h % 4) * (tw + gap), y = y0 + Math.floor(h / 4) * (side + 26), on = h === S.head
+      for (let i = 0; i < N; i++) for (let j = 0; j <= i; j++) {
+        ctx.fillStyle = rgba(tokC(j), (0.08 + 0.92 * Math.sqrt(A[i][j])) * a); ctx.fillRect(x + j * cs, y + i * cs, cs - 0.5, cs - 0.5)
+      }
+      if (on) { ctx.strokeStyle = rgba(C.ink, a); ctx.lineWidth = 1.5; ctx.strokeRect(x - 2.5, y - 2.5, side + 5, side + 5) }
+      const kind = headKind(A, V.pass.ids), tag = kind === 'mixed' ? '' : kind[0]
+      ctx.font = F.mono(10.5); ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = rgba(on ? C.ink : C.mute, a)
+      ctx.fillText(`${h + 1}${tag ? ' ' + tag : ''}`, x, y + side + 4)
+      G.thumbs.push({ x: x - 3, y: y - 3, w: side + 6, h: side + 20, head: h })
+    }
+    ctx.font = F.mono(10.5); ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = rgba(C.mute, a)
+    ctx.fillText('p previous token · f first token', G.xDist0, y0 + 3 * (side + 26))
+    ctx.fillText('s self · i induction', G.xDist0, y0 + 3 * (side + 26) + 15)
+  }
+
   /** The logit lens: the last position's best guess after each block, as rows in the next-token column. */
   function drawLens(front: number, a: number) {
     if (a <= 0) return
@@ -556,6 +580,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     drawSources(ys, front, pu, compA)
     drawParticles(ys, pts, front, pu, compA)
     drawChips(ys, sp, pT, sent, isLast ? 1 - endFade : 1)
+    drawThumbs(pa > 0 && pu <= 0 ? 1 - lensA : 0)
     drawLens(front, lensA)
     drawDist(ys, pts, pu, pS, 1 - endFade)
     drawFlight(pS, isLast)
@@ -637,11 +662,14 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     const [x, y] = stage.local(e)
     S.hoverPlate = plateAt(x, y)
     S.hover = S.hoverPlate ? -1 : laneAt(x, y)
-    cv.style.cursor = inMat(x, y) || S.hoverPlate || S.hover >= 0 ? 'pointer' : 'default'
+    cv.style.cursor = inMat(x, y) || S.hoverPlate || S.hover >= 0 || thumbAt(x, y) ? 'pointer' : 'default'
   })
   cv.addEventListener('pointerleave', () => { S.hover = -1; S.hoverPlate = '' })
+  const thumbAt = (x: number, y: number) => G.thumbs.find((t) => x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h)
   cv.addEventListener('click', (e) => {
     const [x, y] = stage.local(e)
+    const th = thumbAt(x, y)
+    if (th) { S.head = th.head; headStep.set(th.head); linkHead(); return }
     const pl = plateAt(x, y)
     if (pl) { nav(plateLink(pl), { x: e.clientX, y: e.clientY }); return }
     if (inMat(x, y)) { S.head = (S.head + 1) % 12; headStep.set(S.head); return }

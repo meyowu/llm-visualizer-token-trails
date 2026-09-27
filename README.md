@@ -2,14 +2,14 @@
 
 Follow the tokens through AI systems: animated, explorable walk-throughs of the Transformer, inference engines and agent workflows.
 
-The atlas follows a model's life in five parts: **Anatomy** (GPT-2 taken apart), **Lineage** (other architectures as changes to GPT-2), **Training**, **Serving** and **Agents**.
+The atlas follows a model's life in six parts: **Anatomy** (GPT-2 taken apart), **Lineage** (other architectures as changes to GPT-2), **Training**, **Interpretability**, **Serving** and **Agents**.
 
 ## What's here
 
 - **Start here**: what a language model does (a live next-token example with real GPT-2 numbers), what a Transformer is, the path through the Anatomy chapters, and how to read the pictures.
 - **Anatomy / Forward pass**: one full forward pass of GPT-2 small with the numbers of a real run, for three prompts, each continued greedily for three passes: real token ids, embeddings, all 144 attention heads (with a label for what each head does), block 1's MLP neurons, the logit lens after every block, and the real next-token distribution.
-  - **Tokenizer**: GPT-2's real byte-level BPE on any text you type (or four examples: subwords, a contraction, a repeat, non-ASCII): regex pre-split, UTF-8 bytes (space → Ġ), then inside each piece the lowest-ranked adjacent pair looked up and merged until none is left, and each token's id (256 + merge rank) placed on the vocabulary.
-  - **Embedding** (with a repeated word, and one sentence in two word orders): ids as one-hot rows times W_E (a GEMM that is really a row lookup, on a log-scaled vocabulary axis), plus the first N rows of W_P, giving the residual stream.
+  - **Tokenizer**: GPT-2's real byte-level BPE on any text you type (or four examples: subwords, a contraction, a repeat, non-ASCII): regex pre-split, UTF-8 bytes (space → Ġ), then inside each piece the lowest-ranked adjacent pair looked up and merged until none is left, each token's id (256 + merge rank) placed on the vocabulary, and decoding back to text, bytes that wait for the rest of a character included.
+  - **Embedding** (with a repeated word, and one sentence in two word orders): a map of real GPT-2 rows where words of a kind sit together, ids as one-hot rows times W_E (a GEMM that is really a row lookup, on a log-scaled vocabulary axis), plus the first N rows of W_P, giving the residual stream.
   - **LayerNorm & Residual**: the pre-LN residual stream through one block (sub-layers read a normalised copy and add back), then ln_1 on the real toy numbers: each token's features as dots, centred by μ, scaled by σ, then γ ⊙ x̂ + β.
   - **Attention**: every matrix product in one attention head, computed at toy scale (d_model 8, d_head 4) and animated cell by cell: X·W_Q/K/V → Q·Kᵀ → ÷√d → mask → softmax → A·V → concat·W_O → residual add. Hover any result cell to see which row and column produced it.
   - **MLP**: the feed-forward block at toy scale (d_model 8 → d_ff 32, the same 4× as GPT-2): X·W_fc + b → GELU (each activation plotted on the curve) → ·W_proj + b → residual add.
@@ -20,7 +20,7 @@ The atlas follows a model's life in five parts: **Anatomy** (GPT-2 taken apart),
 - **Glossary**: every term of art in plain words; captions mark first mentions with their definition.
 - **Lineage / LLaMA**: LLaMA 3 as a diff against GPT-2: the two blocks side by side, then RoPE (rotating q/k pairs by position, and why only the offset matters), RMSNorm vs LayerNorm, the gated SwiGLU MLP, and MHA vs GQA vs MQA with real KV-cache sizes.
 
-Every page has an All steps list, a Code drawer with the matching PyTorch, a question or two to answer before key steps, and a recap at the end. It pauses at the end of each step so there is time to read (switch to Auto to play straight through); ← and → move between steps. On the overview, click a part marked ↗ (the tokens, the embedding strips, the attn, mlp, ln_f and W_U plates, the next-token bars) to zoom into its detail view.
+Every page has an All steps list, a Code drawer with the matching PyTorch, a Go deeper reading list, a question or two to answer before key steps, and a recap at the end. It pauses at the end of each step so there is time to read (switch to Auto to play straight through); ← and → move between steps. On the overview, click a part marked ↗ (the tokens, the embedding strips, the attn, mlp, ln_f and W_U plates, the next-token bars) to zoom into its detail view.
 
 ## Development
 

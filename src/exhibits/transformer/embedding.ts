@@ -1,4 +1,4 @@
-import { chipW, drawChip, F, fillRich, mathName, serifAt, spaced, useCtx } from '../../core/draw'
+import { chipW, drawChip, F, fillRich, mathName, serifAt, spaced, tokLabel, useCtx } from '../../core/draw'
 import { createFrame, toggle } from '../../core/frame'
 import { MatrixKit, fmt, lr, type M, type Rect } from '../../core/matrix'
 import { Player } from '../../core/player'
@@ -6,6 +6,7 @@ import { Stage, runLoop } from '../../core/stage'
 import { C, rgba } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
 import { teach } from '../learn'
+import { embeddingMap } from '../../lib/gpt2/data'
 import type { Nav } from '../registry'
 import { TOY, TOY_PROMPTS, posEmb, tokEmb, toyTokens, type Tok } from './model'
 
@@ -18,6 +19,7 @@ import { TOY, TOY_PROMPTS, posEmb, tokEmb, toyTokens, type Tok } from './model'
 const PHASES = [
   { id: 'onehot', name: 'One-hot ids', short: 'One-hot', dur: 4 },
   { id: 'lookup', name: 'Row lookup', short: 'onehot · W_E', dur: 7 },
+  { id: 'meaning', name: 'What the rows mean', short: 'Meaning', dur: 7 },
   { id: 'pos', name: 'Add positions', short: '+ W_P', dur: 6 },
   { id: 'stream', name: 'Into the stream', short: 'Stream', dur: 3.5 },
 ]
@@ -278,14 +280,72 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
   stage.canvas.addEventListener('click', (e) => { if (onLink(e)) nav('anatomy/layernorm', { x: e.clientX, y: e.clientY }) })
   stage.canvas.addEventListener('pointermove', (e) => { if (onLink(e)) stage.canvas.style.cursor = 'pointer' })
 
+  /* ---------- what the rows mean: a map of real GPT-2 rows ---------- */
+  const MAP = embeddingMap()
+  let mapPts: { x: number; y: number; i: number }[] = [], mapHover = -1
+  stage.canvas.addEventListener('pointermove', (e) => {
+    const [x, y] = stage.local(e)
+    let best = -1, bd = 14 * 14
+    for (const p of mapPts) { const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < bd) { bd = d; best = p.i } }
+    mapHover = best
+    if (best >= 0) stage.canvas.style.cursor = 'pointer'
+  })
+  function sceneMeaning(p: number) {
+    const x0 = pad + 40, x1 = stage.W - pad - 120, y0 = top + 20, y1 = stage.H - bot - 30
+    const xs = MAP.map((m) => m.x), ys = MAP.map((m) => m.y)
+    const lo = [Math.min(...xs), Math.min(...ys)], hi = [Math.max(...xs), Math.max(...ys)]
+    const X = (v: number) => lerp(x0, x1, (v - lo[0]) / (hi[0] - lo[0])), Y = (v: number) => lerp(y1, y0, (v - lo[1]) / (hi[1] - lo[1]))
+    const inPrompt = (t: string) => seq.findIndex((s) => s.text.trim().toLowerCase() === t.trim().toLowerCase())
+    mapPts = []
+    // labels are placed greedily and skipped where they would overlap one already placed; the
+    // hovered word and the prompt's words go first, so they always get theirs
+    const placed: { x: number; y: number; w: number; h: number }[] = []
+    const free = (r: { x: number; y: number; w: number; h: number }) => !placed.some((q) => r.x < q.x + q.w && q.x < r.x + r.w && r.y < q.y + q.h && q.y < r.y + r.h)
+    ctx.font = F.mono(10.5)
+    const order = MAP.map((_, i) => i).sort((a, b) => Number(b === mapHover) - Number(a === mapHover) || Number(inPrompt(MAP[b].text) >= 0) - Number(inPrompt(MAP[a].text) >= 0))
+    const labelled = new Set<number>()
+    for (const i of order) {
+      const m = MAP[i], r = { x: X(m.x) + 5, y: Y(m.y) - 7, w: ctx.measureText(m.text.trim()).width + 3, h: 14 }
+      if (i === mapHover || inPrompt(m.text) >= 0 || free(r)) { placed.push(r); labelled.add(i) }
+    }
+    const cats = [...new Set(MAP.map((m) => m.cat))]
+    ctx.font = F.label; spaced(true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    cats.forEach((c, k) => {
+      const ms = MAP.filter((m) => m.cat === c), cx = ms.reduce((s, m) => s + X(m.x), 0) / ms.length, cy = Math.min(...ms.map((m) => Y(m.y))) - 16
+      const w = ctx.measureText(c.toUpperCase()).width, r = { x: cx - w / 2, y: cy - 6, w, h: 12 }
+      if (!free(r)) return
+      placed.push(r)
+      ctx.fillStyle = rgba(C.mute, 0.6 * eout(clamp(p * 3 - 0.3 - k * 0.05))); ctx.fillText(c.toUpperCase(), cx, cy)
+    })
+    spaced(false)
+    MAP.forEach((m, i) => {
+      const a = eout(clamp(p * 3 - (i / MAP.length) * 0.8)), x = X(m.x), y = Y(m.y), pi = inPrompt(m.text), hv = i === mapHover
+      const col = pi >= 0 ? tokRGB(pi) : C.ink2
+      ctx.fillStyle = rgba(col, (pi >= 0 || hv ? 1 : 0.6) * a); ctx.beginPath(); ctx.arc(x, y, pi >= 0 || hv ? 4 : 2.6, 0, 7); ctx.fill()
+      if (labelled.has(i)) {
+        ctx.font = F.mono(10.5); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(pi >= 0 || hv ? C.ink : C.mute, (pi >= 0 || hv ? 1 : 0.75) * a)
+        ctx.fillText(m.text.trim(), x + 6, y)
+      }
+      mapPts.push({ x, y, i })
+    })
+    const f = mapHover >= 0 ? MAP[mapHover] : MAP.find((m) => inPrompt(m.text) >= 0) ?? MAP[0]
+    if (mapHover >= 0) { ctx.strokeStyle = rgba(C.ink); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(X(f.x), Y(f.y), 8, 0, 7); ctx.stroke() }
+    mk.formula = {
+      segs: [[`${tokLabel(f.text)}  ·  closest rows:  `, C.mute], [f.near.map((n) => `${tokLabel(n.text)} ${fmt(n.cos)}`).join('   '), C.ink]],
+      note: 'Cosine similarity between real W_E rows, among the 12,000 most common word tokens. The map squeezes 768 dimensions into 2 (the first two principal components of these words), so distances on it are only rough.',
+    }
+  }
+
   function draw() {
     useCtx(ctx)
     stage.begin()
     mk.begin()
     nextLink = null
-    const pl = prog('lookup'), pp = prog('pos'), ps = prog('stream')
+    mapPts = []
+    const pl = prog('lookup'), pmn = prog('meaning'), pp = prog('pos'), ps = prog('stream')
     if (pl <= 0) sceneOneHot(prog('onehot'))
-    else if (pp <= 0) sceneLookup(pl)
+    else if (pmn <= 0) sceneLookup(pl)
+    else if (pp <= 0) sceneMeaning(pmn)
     else if (ps <= 0) scenePos(pp)
     else sceneStream(ps)
     mk.drawFormula()
@@ -294,6 +354,7 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
   const CAPS: Record<string, [string, string]> = {
     onehot: ['Each token id becomes a one-hot row: 50,257 zeros with a single 1 at the id. Stacked, the prompt is a 5 × 50,257 matrix.', '[5 × 50,257]'],
     lookup: ['Multiplying the one-hot rows by W_E selects one row of W_E per token: a GEMM on paper, a table lookup in practice. Each row is a learned 768-number description of its token, and tokens used alike get similar rows: in GPT-2, Ġcat is closer to Ġdog (cosine 0.55) and Ġkitten (0.50) than to Ġon (0.21).', 'GPT-2 W_E [50,257 × 768] · 38.6M params'],
+    meaning: ['Each row of W_E is a learned description of a token. Squeezed from 768 dimensions to 2, words of a kind land near each other: numbers, days and months, family, function words. These are real GPT-2 rows; hover a word to see its closest ones.', 'real W_E rows · 2 of 768 dims (PCA)'],
     pos: ['Attention treats its inputs as an unordered set (the causal mask gives only a weak hint of position), so each slot adds its own row of the position matrix W_P. Slot i always gets row i. Try the other prompts: a repeated word, and the same words in two orders.', 'GPT-2 W_P [1,024 × 768] · context 1,024'],
     stream: ['The sum is the residual stream that enters block 1: one 768-wide lane per token, still unmixed.', 'h₀ [N × 768]'],
   }

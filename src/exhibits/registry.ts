@@ -36,7 +36,7 @@ export interface Category {
 }
 
 /*
- * The atlas follows a model's life: its anatomy, its lineage, how it is trained, how it is
+ * The atlas follows a model's life: its anatomy, its lineage, how it is trained, what it has learned, how it is
  * served, and how agents use it.
  */
 export const CATEGORIES: Category[] = [
@@ -83,9 +83,24 @@ export const CATEGORIES: Category[] = [
     title: 'Training',
     entries: [
       { name: 'Next-token loss', tag: 'cross-entropy · p − y', route: 'training/loss', mount: mountLoss },
-      { name: 'Backprop', tag: 'gradients through the layers' },
-      { name: 'LoRA', tag: 'low-rank adapters' },
+      { name: 'Backprop', tag: 'gradients through one block' },
+      { name: 'Optimizer', tag: 'AdamW · warmup · schedule' },
+      { name: 'Learning the tokenizer', tag: 'counting pairs for BPE' },
+      { heading: 'After pretraining' },
+      { name: 'SFT', tag: 'instruction tuning' },
       { name: 'RLHF & DPO', tag: 'learning from preferences' },
+      { name: 'LoRA', tag: 'low-rank adapters' },
+      { name: 'Scaling laws', tag: 'loss vs compute' },
+    ],
+  },
+  {
+    id: 'interpretability',
+    title: 'Interpretability',
+    entries: [
+      { name: 'Logit lens', tag: 'predictions block by block' },
+      { name: 'Induction heads', tag: 'copying patterns' },
+      { name: 'Attention sinks', tag: 'the first token' },
+      { name: 'Superposition', tag: 'more features than dimensions' },
     ],
   },
   {
@@ -104,6 +119,7 @@ export const CATEGORIES: Category[] = [
     id: 'agents',
     title: 'Agents',
     entries: [
+      { name: 'In-context learning', tag: 'prompts as programs' },
       { name: 'ReAct Loop', tag: 'think → act → observe' },
       { name: 'Tool Calling', tag: 'schema → call → result' },
       { name: 'RAG Pipeline', tag: 'embed → retrieve → read' },

@@ -20,6 +20,7 @@ const PHASES = [
   { id: 'bytes', name: 'Bytes', dur: 3.5 },
   { id: 'merge', name: 'BPE merges', short: 'Merge', dur: 14 },
   { id: 'ids', name: 'Vocabulary ids', short: 'ids', dur: 6 },
+  { id: 'decode', name: 'Decode', dur: 6 },
 ]
 const EXAMPLES = ['The cat sat on the', 'the cat saw the cat', "Tokenization isn't magic", 'café 你好']
 const MAXLEN = 40
@@ -334,6 +335,35 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
     return 'Each id picks one row of the embedding matrix next.'
   }
 
+  /** Decoding: ids back to byte strings, joined and read as UTF-8, token by token as a model would stream them. */
+  function sceneDecode(p: number) {
+    const rows = rowsOf(), fin = pieces.map((x) => x.tokens.map((t) => t.text)), cells = layoutCells(fin, rows)
+    const flat = pieces.flatMap((x, pi) => x.tokens.map((t, k) => ({ sym: t.text, id: t.id, cell: cells[pi][k], ti: tokIndex[pi][k] })))
+    const shown = Math.min(flat.length, Math.floor(clamp(p / 0.85) * flat.length + 0.001))
+    const bytes: number[] = []
+    flat.forEach((t, n) => {
+      const on = n < shown
+      drawSym(t.cell.x, t.cell.y, t.cell.w, t.sym, t.ti, 0, on ? 1 : 0.35, n === shown - 1 ? 0.8 : 0, on)
+      const b = symbolBytes(t.sym)
+      if (on) bytes.push(...b)
+      ctx.font = F.mono(10.5); ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = rgba(C.mute, on ? 1 : 0.35)
+      ctx.fillText(`${b.length}B`, t.cell.x + t.cell.w / 2, t.cell.y + G.cellH / 2 + 6)
+    })
+    // the text so far: complete characters only; bytes of an unfinished one wait
+    let ok = bytes.length, text = ''
+    for (; ok >= 0; ok--) { try { text = new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(bytes.slice(0, ok))); break } catch { /* drop a trailing partial byte */ } }
+    const waiting = bytes.length - ok, y = G.rulerY - 10
+    ctx.font = F.label; spaced(true); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.mute); ctx.fillText('TEXT SO FAR', G.mainL, y - 44); spaced(false)
+    ctx.font = serifAt(30); ctx.fillStyle = rgba(C.ink); ctx.fillText(text, G.mainL, y)
+    if (waiting) {
+      const x = G.mainL + ctx.measureText(text).width + 10
+      ctx.font = F.mono(12); ctx.fillStyle = rgba(C.ink2); ctx.fillText(`+ ${waiting} byte${waiting > 1 ? 's' : ''} waiting: ${bytes.slice(ok).map(hex2).join(' ')}`, x, y - 4)
+    }
+    formula = waiting
+      ? { segs: [['bytes  →  UTF-8', C.ink], ['   ·   ', C.mute], [`${waiting} byte${waiting > 1 ? 's' : ''} of an unfinished character`, C.ink2]], note: 'This token ends in the middle of a character. A chat interface streaming tokens holds these bytes back until the next token completes the character.' }
+      : { segs: [['text  =  bytes(vocab[id] for id in ids).decode("utf-8")', C.ink]], note: 'Decoding is a lookup and a join: no model involved. Every id maps to exactly one byte string.' }
+  }
+
   function draw() {
     useCtx(ctx)
     stage.begin()
@@ -345,14 +375,19 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
       frame.setFormula(null)
       return
     }
-    const pb = prog('bytes'), pm = prog('merge'), pi = prog('ids')
+    const pb = prog('bytes'), pm = prog('merge'), pi = prog('ids'), pd = prog('decode')
     if (pb <= 0) sceneSplit(prog('split'))
     else if (pm <= 0) sceneBytes(pb)
     else if (pi <= 0) sceneMerge(pm)
-    else sceneIds(pi)
+    else if (pd <= 0) sceneIds(pi)
+    else sceneDecode(pd)
     if (hover && pb > 0 && pm <= 0) {
       const b = symbolBytes(hover.sym)[0], ch = b >= 33 && b <= 126 ? `"${String.fromCharCode(b)}"` : b === 32 ? 'a space' : 'part of a character'
       formula = { segs: [[`${ch}  →  byte 0x${hex2(b)} (${b})  →  stand-in `, C.mute], [hover.sym, C.ink]], note: 'GPT-2 gives each of the 256 byte values a printable stand-in, so a byte like a space or a control code can be written, and merged, like any letter.' }
+    }
+    if (hover && pd > 0) {
+      const b = symbolBytes(hover.sym)
+      formula = { segs: [[`id ${ids[hover.tok]}  →  "${hover.sym}"  →  bytes `, C.mute], [b.map(hex2).join(' '), C.ink]], note: b.some((x) => x >= 0x80) ? 'Bytes from 0x80 up belong to multi-byte characters; a token may hold only part of one.' : 'Plain ASCII bytes: each one is a character on its own.' }
     }
     if (hover && pm > 0 && pi <= 0) {
       const n = [...hover.sym].length
@@ -372,9 +407,10 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
   function caption(id: string): [string, string] {
     const nBytes = pieces.reduce((s, p) => s + p.bytes.length, 0)
     switch (id) {
-      case 'split': return [`A regular expression splits the text into words, numbers and punctuation. Each piece keeps its leading space. Type your own text below${cut ? ` (only the first ${MAXBYTES} bytes are drawn)` : ''}.`, `${pieces.length} pieces`]
+      case 'split': return [`Why subwords: single characters make sequences very long, and whole words need a huge vocabulary that still misses new words; BPE sits in between. First a regular expression splits the text into words, numbers and punctuation, each keeping its leading space. Type your own text below${cut ? ` (only the first ${MAXBYTES} bytes are drawn)` : ''}.`, `${pieces.length} pieces`]
       case 'bytes': return ['Each piece becomes its UTF-8 bytes. GPT-2 gives every byte value a visible stand-in character, so a space is written Ġ.', `${nBytes} bytes`]
       case 'merge': return ['Inside each piece, the rank of every adjacent pair is looked up and the lowest-ranked pair is fused. This repeats until no pair is in the table; rare words end up as several tokens.', `${fired.length} merges fire`]
+      case 'decode': return ['Decoding runs the other way: each id is looked up to its byte string, the bytes are joined and read as UTF-8. A token can end in the middle of a character (try “café 你好”), so streaming output holds those bytes until the character is complete.', 'ids → bytes → text']
       default: return ['Each final symbol is an entry in the vocabulary. A merged token’s id is 256 plus its merge rank. Ids 0–255 are the 256 byte symbols in GPT-2’s own order, not by byte value (“.” is 13, Ġ is 220), and 50256 is <|endoftext|>.', `ids [${ids.join(', ')}]`]
     }
   }
