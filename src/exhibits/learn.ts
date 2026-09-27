@@ -400,6 +400,33 @@ const LEARN: Record<string, Learn> = {
       'Its learned 1D positions rediscover the 2D grid, and only the [CLS] output is classified.',
     ],
   },
+  clip: {
+    refs: [["Radford et al. 2021, Learning Transferable Visual Models From Natural Language Supervision (CLIP)", "https://arxiv.org/abs/2103.00020"], ["Liang et al. 2022, Mind the Gap: the modality gap in contrastive models", "https://arxiv.org/abs/2203.02053"], ["openai/clip-vit-base-patch32, the weights behind the real numbers", "https://huggingface.co/openai/clip-vit-base-patch32"]],
+    code: {
+      lines: [
+        '# two encoders, one shared space',
+        'i = F.normalize(visual_projection(vit(images)[:, 0]), dim=-1)          # (N, 512)',
+        't = F.normalize(text_projection(text_tf(ids)[range(N), eot_pos]), dim=-1)  # (N, 512)',
+        '# every image against every caption, scaled by the learned temperature',
+        'logits = logit_scale.exp() * i @ t.T                    # (N, N), scale capped at 100',
+        'labels = torch.arange(N)                                # the diagonal holds the true pairs',
+        'loss = (F.cross_entropy(logits, labels) + F.cross_entropy(logits.T, labels)) / 2',
+        '# zero-shot: one caption per class, pick the closest',
+        'classes = F.normalize(text_projection(text_tf(prompts)), dim=-1)',
+        'pred = (i @ classes.T).argmax(dim=-1)',
+      ],
+      at: { towers: [0, 1, 2], space: [1, 2], matrix: [3, 4, 5, 6], zeroshot: [7, 8, 9], scale: [4] },
+    },
+    checks: [
+      { phase: 'matrix', q: 'In a batch of 4 image–caption pairs, which cells of the 4 × 4 similarity matrix should training push up?', options: ['The diagonal: each image with its own caption', 'The first row', 'All of them equally', 'The ones off the diagonal'], answer: 0, why: 'Pair i sits at row i, column i. Cross-entropy over each row and each column rewards the diagonal and penalises the rest.' },
+      { phase: 'zeroshot', q: 'How does CLIP classify an image into classes it was never trained on?', options: ['It compares the image with a caption written for each class and picks the most similar', 'It adds a new output layer and trains it', 'It generates the class name word by word', 'It looks the image up in its training set'], answer: 0, why: 'Class names are text, so the text encoder turns them into vectors in the same space as images.' },
+    ],
+    recap: [
+      'CLIP pairs an image encoder (a ViT) with a GPT-2-like text encoder, both ending in a length-1 vector of 512.',
+      'Training makes each image most similar to its own caption across the batch, in both directions.',
+      'Classes can be written as captions, which gives zero-shot classification; a learned temperature of 100 sharpens the softmax.',
+    ],
+  },
   llama: {
     refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {
