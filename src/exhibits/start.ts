@@ -1,5 +1,6 @@
 import { rich, toggle } from '../core/frame'
 import { legendList } from '../core/legend'
+import { lastPlace } from '../core/progress'
 import { PROMPT_LABELS, nextDist, presets } from '../lib/gpt2/data'
 import type { Nav } from './registry'
 
@@ -84,6 +85,16 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
     ol.appendChild(li)
   })
   q('.st-go').addEventListener('click', () => nav('anatomy'))
+  // pick up where this browser left off
+  const last = lastPlace()
+  if (last && last.route !== 'start') {
+    const b = document.createElement('button')
+    b.type = 'button'; b.className = 'st-go st-resume'
+    const page = PATH.find(([r]) => r === last.route)?.[1] ?? last.route.split('/').pop()
+    b.textContent = `Resume: ${page} ›`
+    b.addEventListener('click', () => nav(`${last.route}?phase=${last.phase}`))
+    q('.st-go').after(b)
+  }
   return () => {}
 }
 

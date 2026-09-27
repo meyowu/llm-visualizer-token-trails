@@ -3,6 +3,8 @@ import { registerFonts } from './core/fonts'
 import { rich } from './core/frame'
 import { openAtPhase } from './core/player'
 import { pref } from './core/prefs'
+import { progress } from './core/progress'
+import { getParams } from './core/link'
 import { poke } from './core/stage'
 import { watchTheme } from './core/theme'
 import { reducedMotion } from './core/util'
@@ -23,6 +25,13 @@ themeBtn.addEventListener('click', () => {
   const next = THEMES[(THEMES.indexOf((pref.get('theme') ?? 'system') as (typeof THEMES)[number]) + 1) % THEMES.length]
   pref.set('theme', next); applyTheme(next)
 })
+// ?embed=1 drops the rail and tour chrome, for an iframe in slides or a course page
+if (getParams().get('embed') === '1') document.querySelector('.app')!.classList.add('embed')
+// presentation mode: no rail, larger captions; Escape leaves it
+const presentBtn = document.querySelector('.present-btn') as HTMLButtonElement
+const setPresent = (on: boolean) => { document.querySelector('.app')!.classList.toggle('present', on); presentBtn.setAttribute('aria-pressed', String(on)); poke() }
+presentBtn.addEventListener('click', () => setPresent(true))
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.querySelector('.app.present')) setPresent(false) })
 // the skip link lands on the current page's title
 ;(document.querySelector('.skip') as HTMLButtonElement).addEventListener('click', () => {
   const h1 = current?.root.querySelector('h1') as HTMLElement | null
@@ -69,6 +78,11 @@ function exhibitLink(ex: Exhibit, active: string): HTMLElement {
   if (!ex.route) {
     el.insertAdjacentHTML('beforeend', '<em class="soon-pill">soon<span class="sr-only"> (coming soon)</span></em>')
     el.title = 'In progress'
+  } else {
+    // how far this reader got: a check when every step was seen, else a fraction
+    const pg = progress(ex.route)
+    if (pg.of && pg.seen >= pg.of) el.insertAdjacentHTML('beforeend', '<em class="done" title="Every step seen">✓<span class="sr-only"> seen</span></em>')
+    else if (pg.seen) el.insertAdjacentHTML('beforeend', `<em class="part" title="Steps seen">${pg.seen}/${pg.of}<span class="sr-only"> steps seen</span></em>`)
   }
   if (ex.route) {
     const a = el as HTMLAnchorElement
@@ -183,6 +197,21 @@ window.addEventListener('keydown', (e) => {
   if (to) { e.preventDefault(); go(to) }
 })
 
+/** "Save frame": the drawing as it is now, as a PNG. */
+function saveButton(route: string, root: HTMLElement) {
+  const cv = root.querySelector('.stage canvas') as HTMLCanvasElement | null, meta = root.querySelector('.controls .meta')
+  if (!cv || !meta) return
+  const b = document.createElement('button')
+  b.type = 'button'; b.className = 'cycle'; b.textContent = 'Save frame'; b.title = 'Download the drawing as a PNG'
+  b.addEventListener('click', () => cv.toBlob((blob) => {
+    if (!blob) return
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob); a.download = `token-trails-${route.replace(/\//g, '-')}.png`
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+  }))
+  meta.appendChild(b)
+}
+
 /* ---------- router ---------- */
 let current: { route: string; root: HTMLElement; destroy: () => void } | null = null
 
@@ -225,6 +254,7 @@ function go(target: string, origin?: { x: number; y: number }, push = true) {
   }
   openAtPhase(null)
   chapterNav(route, root)
+  saveButton(route, root)
   current = { route, root, destroy }
   document.title = route === 'start' ? 'Token Trails' : [nameOf(route), CATEGORIES.find((c) => exhibitsOf(c).some((e) => e.route === route))?.title, 'Token Trails'].filter(Boolean).join(' · ')
   app.classList.remove('menu-open'); syncRailBtn()

@@ -16,7 +16,8 @@ There are no tests. To verify a change: typecheck, then open the page and step t
 ## Layout
 
 ```
-src/main.ts                 rail nav (collapsible; a drawer on phones), hash router (#/route?phase=id), page titles,
+src/main.ts                 rail nav (collapsible; a drawer on phones), hash router (#/route?phase=id), page titles, theme,
+                            ?embed=1 and Present modes, Save frame,
                             tour order with previous/next (Shift+←/→), zoom transitions
 src/styles.css              design tokens (dark-first, light via prefers-color-scheme / data-theme) + frame styles
 src/core/stage.ts           Stage: DPR-aware canvas with a min size; scaled to fit a narrower host (phones get a full-size toggle);
@@ -25,6 +26,7 @@ src/core/player.ts          Player: phases, t, play/pause, step buttons, Step/Au
                             (player.describe), ?phase= in the URL; openAtPhase() for links
 src/core/fonts.ts           registerFonts(): the three families as self-hosted woff2 (@fontsource files), Latin, Latin Ext, Greek
 src/core/link.ts            getParams()/setParams(): page state in the address (#/route?phase=…&head=6.6), replaceState only
+src/core/progress.ts        steps seen per page and the last place (rail ✓ / n of m, Resume on the start page)
 src/core/prefs.ts           pref.get/set: reader preferences in localStorage (speed, pacing, temperature, strategy)
 src/core/frame.ts           createFrame(): header/specs, stage host, formula strip, caption line, controls; toggle(), stepper(), rich()
 src/core/draw.ts            primitives: chips, plate(), bracketLabel(), mathName()/mathRun(), fonts F

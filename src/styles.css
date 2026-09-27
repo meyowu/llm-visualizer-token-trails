@@ -316,3 +316,19 @@ abbr.term { text-decoration: underline dotted; text-decoration-color: var(--mute
   .rail, .collapsed .rail { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
   .head, .caption, .controls, .formula { padding-right: max(16px, env(safe-area-inset-right)); padding-left: max(16px, env(safe-area-inset-left)); }
 }
+
+/* ---------- embed and presentation modes ---------- */
+.foot-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.app.embed, .app.present { grid-template-columns: minmax(0, 1fr); }
+.app.embed .rail, .app.present .rail { display: none; }
+.app.embed .chapnav, .app.embed .pipeline, .app.embed .skip { display: none; }
+.app.embed .head { padding-top: 12px; }
+.app.embed h1 { font-size: 32px; }
+.app.present .cap-text { font-size: 17px; max-width: 80ch; }
+.app.present .cap-title b { font-size: 24px; }
+.app.present .f-line { font-size: 14px; }
+.app.present .f-note { font-size: 15px; }
+.ex .done, .ex .part { grid-column: 2; justify-self: start; margin-top: 3px; font: 500 10.5px var(--mono); font-style: normal; color: var(--t4); }
+.ex .part { color: var(--mute); }
+.st-resume { margin-left: 10px; background: none; color: var(--ink); border-color: var(--line2); }
+.st-resume:hover { background: var(--panel); }
