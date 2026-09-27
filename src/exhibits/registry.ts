@@ -1,5 +1,6 @@
 import { mountAttention } from './transformer/attention'
 import { mountEmbedding } from './transformer/embedding'
+import { mountLayerNorm } from './transformer/layernorm'
 import { mountMlp } from './transformer/mlp'
 import { mountOverview } from './transformer/overview'
 import { mountTokenizer } from './transformer/tokenizer'
@@ -33,7 +34,7 @@ export const CATEGORIES: Category[] = [
       { name: 'Embedding', tag: 'W_E · positions', route: 'transformer/embedding', mount: mountEmbedding },
       { name: 'Attention', tag: 'QKᵀ · softmax · V', route: 'transformer/attention', mount: mountAttention },
       { name: 'MLP', tag: '768 → 3072 → 768', route: 'transformer/mlp', mount: mountMlp },
-      { name: 'LayerNorm & Residual', tag: 'pre-LN stream' },
+      { name: 'LayerNorm & Residual', tag: 'pre-LN stream', route: 'transformer/layernorm', mount: mountLayerNorm },
       { name: 'Unembed & Sampling', tag: 'logits · temperature' },
     ],
   },

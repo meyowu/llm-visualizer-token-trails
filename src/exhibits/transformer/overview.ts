@@ -428,7 +428,8 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     plate(G.xMlp, py0, py1, mAct); subLabel(hovM ? 'mlp ↗' : 'mlp', G.xMlp, G.labY + 32, mAct > 0.5)
     G.stack.forEach((x, k) => plate(x, py0, py1, ps > 0 && ps < 1 ? clamp(1 - Math.abs(ps * 11 - k - 0.5) / 1.3) : 0, { w: 6, d: 8 }))
     const lnAct = pu > 0 && pu < 1 ? clamp(1 - Math.abs(pu - 0.2) / 0.2) : 0, wuAct = pu > 0 && pu < 1 ? clamp(1 - Math.abs(pu - 0.55) / 0.3) : 0
-    plate(G.xLn, py0, py1, lnAct); subLabel('ln_f', G.xLn, G.labY + 32, lnAct > 0.1)
+    const hovL = S.hoverPlate === 'ln'
+    plate(G.xLn, py0, py1, Math.max(lnAct, hovL ? 0.8 : 0)); subLabel(hovL ? 'ln_f ↗' : 'ln_f', G.xLn, G.labY + 32, lnAct > 0.1 || hovL)
     plate(G.xWU, wu0, wu1, wuAct, { w: 11, d: 11, hatch: 34 }); subLabel('W_U', G.xWU, G.labY + 32, wuAct > 0.1)
 
     drawEmb(ys, sp, pe, isLast ? 1 - endFade : 1)
@@ -442,6 +443,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     if (hovM) drawOpenHint(G.xMlp, py0 - 4)
     if (S.hoverPlate === 'tok') drawOpenHint(G.xTok + 56, py0 - 4)
     if (S.hoverPlate === 'emb') drawOpenHint((G.xEmb0 + G.xEmb1) / 2, py0 - 4)
+    if (hovL) drawOpenHint(G.xLn, py0 - 4)
   }
 
   /* ---------- captions ---------- */
@@ -454,7 +456,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
       case 'embed': return { t: 'Each id selects one row of the embedding matrix W_E, and the position vector for slot i is added. From here on, every token is a 768-wide residual stream. Click the embedding strips to see the lookup.', s: `[${N} × 768]` }
       case 'attn': return { t: 'Each position compares its query with the keys of every earlier position and pulls in their values, weighted by similarity. The causal mask hides the future. Click the attn plate to open up every matrix product.', s: `12 heads × [${N} × ${N}]` }
       case 'mlp': return { t: 'Each position is expanded to 3,072 dimensions, passed through GELU, and projected back to 768. Positions exchange no information in this step. Click the mlp plate to see the matrix products and GELU.', s: `[${N} × 768] → [${N} × 3072]` }
-      case 'stack': return { t: 'The same block repeats 11 more times. Each block adds its result to the residual stream instead of replacing it; the blending colors trace information moving between positions.', s: '12 blocks · ≈85M params' }
+      case 'stack': return { t: 'The same block repeats 11 more times. Each block adds its result to the residual stream instead of replacing it; the blending colors trace information moving between positions. Click ln_f to see how LayerNorm works.', s: '12 blocks · ≈85M params' }
       case 'unembed': return { t: 'Only the last position is used: after ln_f it is dotted with every vocabulary vector, giving 50,257 logits. GPT-2 ties W_U to W_E.', s: '[1 × 768] · W_Eᵀ → [1 × 50,257]' }
       default: {
         const p = S.pick, pp = p.d[p.idx].p
@@ -472,9 +474,10 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     if (Math.abs(x - G.xMlp) < 14) return 'mlp'
     if (x >= G.xTok - 4 && x < G.xEmb0 - 12) return 'tok'
     if (x >= G.xEmb0 - 4 && x <= G.xEmb1 + 4) return 'emb'
+    if (Math.abs(x - G.xLn) < 14) return 'ln'
     return ''
   }
-  const PLATE_ROUTES: Record<string, string> = { attn: 'transformer/attention', mlp: 'transformer/mlp', tok: 'transformer/tokenizer', emb: 'transformer/embedding' }
+  const PLATE_ROUTES: Record<string, string> = { attn: 'transformer/attention', mlp: 'transformer/mlp', tok: 'transformer/tokenizer', emb: 'transformer/embedding', ln: 'transformer/layernorm' }
   const cv = stage.canvas
   cv.addEventListener('pointermove', (e) => {
     const [x, y] = stage.local(e), { sp, ys } = curYs()

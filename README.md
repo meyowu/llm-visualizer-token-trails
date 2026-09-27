@@ -7,10 +7,11 @@ Follow the tokens through AI systems: animated, explorable walk-throughs of the 
 - **Transformer / Forward pass**: one full forward pass of GPT-2 small, from tokenization to sampling at the LM head. Scrub the timeline, switch attention heads, and drag the temperature.
 - **Transformer / Tokenizer**: GPT-2's byte-level BPE on the prompt: regex pre-split, bytes (space → Ġ), merge rules fired in rank order, and each token's id (256 + merge rank) placed on the vocabulary.
 - **Transformer / Embedding**: ids as one-hot rows times W_E (a GEMM that is really a row lookup, on a log-scaled vocabulary axis), plus the first N rows of W_P, giving the residual stream.
+- **Transformer / LayerNorm & Residual**: the pre-LN residual stream through one block (sub-layers read a normalised copy and add back), then ln_1 on the real toy numbers: each token's features as dots, centred by μ, scaled by σ, then γ ⊙ x̂ + β.
 - **Transformer / Attention**: every matrix product in one attention head, computed with real arithmetic at toy scale (d_model 8, d_head 4) and animated cell by cell: X·W_Q/K/V → Q·Kᵀ → ÷√d → mask → softmax → A·V → concat·W_O → residual add. Hover any result cell to see which row and column produced it.
 - **Transformer / MLP**: the feed-forward block at toy scale (d_model 8 → d_ff 32, the same 4× as GPT-2): X·W_fc + b → GELU (each activation plotted on the curve) → ·W_proj + b → residual add.
 
-On the overview, click a part marked ↗ (the tokens, the embedding strips, the attn plate, the mlp plate) to zoom into its detail view.
+On the overview, click a part marked ↗ (the tokens, the embedding strips, the attn, mlp and ln_f plates) to zoom into its detail view.
 
 ## Development
 
@@ -41,6 +42,7 @@ src/
       overview.ts         forward-pass overview
       tokenizer.ts        tokenizer detail view
       embedding.ts        embedding detail view
+      layernorm.ts        layernorm & residual detail view
       attention.ts        attention detail view
       mlp.ts              MLP detail view
 ```

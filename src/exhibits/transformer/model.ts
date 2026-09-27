@@ -78,11 +78,24 @@ export function embedRow(t: Tok, i: number): number[] {
   return e.map((v, k) => v + p[k])
 }
 
-export function layerNorm(v: number[]): number[] {
-  const m = v.reduce((a, b) => a + b, 0) / v.length
-  const s = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length + 1e-5)
-  return v.map((x) => (x - m) / s)
+export interface LnParams { gamma: number[]; beta: number[] }
+export const LN_EPS = 1e-5
+function lnParams(seed: number): LnParams {
+  const r = rng(seed)
+  return { gamma: Array.from({ length: TOY.d }, () => 1 + 0.15 * gauss(r)), beta: Array.from({ length: TOY.d }, () => 0.1 * gauss(r)) }
 }
+/** Learned scale γ and shift β of the three LayerNorms in the toy model. */
+export const LN = { ln1: lnParams(101), ln2: lnParams(202), lnf: lnParams(303) }
+
+export interface LnStats { mu: number; sigma: number; xhat: number[]; out: number[] }
+/** LayerNorm over one token's features: subtract the mean, divide by the std, then γ ⊙ x̂ + β. */
+export function lnStats(v: number[], p: LnParams): LnStats {
+  const mu = v.reduce((a, b) => a + b, 0) / v.length
+  const sigma = Math.sqrt(v.reduce((a, b) => a + (b - mu) ** 2, 0) / v.length + LN_EPS)
+  const xhat = v.map((x) => (x - mu) / sigma)
+  return { mu, sigma, xhat, out: xhat.map((x, k) => p.gamma[k] * x + p.beta[k]) }
+}
+export const layerNorm = (v: number[], p: LnParams) => lnStats(v, p).out
 
 export const WEIGHT_SEED = 5
 function weights() {
@@ -124,7 +137,7 @@ export interface Attn {
 
 export function attention(seq: Tok[]): Attn {
   const h = seq.map((t, i) => embedRow(t, i))
-  const X = h.map(layerNorm)
+  const X = h.map((r) => layerNorm(r, LN.ln1))
   const heads = Array.from({ length: TOY.heads }, (_, k): Head => {
     const Q = matmul(X, W.Wq[k]), K = matmul(X, W.Wk[k]), V = matmul(X, W.Wv[k])
     const S = matmul(Q, transpose(K))
@@ -176,7 +189,7 @@ export interface Mlp {
 }
 
 export function mlp(seq: Tok[], att: Attn = attention(seq)): Mlp {
-  const h = att.resid, X = h.map(layerNorm)
+  const h = att.resid, X = h.map((r) => layerNorm(r, LN.ln2))
   const H = matmul(X, WM.Wfc).map((r) => r.map((v, j) => v + WM.bfc[j]))
   const G = H.map((r) => r.map(gelu))
   const Y = matmul(G, WM.Wproj).map((r) => r.map((v, j) => v + WM.bproj[j]))

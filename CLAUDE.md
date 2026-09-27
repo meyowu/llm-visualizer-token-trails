@@ -30,6 +30,7 @@ src/exhibits/transformer/
   overview.ts               forward pass, tokenizer → sampling; attn/mlp plates open the detail views
   tokenizer.ts              tokenizer detail view: pre-split, bytes, BPE merges by rank, ids (id = 256 + merge rank)
   embedding.ts              embedding detail view: onehot · W_E as a lookup, + W_P, into the stream
+  layernorm.ts              pre-LN stream schematic, then ln_1 as dots on number lines (μ, σ, γ, β)
   attention.ts              attention detail view, every GEMM animated cell by cell
   mlp.ts                    MLP detail view: up-projection, GELU curve, down-projection, residual
 ```
