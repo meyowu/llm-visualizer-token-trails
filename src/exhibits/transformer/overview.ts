@@ -25,7 +25,7 @@ interface Pick { idx: number; text: string; d: DistRow[]; u: number }
 export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   const reduced = reducedMotion()
   const frame = createFrame(root, {
-    eyebrow: 'Transformer',
+    eyebrow: 'Anatomy',
     title: 'Forward pass',
     subtitle: 'decoder-only · GPT-2 small',
     specs: [
@@ -509,7 +509,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     if (Math.abs(x - G.xLn) < 14) return 'ln'
     return ''
   }
-  const PLATE_ROUTES: Record<string, string> = { attn: 'transformer/attention', mlp: 'transformer/mlp', tok: 'transformer/tokenizer', emb: 'transformer/embedding', ln: 'transformer/layernorm', wu: 'transformer/unembed' }
+  const PLATE_ROUTES: Record<string, string> = { attn: 'anatomy/attention', mlp: 'anatomy/mlp', tok: 'anatomy/tokenizer', emb: 'anatomy/embedding', ln: 'anatomy/layernorm', wu: 'anatomy/unembed' }
   const cv = stage.canvas
   cv.addEventListener('pointermove', (e) => {
     const [x, y] = stage.local(e), { sp, ys } = curYs()

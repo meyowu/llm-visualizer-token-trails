@@ -32,10 +32,10 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
   const S = { head: 0 }
 
   const frame = createFrame(root, {
-    eyebrow: 'Transformer · Attention',
+    eyebrow: 'Anatomy · Attention',
     title: 'Attention',
     subtitle: 'causal self-attention · block 1 · head 1',
-    back: { label: 'Forward pass', onClick: () => nav('transformer') },
+    back: { label: 'Forward pass', onClick: () => nav('anatomy') },
     specs: [
       { label: 'shown', value: 'toy', real: 'GPT-2 small' },
       { label: 'tokens', value: String(N) },

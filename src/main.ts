@@ -2,7 +2,7 @@ import './styles.css'
 import { rich } from './core/frame'
 import { watchTheme } from './core/theme'
 import { reducedMotion } from './core/util'
-import { CATEGORIES, DEFAULT_ROUTE, ROUTES } from './exhibits/registry'
+import { ALIASES, CATEGORIES, DEFAULT_ROUTE, ROUTES, exhibitsOf, isHeading, type Exhibit } from './exhibits/registry'
 
 watchTheme()
 
@@ -10,29 +10,57 @@ const railNav = document.querySelector('.nav') as HTMLElement
 const main = document.querySelector('.main') as HTMLElement
 
 /* ---------- rail ---------- */
+/** Categories the reader has opened; the one holding the current route is always open. */
+const open = new Set<string>()
+
+function exhibitLink(ex: Exhibit, active: string): HTMLElement {
+  const li = document.createElement('li')
+  const el = document.createElement(ex.route ? 'a' : 'div')
+  el.className = 'ex' + (ex.route ? '' : ' soon')
+  el.innerHTML = '<span></span><small></small>'
+  el.querySelector('span')!.textContent = ex.name
+  el.querySelector('small')!.innerHTML = rich(ex.tag)
+  if (ex.route) {
+    const a = el as HTMLAnchorElement
+    a.href = '#/' + ex.route
+    if (ex.route === active) a.setAttribute('aria-current', 'page')
+    a.addEventListener('click', (e) => { e.preventDefault(); go(ex.route!) })
+  }
+  li.appendChild(el)
+  if (ex.children?.length) {
+    const kids = document.createElement('ul')
+    kids.className = 'kids'
+    ex.children.forEach((c) => kids.appendChild(exhibitLink(c, active)))
+    li.appendChild(kids)
+  }
+  return li
+}
+
 function renderRail(active: string) {
   railNav.innerHTML = ''
   for (const cat of CATEGORIES) {
+    const all = exhibitsOf(cat), live = all.filter((e) => e.route).length
+    if (all.some((e) => e.route === active)) open.add(cat.id)
+    const isOpen = open.has(cat.id)
     const sec = document.createElement('section')
     sec.className = 'group'
-    const h = document.createElement('h2')
-    h.textContent = cat.title
+    const h = document.createElement('button')
+    h.className = 'cat'
+    h.type = 'button'
+    h.setAttribute('aria-expanded', String(isOpen))
+    h.innerHTML = '<span class="chev" aria-hidden="true"></span><span class="t"></span><span class="n"></span>'
+    h.querySelector('.t')!.textContent = cat.title
+    h.querySelector('.n')!.textContent = `${live} / ${all.length}`
+    h.addEventListener('click', () => { if (open.has(cat.id)) open.delete(cat.id); else open.add(cat.id); renderRail(active) })
     const ul = document.createElement('ul')
-    for (const ex of cat.items) {
-      const li = document.createElement('li')
-      const el = document.createElement(ex.route ? 'a' : 'div')
-      el.className = 'ex' + (ex.route ? '' : ' soon')
-      el.innerHTML = '<span></span><small></small>'
-      el.querySelector('span')!.textContent = ex.name
-      el.querySelector('small')!.innerHTML = rich(ex.tag)
-      if (ex.route) {
-        const a = el as HTMLAnchorElement
-        a.href = '#/' + ex.route
-        if (ex.route === active) a.setAttribute('aria-current', 'page')
-        a.addEventListener('click', (e) => { e.preventDefault(); go(ex.route!) })
-      }
-      li.appendChild(el)
-      ul.appendChild(li)
+    ul.hidden = !isOpen
+    for (const e of cat.entries) {
+      if (isHeading(e)) {
+        const li = document.createElement('li')
+        li.className = 'subh'
+        li.textContent = e.heading
+        ul.appendChild(li)
+      } else ul.appendChild(exhibitLink(e, active))
     }
     sec.append(h, ul)
     railNav.appendChild(sec)
@@ -43,7 +71,12 @@ function renderRail(active: string) {
 let current: { route: string; root: HTMLElement; destroy: () => void } | null = null
 
 function parse(): string {
-  const h = location.hash.replace(/^#\/?/, '')
+  let h = location.hash.replace(/^#\/?/, '')
+  for (const [from, to] of ALIASES) {
+    if (h !== from && !h.startsWith(from + '/')) continue
+    h = to + h.slice(from.length)
+    try { history.replaceState(null, '', '#/' + h) } catch { /* sandboxed frames may refuse */ }
+  }
   return ROUTES[h] ? h : DEFAULT_ROUTE
 }
 

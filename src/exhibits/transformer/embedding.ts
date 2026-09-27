@@ -30,10 +30,10 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
   const Hm: M = E.map((r, i) => r.map((v, k) => v + P[i][k]))
 
   const frame = createFrame(root, {
-    eyebrow: 'Transformer · Embedding',
+    eyebrow: 'Anatomy · Embedding',
     title: 'Embedding',
     subtitle: 'token + position · GPT-2',
-    back: { label: 'Forward pass', onClick: () => nav('transformer') },
+    back: { label: 'Forward pass', onClick: () => nav('anatomy') },
     specs: [
       { label: 'shown', value: 'toy', real: 'GPT-2 small' },
       { label: 'vocab', value: '50,257' },

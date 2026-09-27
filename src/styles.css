@@ -41,8 +41,18 @@ button { font: inherit; color: inherit; }
 .brand b { font: italic 400 24px/1 var(--serif); letter-spacing: -.01em; }
 .brand svg { flex: none; }
 .tagline { margin: 8px 0 0; color: var(--mute); font-size: 12.5px; }
-.nav { display: flex; flex-direction: column; gap: 22px; }
-.group h2 { margin: 0 0 8px 8px; font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--mute); }
+.nav { display: flex; flex-direction: column; gap: 14px; }
+.cat { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0 0 6px; padding: 4px 8px; border: 0; background: none; cursor: pointer; font: 500 10.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--mute); text-align: left; }
+.cat:hover { color: var(--ink2); }
+.cat .t { flex: 1; }
+.cat .n { letter-spacing: .02em; color: var(--faint); font-variant-numeric: tabular-nums; }
+.cat .chev { width: 6px; height: 6px; border-right: 1px solid currentColor; border-bottom: 1px solid currentColor; transform: rotate(-45deg); transition: transform .15s; }
+.cat[aria-expanded="true"] .chev { transform: rotate(45deg) translate(-1px, -1px); }
+.group .subh { margin: 10px 0 2px 26px; font: 400 10px/1.2 var(--mono); letter-spacing: .06em; color: var(--faint); }
+.group .subh:first-child { margin-top: 2px; }
+.group .kids { list-style: none; margin: 2px 0 4px 12px; padding: 0 0 0 8px; border-left: 1px solid var(--line2); display: grid; gap: 1px; }
+.kids .ex { padding-block: 4px; }
+.kids .ex span { font-size: 13px; }
 .group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .ex { display: grid; grid-template-columns: 8px 1fr; column-gap: 10px; align-items: baseline; padding: 6px 8px; border-radius: 6px; color: var(--mute); text-decoration: none; }
 .ex::before { content: ""; width: 6px; height: 6px; border-radius: 50%; border: 1px solid var(--faint); grid-row: 1; transform: translateY(-1px); }
@@ -113,7 +123,10 @@ h1 .sub { font: 400 12px var(--mono); letter-spacing: .02em; color: var(--mute);
   .app { display: block; height: auto; }
   .rail { border-right: 0; border-bottom: 1px solid var(--line); padding: 18px 16px; gap: 14px; overflow: visible; }
   .nav { flex-direction: row; gap: 18px; overflow-x: auto; padding-bottom: 6px; }
-  .group ul { display: flex; gap: 2px; }
+  .group ul, .kids { display: flex; gap: 2px; }
+  .group .kids { border-left: 0; margin: 0; padding: 0; }
+  .group > ul > li { display: flex; }
+  .group .subh { display: none; }
   .ex { white-space: nowrap; }
   .rail-foot { display: none; }
   .main { height: auto; overflow: visible; }

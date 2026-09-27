@@ -28,10 +28,10 @@ export function mountMlp(root: HTMLElement, nav: Nav): () => void {
   const WprojT = transpose(R.Wproj)
 
   const frame = createFrame(root, {
-    eyebrow: 'Transformer · MLP',
+    eyebrow: 'Anatomy · MLP',
     title: 'MLP',
     subtitle: 'feed-forward · block 1',
-    back: { label: 'Forward pass', onClick: () => nav('transformer') },
+    back: { label: 'Forward pass', onClick: () => nav('anatomy') },
     specs: [
       { label: 'shown', value: 'toy', real: 'GPT-2 small' },
       { label: 'tokens', value: String(N) },

@@ -29,10 +29,10 @@ export function mountLayerNorm(root: HTMLElement, nav: Nav): () => void {
   const att = attention(seq)
 
   const frame = createFrame(root, {
-    eyebrow: 'Transformer · LayerNorm & Residual',
+    eyebrow: 'Anatomy · LayerNorm & Residual',
     title: 'LayerNorm & Residual',
     subtitle: 'pre-LN · ln_1 of block 1',
-    back: { label: 'Forward pass', onClick: () => nav('transformer') },
+    back: { label: 'Forward pass', onClick: () => nav('anatomy') },
     specs: [
       { label: 'shown', value: 'toy', real: 'GPT-2 small' },
       { label: 'features', value: String(D), real: '768' },
@@ -256,7 +256,7 @@ export function mountLayerNorm(root: HTMLElement, nav: Nav): () => void {
   stage.canvas.addEventListener('pointerleave', () => { hoverPlate = '' })
   stage.canvas.addEventListener('click', (e) => {
     const [x, y] = stage.local(e), pl = plateAt(x, y)
-    if (pl) nav(pl === 'attn' ? 'transformer/attention' : 'transformer/mlp', { x: e.clientX, y: e.clientY })
+    if (pl) nav(pl === 'attn' ? 'anatomy/attention' : 'anatomy/mlp', { x: e.clientX, y: e.clientY })
   })
 
   const CAPS: Record<string, [string, string]> = {

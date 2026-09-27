@@ -62,10 +62,10 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
   const final = steps[steps.length - 1].after
 
   const frame = createFrame(root, {
-    eyebrow: 'Transformer · Tokenizer',
+    eyebrow: 'Anatomy · Tokenizer',
     title: 'Tokenizer',
     subtitle: 'byte-level BPE · GPT-2',
-    back: { label: 'Forward pass', onClick: () => nav('transformer') },
+    back: { label: 'Forward pass', onClick: () => nav('anatomy') },
     specs: [
       { label: 'base symbols', value: '256 bytes' },
       { label: 'merges', value: '50,000' },

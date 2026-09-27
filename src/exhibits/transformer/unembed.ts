@@ -42,10 +42,10 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
 
   const S = { T: 0.8, strat: 0, u: 0.22 }
   const frame = createFrame(root, {
-    eyebrow: 'Transformer · Unembed & Sampling',
+    eyebrow: 'Anatomy · Unembed & Sampling',
     title: 'Unembed & Sampling',
     subtitle: 'LM head · tied to W_E',
-    back: { label: 'Forward pass', onClick: () => nav('transformer') },
+    back: { label: 'Forward pass', onClick: () => nav('anatomy') },
     specs: [
       { label: 'shown', value: 'toy', real: 'GPT-2 small' },
       { label: 'd_model', value: String(D), real: '768' },
