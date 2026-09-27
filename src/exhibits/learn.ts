@@ -261,6 +261,35 @@ const LEARN: Record<string, Learn> = {
       'It normalises after each residual add and adds fixed sinusoids; GPT-2 moved to pre-LN and learned positions.',
     ],
   },
+  mixtral: {
+    refs: [["Jiang et al. 2024, Mixtral of Experts", "https://arxiv.org/abs/2401.04088"], ["Shazeer et al. 2017, Outrageously Large Neural Networks: the Sparsely-Gated Mixture-of-Experts Layer", "https://arxiv.org/abs/1701.06538"], ["Fedus et al. 2021, Switch Transformers (load-balancing loss)", "https://arxiv.org/abs/2101.03961"]],
+    code: {
+      lines: [
+        '# the block is LLaMA\'s, with a sparse MoE layer where the MLP was',
+        'h = x + self_attn(rms_norm(x)); out = h + moe(rms_norm(h))',
+        '# moe: score the 8 experts, keep the best 2, renormalise their weights',
+        'router_logits = self.gate(x)                          # (tokens, 8)',
+        'weights = F.softmax(router_logits, dim=-1)',
+        'weights, experts = torch.topk(weights, 2, dim=-1)',
+        'weights /= weights.sum(dim=-1, keepdim=True)            # = softmax over the top 2',
+        'y = sum(w * self.experts[e](x) for w, e in zip(weights, experts))',
+        '# each expert is a SwiGLU MLP',
+        'expert_out = self.w2(F.silu(self.w1(x)) * self.w3(x))',
+        '# training adds a balancing loss: share routed × mean probability',
+        'aux = n_experts * (f * P).sum()',
+      ],
+      at: { blocks: [0, 1], route: [2, 3, 4, 5, 6], dispatch: [7, 8, 9], params: [7, 9], balance: [10, 11] },
+    },
+    checks: [
+      { phase: 'dispatch', q: 'Mixtral has 8 experts per layer and runs 2 for each token. Roughly what share of the expert weights does one token use?', options: ['A quarter', 'An eighth', 'Two thirds', 'All of them'], answer: 0, why: '2 of 8 experts: a quarter of the expert weights, in every layer. The attention weights are shared and always used.' },
+      { phase: 'params', q: 'Mixtral stores 46.7B parameters. What sets its compute per token?', options: ['The 12.9B parameters a token actually runs through', 'All 46.7B parameters', 'Only the router', 'The size of the vocabulary'], answer: 0, why: 'About 2 FLOPs per weight used: the shared parts plus 2 experts per layer, 12.9B. Memory still has to hold all 46.7B.' },
+    ],
+    recap: [
+      'Mixtral keeps LLaMA’s attention and replaces each MLP with 8 expert MLPs and a router.',
+      'The router scores the experts for each token; the top 2 run, mixed by a softmax over their two scores.',
+      'It stores 46.7B parameters but uses 12.9B per token; a balancing loss keeps the experts evenly used.',
+    ],
+  },
   llama: {
     refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {

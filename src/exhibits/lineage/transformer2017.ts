@@ -4,7 +4,7 @@ import { C, blend, mixc, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, gauss, lerp, rng } from '../../core/util'
 import { streamNorms, wpeSlice } from '../../lib/gpt2/data'
 import type { Nav } from '../registry'
-import { mountLineage, type Env } from './kit'
+import { mountLineage, words, type Env } from './kit'
 
 /*
  * The original Transformer (Vaswani et al. 2017) as a diff against GPT-2. Two stacks instead of
@@ -24,10 +24,9 @@ const PHASES = [
   { id: 'pos', name: 'Sinusoidal positions', short: 'Sinusoids', dur: 9 },
 ]
 
-const toks = (words: string[]): TokLike[] => words.map((text, c) => ({ text, c }))
-const SRC = toks(['I', 'have', 'seen', 'the', 'cat', '.'])
-const TIN = toks(['<s>', 'Ich', 'habe', 'die', 'Katze', 'gesehen', '.'])
-const TOUT = toks(['Ich', 'habe', 'die', 'Katze', 'gesehen', '.', '</s>'])
+const SRC = words(['I', 'have', 'seen', 'the', 'cat', '.'])
+const TIN = words(['<s>', 'Ich', 'habe', 'die', 'Katze', 'gesehen', '.'])
+const TOUT = words(['Ich', 'habe', 'die', 'Katze', 'gesehen', '.', '</s>'])
 const NS = SRC.length, NT = TIN.length, DK = 4
 /** The source word each target position translates next (German puts the participle last). */
 const ALIGN = [0, 1, 3, 4, 2, 5, 5]

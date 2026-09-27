@@ -20,6 +20,7 @@ The atlas follows a model's life in six parts: **Anatomy** (GPT-2 taken apart), 
 - **Glossary**: every term of art in plain words; captions mark first mentions with their definition.
 - **Lineage / Transformer (2017)**: the original encoder–decoder as a diff against GPT-2: why attention replaced RNNs (one step instead of n), the encoder and decoder stacks, translating “I have seen the cat.” token by token, the three attentions and their masks, cross-attention as a target × source GEMM, post-LN vs pre-LN with GPT-2's real residual-stream lengths, and sinusoidal positions next to GPT-2's real learned W_P.
 - **Lineage / LLaMA**: LLaMA 3 as a diff against GPT-2: the two blocks side by side, then RoPE (rotating q/k pairs by position, and why only the offset matters), RMSNorm vs LayerNorm, the gated SwiGLU MLP, and MHA vs GQA vs MQA with real KV-cache sizes.
+- **Lineage / Mixtral**: the mixture of experts: the MLP becomes a router and 8 SwiGLU experts, the router's scores and top-2 pick as a small GEMM, six tokens dispatched to their two experts and combined, 46.7B stored vs 12.9B used per token, and the Switch Transformer balancing loss computed on the batch.
 
 Every page has an All steps list, a Code drawer with the matching PyTorch, a Go deeper reading list, a question or two to answer before key steps, and a recap at the end. It pauses at the end of each step so there is time to read (switch to Auto to play straight through); ← and → move between steps. On the overview, click a part marked ↗ (the tokens, the embedding strips, the attn, mlp, ln_f and W_U plates, the next-token bars) to zoom into its detail view.
 
@@ -67,6 +68,7 @@ src/
     lineage/
       transformer2017.ts  the 2017 Transformer compared with GPT-2
       llama.ts            LLaMA 3 compared with GPT-2
+      mixtral.ts          Mixtral 8x7B compared with GPT-2
 scripts/
   gpt2-export.ts          offline GPT-2 small forward pass that writes src/data/gpt2.json
 ```

@@ -14,6 +14,9 @@ import type { Nav } from '../registry'
  * canvas that jump to a phase.
  */
 
+/** Plain word tokens for a toy sentence; token i gets hue i. */
+export const words = (ws: string[]): TokLike[] => ws.map((text, c) => ({ text, c }))
+
 /** Canvas helpers shared by the Lineage pages; they draw on the page's stage. */
 export interface Kit {
   /** A dark label that jumps to `phase` when clicked. */

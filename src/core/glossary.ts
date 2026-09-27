@@ -32,6 +32,8 @@ export const TERMS: Term[] = [
   { term: 'LayerNorm', match: ['layernorm'], def: 'Rescales each token’s vector to mean 0 and spread 1, then applies a learned scale (γ) and shift (β) per feature.' },
   { term: 'Logit lens', match: ['logit lens'], def: 'Reading a middle layer through the final LayerNorm and the unembedding, to see what the model would predict if it stopped there.' },
   { term: 'Logits', match: ['logits', 'logit'], def: 'Raw, unnormalised scores, one per vocabulary token; softmax turns them into probabilities.' },
+  { term: 'Mixture of experts (MoE)', match: ['mixture of experts', 'moe'], def: 'A layer with several expert MLPs and a router; each token runs through only the few experts the router picks, so the model can store many more parameters than it uses per token.' },
+  { term: 'Router', match: ['router'], def: 'In a mixture of experts, a small matrix that scores every expert for a token; the top-scoring experts run, weighted by a softmax over their scores.' },
   { term: 'MLP', match: ['mlp'], def: 'Multi-layer perceptron: two matrix products with a nonlinearity (GELU) between them, applied to each token on its own.' },
   { term: 'x · W and W x', match: [], def: 'Two ways to write the same product. Papers often write W x (a column vector); code and this site write x · W (x @ W), with one row per token.' },
   { term: 'Query, key, value', match: [], def: 'Three vectors made from each token for attention: what it is looking for, what it offers, and what it passes on when chosen.' },
