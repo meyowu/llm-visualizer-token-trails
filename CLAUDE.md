@@ -24,7 +24,8 @@ src/core/frame.ts           createFrame(): header/specs, stage host, caption lin
 src/core/draw.ts            primitives: chips, plate(), bracketLabel(), mathName()/mathRun(), fonts F
 src/core/matrix.ts          MatrixKit: drawMat (slabs), gemm() schedules, gemmOverlay, hover hits, formula line
 src/core/theme.ts           canvas palette C (read from CSS tokens), rgba/mixc/blend/pop
-src/exhibits/registry.ts    categories + exhibits; an item is live when it has `route` and `mount`
+src/exhibits/registry.ts    categories (Anatomy, Lineage, Training, Serving, Agents) → entries: exhibits or sub-headings;
+                            an exhibit may have `children` (its steps); live when it has `route` and `mount`
 src/exhibits/transformer/
   model.ts                  GPT-2 ids, canned next-token distribution, toy attention + MLP blocks, overview pass data
   overview.ts               forward pass, tokenizer → sampling; attn/mlp plates open the detail views
@@ -39,7 +40,7 @@ src/exhibits/transformer/
 ## Adding an exhibit or detail view
 
 1. Write `mountX(root, nav): () => void`: `createFrame` → `new Stage` → `new Player(PHASES, frame.controls)` → `runLoop` that ticks, draws, updates the timeline UI and sets the caption. Return a destroy that stops the loop and calls `player.destroy()` and `stage.destroy()`.
-2. Register it in `registry.ts` (`route` + `mount`). A route one level deeper than the current one (`transformer/mlp`) opens with a zoom-in.
+2. Register it in `registry.ts` (`route` + `mount`). Steps of an exhibit go in its `children` with a deeper route (`anatomy/mlp`), which opens with a zoom-in. Routes are hash-based (`#/anatomy/attention`, `#/lineage/llama`); old ones keep working through `ALIASES`.
 3. To open a detail view from the overview, add its plate to `plateAt` / `PLATE_ROUTES` in `overview.ts` (hover highlight and `drawOpenHint` follow). Mention the click in that phase's caption.
 
 ## Conventions
