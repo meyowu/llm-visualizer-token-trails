@@ -1,4 +1,4 @@
-import { F, fillRich, rr, spaced, useCtx } from '../../core/draw'
+import { F, fillRich, rr, serifAt, spaced, useCtx } from '../../core/draw'
 import { createFrame } from '../../core/frame'
 import { Player } from '../../core/player'
 import { Stage, runLoop } from '../../core/stage'
@@ -125,7 +125,7 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
 
   /* ---------- scenes ---------- */
   function sentence(sepE: number, a: number, colorE: number) {
-    ctx.font = 'italic 400 34px Newsreader, Georgia, serif'; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'
+    ctx.font = serifAt(34); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'
     const ws = PROMPT.map((w) => ctx.measureText(w).width)
     const total = ws.reduce((s, v) => s + v, 0) + WGAP * sepE * (N - 1)
     let x = (G.mainL + G.mainR) / 2 - total / 2
@@ -159,7 +159,7 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
     cells.forEach((w, wi) => w.forEach((r, k) => {
       const f = eio(clamp((p - 0.1 - (wi * 4 + k) * 0.02) / 0.4))
       if (f <= 0) return
-      ctx.font = 'italic 400 34px Newsreader, Georgia, serif'
+      ctx.font = serifAt(34)
       const sx = pos[wi].chars[k], x = lerp(sx, r.x, f), y = lerp(G.sentY - 10, G.rowY, f)
       drawSym(x, y, lerp(18, r.w, f), r.sym, wi, f, 0)
       ctx.font = F.mono(10); ctx.textAlign = 'center'; ctx.textBaseline = 'top'

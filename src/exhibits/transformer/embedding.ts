@@ -1,4 +1,4 @@
-import { F, chipW, drawChip, fillRich, mathName, spaced, useCtx } from '../../core/draw'
+import { chipW, drawChip, F, fillRich, mathName, serifAt, spaced, useCtx } from '../../core/draw'
 import { createFrame } from '../../core/frame'
 import { MatrixKit, fmt, lr, type M, type Rect } from '../../core/matrix'
 import { Player } from '../../core/player'
@@ -203,7 +203,7 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
     mk.drawMat({ r: L.H2, vals: Hm, kind: 'row', alpha: clamp(hp * 3), name: 'h', shape: '5 × 8', real: 'N × 768', label: 'bottom', reveal: (i, j) => (hp * N * D > i * D + j ? 1 : 0) })
     mk.hit('H', L.H2, N, D)
     // + and = signs
-    ctx.font = 'italic 400 26px Newsreader, Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.font = serifAt(26); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
     const my = L.E2.y + (N * L.E2.c) / 2
     ctx.fillStyle = rgba(C.ink2, pp); ctx.fillText('+', L.E2.x + 8.5 * L.E2.c, my)
     ctx.fillStyle = rgba(C.ink2, clamp(hp * 3)); ctx.fillText('=', L.P2.x + 8.5 * L.P2.c, my)

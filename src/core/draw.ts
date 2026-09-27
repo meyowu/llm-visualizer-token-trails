@@ -6,14 +6,20 @@ export function useCtx(c: CanvasRenderingContext2D) {
   ctx = c
 }
 
+export const MONO = '"JetBrains Mono", ui-monospace, Menlo, monospace'
+export const SERIF = '"EB Garamond", Georgia, serif'
+/** Italic serif for names and math. EB Garamond runs small, so sizes are scaled up 10%. */
+export const serifAt = (px: number) => `italic 400 ${Math.round(px * 1.1 * 10) / 10}px ${SERIF}`
+
 export const F = {
-  serif: 'italic 400 26px Newsreader, Georgia, serif',
-  serifM: 'italic 400 19px Newsreader, Georgia, serif',
-  chip: '500 12px "Geist Mono", ui-monospace, Menlo, monospace',
-  small: '400 10.5px "Geist Mono", ui-monospace, Menlo, monospace',
-  label: '500 10px "Geist Mono", ui-monospace, Menlo, monospace',
+  serif: serifAt(26),
+  serifM: serifAt(19),
+  chip: `500 12.5px ${MONO}`,
+  small: `400 11px ${MONO}`,
+  label: `500 10.5px ${MONO}`,
   body: '400 12px Geist, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif',
-  mono: (px: number, w = 400) => `${w} ${px}px "Geist Mono", ui-monospace, Menlo, monospace`,
+  /** Mono at a given size; anything under 11px gets +0.5px, since small JetBrains Mono needs it to stay crisp. */
+  mono: (px: number, w = 400) => `${w} ${px < 11 ? px + 0.5 : px}px ${MONO}`,
 }
 
 export interface TokLike {
@@ -178,7 +184,7 @@ export function mathRun(parts: [string, boolean][], x: number, y: number, a: num
   ctx.fillStyle = rgba(col, a)
   let w = 0
   for (const [t, isSub] of parts) {
-    ctx.font = `italic 400 ${isSub ? Math.round(size * 0.62) : size}px Newsreader, Georgia, serif`
+    ctx.font = serifAt(isSub ? size * 0.62 : size)
     ctx.fillText(t, x + w, isSub ? y + size * 0.22 : y)
     w += ctx.measureText(t).width + (isSub ? 1 : 0)
   }
@@ -192,7 +198,7 @@ export function mathName(name: string, x: number, y: number, a: number, size = 1
   ctx.fillStyle = rgba(col, a)
   let w = 0
   for (const [s, sub] of richSegs(name)) {
-    ctx.font = `italic 400 ${sub ? Math.round(size * 0.62) : size}px Newsreader, Georgia, serif`
+    ctx.font = serifAt(sub ? size * 0.62 : size)
     ctx.fillText(s, x + w + (sub ? 1 : 0), sub ? y + size * 0.22 : y)
     w += ctx.measureText(s).width + (sub ? 1 : 0)
   }

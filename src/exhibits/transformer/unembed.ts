@@ -1,4 +1,4 @@
-import { F, chipW, drawChip, plate, rr, spaced, subLabel, tokDisp, tokLabel, tokText, useCtx } from '../../core/draw'
+import { chipW, drawChip, F, plate, rr, serifAt, spaced, subLabel, tokDisp, tokLabel, tokText, useCtx } from '../../core/draw'
 import { createFrame, toggle } from '../../core/frame'
 import { MatrixKit, fmt, gemm, type M, type Rect } from '../../core/matrix'
 import { Player } from '../../core/player'
@@ -115,7 +115,7 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
 
   /* ---------- pieces ---------- */
   function sentence(appendA: number, text: string) {
-    ctx.font = 'italic 400 26px Newsreader, Georgia, serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'
+    ctx.font = serifAt(26); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'
     let xx0 = pad
     PROMPT.forEach((w) => { ctx.fillStyle = rgba(C.ink); ctx.fillText(w, xx0, L.sentY); xx0 += ctx.measureText(w).width })
     if (appendA > 0) { ctx.fillStyle = rgba(nextCol, appendA); ctx.fillText(tokDisp(text), xx0, L.sentY); xx0 += ctx.measureText(tokDisp(text)).width }

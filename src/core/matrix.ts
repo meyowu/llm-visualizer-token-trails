@@ -149,9 +149,14 @@ export class MatrixKit {
     ctx.restore()
   }
   cellText(t: string, x: number, y: number, c: number, fa: number, a: number, weak = false) {
-    if (!t || c < 17) return
+    if (!t || c < 14) return
     const ctx = this.ctx
-    ctx.font = F.mono(clamp(c * 0.3, 8, 11)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    // shrink to fit the cell; skip the number when it would have to go below 7px
+    let fs = clamp(c * 0.3, 8, 11)
+    ctx.font = F.mono(fs)
+    const w = ctx.measureText(t).width
+    if (w > c - 3) { fs = (fs * (c - 3)) / w; if (fs < 7) return; ctx.font = F.mono(fs) }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
     ctx.fillStyle = rgba(fa > 0.55 ? C.bg : weak ? C.ink2 : C.ink, (weak ? 0.7 : 0.9) * a)
     ctx.fillText(t, x + c / 2, y + c / 2 + 0.5)
   }

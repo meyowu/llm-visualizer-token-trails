@@ -56,14 +56,14 @@ src/exhibits/transformer/
   - Colors come only from `C` / the CSS tokens. Never hard-code hex in drawing code, and check both themes.
   - Each token keeps its hue (`--t0…--t6`, token i → `i % 7`) everywhere. Information mixing between tokens is shown by blending hues, and the blend must match the overview's lanes (`mixStep` / `laneCols`).
   - Layers are tilted glass plates. Matrices are slabs with a 5px depth face. A filled cell is positive, an outlined cell is negative.
-  - Fonts: Newsreader italic for names and math, Geist for UI text, Geist Mono for labels and numbers. Group labels are uppercase mono over thin brackets.
+  - Fonts: EB Garamond italic for names and math (`serifAt()`, scaled up 10%), Geist for UI text, JetBrains Mono for labels and numbers (`MONO`, never under 10.5px on canvas). Group labels are uppercase mono over thin brackets. Use the constants in `core/draw.ts`, never a hard-coded font string.
   - Keep canvas text minimal, using real units and terms of art (GPT-2 ids, Ġ, 768 → 3072, FLOPs). Explanations go in the caption line: one or two plain sentences per phase. The canvas formula line carries a short note for the focused cell.
 - Seeds are chosen for readable patterns (`WEIGHT_SEED` in `model.ts`). Changing a seed changes every number shown, so re-check the attention patterns if you touch it.
 
 ## Gotchas
 
 - The browser pane's `preview_start` with the `dev` config has failed to serve before. If :5173 doesn't answer, run `npx vite --port 5174` in the background and navigate there. A hidden pane throttles rAF, so take a fresh screenshot before judging a frozen frame.
-- Unicode subscripts don't render in Newsreader; use `mathRun()` for math with subscripts.
+- Don't rely on Unicode subscript characters in the serif; use `mathRun()` or `fillRich()` for math with subscripts.
 - The repo is private: github.com/meyowu/token-trails.
 
 ## Shipping

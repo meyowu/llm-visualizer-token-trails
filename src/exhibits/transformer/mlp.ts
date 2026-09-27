@@ -4,7 +4,7 @@ import { Player } from '../../core/player'
 import { Stage, runLoop } from '../../core/stage'
 import { C, blend, rgba } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
-import { F, chipW, mathName, plate, subLabel, useCtx } from '../../core/draw'
+import { chipW, F, mathName, plate, serifAt, subLabel, useCtx } from '../../core/draw'
 import type { Nav } from '../registry'
 import { GELU_MIN, TOY, TOY_FF, attention, gelu, mlp, promptTokens, transpose } from './model'
 
@@ -75,10 +75,10 @@ export function mountMlp(root: HTMLElement, nav: Nav): () => void {
   function drawBias(r: Rect, vals: number[], name: string, shape: string, real: string, a: number, side: 'left' | 'right') {
     if (a <= 0.01) return
     mk.drawMat({ r, vals: [vals], kind: 'w', alpha: a, name, shape, label: 'none', noText: true })
-    ctx.font = 'italic 400 18px Newsreader, Georgia, serif'
+    ctx.font = serifAt(18)
     const [base, sub] = name.split('_')
     const bw = ctx.measureText(base).width
-    ctx.font = 'italic 400 11px Newsreader, Georgia, serif'
+    ctx.font = serifAt(11)
     const w = bw + ctx.measureText(sub).width + 1
     const y = r.y + r.c * 0.72
     if (side === 'right') {
@@ -142,7 +142,7 @@ export function mountMlp(root: HTMLElement, nav: Nav): () => void {
       ctx.strokeStyle = rgba(C.ink, a); ctx.lineWidth = 1.5; ctx.stroke()
     }
     // labels
-    ctx.font = 'italic 400 17px Newsreader, Georgia, serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'
+    ctx.font = serifAt(17); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'
     ctx.fillStyle = rgba(C.ink, a); ctx.fillText('GELU(x) = x · Φ(x)', P.x0, P.y0 + 14)
     ctx.font = F.mono(9.5); ctx.fillStyle = rgba(C.mute, a); ctx.textBaseline = 'top'
     ctx.textAlign = 'center'
