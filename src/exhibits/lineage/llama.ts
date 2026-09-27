@@ -36,7 +36,7 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
     title: 'LLaMA',
     subtitle: 'LLaMA 3 8B · what changed since GPT-2',
     specs: [
-      { label: 'compared', value: 'LLaMA 3 8B', real: 'GPT-2 small' },
+      { label: 'compared', value: 'LLaMA 3 8B', real: 'GPT-2 small', realLabel: 'vs' },
       { label: 'layers', value: '32', real: '12' },
       { label: 'd_model', value: '4,096', real: '768' },
       { label: 'heads', value: '32 q · 8 kv', real: '12' },

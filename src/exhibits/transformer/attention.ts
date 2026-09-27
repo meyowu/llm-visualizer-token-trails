@@ -38,7 +38,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     subtitle: 'causal self-attention · block 1 · head 1',
     back: { label: 'Forward pass', onClick: () => nav('anatomy') },
     specs: [
-      { label: 'shown', value: 'toy', real: 'GPT-2 small' },
+      { label: 'shown', value: 'toy scale' },
       { label: 'tokens', value: String(N) },
       { label: 'd_model', value: String(TOY.d), real: '768' },
       { label: 'd_head', value: String(TOY.dh), real: '64' },
@@ -214,7 +214,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     if (f && pc === 0) {
       gemmOverlay({ A: L.Q, Av: h.Q, B: L.KT, Bv: transpose(h.K), C: L.S, f, names: ['S', 'Q', 'Kᵀ'], note: `${tl(f.i)}'s query · ${tl(f.j)}'s key: the higher the score, the more ${tl(f.i)} attends to ${tl(f.j)}.` })
     } else if (pso > 0) {
-      const i = mk.hover?.key === 'S' ? mk.hover.i : Math.min(N - 1, Math.floor(clamp(pso / 0.87) * N))
+      const i = mk.focus?.key === 'S' ? mk.focus.i : Math.min(N - 1, Math.floor(clamp(pso / 0.87) * N))
       const row = h.Ss[i].slice(0, i + 1), arow = h.A[i].slice(0, i + 1)
       mk.formula = {
         segs: [[`A[${i}]`, C.ink], ['  =  softmax( ', C.mute], [row.map(fmt).join(', '), C.ink2], [' )  =  ', C.mute], [arow.map((v) => v.toFixed(2)).join(', '), C.ink]],

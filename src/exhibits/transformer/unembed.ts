@@ -82,9 +82,9 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
     back: { label: 'Forward pass', onClick: () => nav('anatomy') },
     specs: [
       { label: 'shown', value: 'real GPT-2' },
-      { label: 'd_model', value: '768', real: `${D} drawn` },
+      { label: 'd_model', value: '768', real: `${D} drawn`, realLabel: '' },
       { label: 'vocab', value: '50,257' },
-      { label: 'LM head', value: 'W_Eᵀ', real: 'tied' },
+      { label: 'LM head', value: 'W_Eᵀ, tied' },
     ],
   })
   const stage = new Stage(frame.stageHost, 1040, 470, 'Unembedding and sampling with numbers from a real GPT-2 small run: the last position passes through ln_f, is scored against every vocabulary embedding to give logits, which are divided by the temperature, turned into probabilities by softmax, and sampled.')

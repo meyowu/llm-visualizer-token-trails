@@ -1,11 +1,15 @@
+import { legendList } from './legend'
+import { pref } from './prefs'
 import { C, type RGB } from './theme'
 
 /** The shared page frame of an exhibit: header, stage, formula strip, caption line and control bar. */
 export interface Spec {
   label: string
   value: string
-  /** Real-model value, shown faintly after a toy value. */
+  /** The real model's value, shown faintly after the drawn one, as "GPT-2 768". */
   real?: string
+  /** What `real` refers to; defaults to GPT-2, '' for a plain note. */
+  realLabel?: string
 }
 
 export interface FrameOptions {
@@ -16,6 +20,8 @@ export interface FrameOptions {
   back?: { label: string; onClick: () => void }
   /** Reserve a strip under the stage for the focused cell's formula and note (detail views). */
   formula?: boolean
+  /** How to inspect this view, shown faintly in the formula strip. */
+  formulaHint?: string
 }
 
 /** One run of the formula line: text, its colour (C.ink / C.ink2 / C.mute or a token hue), optional alpha. */
@@ -50,11 +56,11 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
         <h1>${esc(o.title)}<span class="sub">${rich(o.subtitle)}</span></h1>
       </div>
       <dl class="specs">
-        ${o.specs.map((s) => `<div><dt>${rich(s.label)}</dt><dd>${rich(s.value)}${s.real ? `<small>/ ${rich(s.real)}</small>` : ''}</dd></div>`).join('')}
+        ${o.specs.map((s) => `<div><dt>${rich(s.label)}</dt><dd>${rich(s.value)}${s.real ? `<small>${rich([s.realLabel ?? 'GPT-2', s.real].filter(Boolean).join(' '))}</small>` : ''}</dd></div>`).join('')}
       </dl>
     </header>
     <section class="stage"></section>
-    ${o.formula ? '<section class="formula"><div class="f-line"></div><div class="f-note"></div></section>' : ''}
+    ${o.formula ? `<section class="formula"><div class="f-line"></div><div class="f-note"></div><p class="f-hint">${esc(o.formulaHint ?? 'Hover a result cell to see how it is computed; click or tap it to pin it.')}</p></section>` : ''}
     <section class="caption" aria-live="polite">
       <div class="cap-title"><b></b><em></em></div>
       <p class="cap-text"></p>
@@ -62,6 +68,12 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
     </section>
     <section class="controls" aria-label="Playback"></section>`
   if (o.back) root.querySelector('.back')!.addEventListener('click', o.back.onClick)
+  // how to read the pictures, under the controls; open by itself on a first visit
+  const legend = document.createElement('details')
+  legend.className = 'legend-d'
+  legend.innerHTML = `<summary>How to read the pictures</summary>${legendList()}<p class="legend-note">In the header, a plain number is what the drawing uses and “GPT-2 768” is the real model’s size.</p>`
+  root.querySelector('.controls')!.appendChild(legend)
+  if (!pref.get('legend-seen')) { legend.open = true; pref.set('legend-seen', '1') }
   const q = <T extends HTMLElement>(s: string) => root.querySelector(s) as T
   const title = q('.cap-title b'), short = q('.cap-title em'), text = q('.cap-text'), shape = q('.cap-shape'), sub = q('h1 .sub')
   const fLine = root.querySelector('.f-line'), fNote = root.querySelector('.f-note')

@@ -155,9 +155,9 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   /* ---------- scene parts ---------- */
   function drawTop(ci: number, lensMode: boolean) {
     const groups: [string, number, number][] = [
-      ['tokenizer', G.xTok, G.xTok + 120], ['embedding', G.xEmb0, G.xEmb1],
+      ['tokenizer ↗', G.xTok, G.xTok + 120], ['embedding ↗', G.xEmb0, G.xEmb1],
       ['block 1', G.xLn1 - 10, G.xMlp + 34], ['blocks 2–12', G.xS0 - 10, G.xS1 + 10],
-      ['unembed', G.xLn - 12, G.xWU + 16], ['next token', G.xDist0, stage.W - G.padR]]
+      ['unembed', G.xLn - 12, G.xWU + 16], ['next token ↗', G.xDist0, stage.W - G.padR]]
     const gi = [0, 1, 2, 2, 3, 4, 5][ci]
     groups.forEach(([t, a, b], k) => bracketLabel(t, a, b, G.labY, k === gi))
     // column notes on the sub-label row
@@ -526,9 +526,9 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     plate(G.xLn2, py0, py1, act(pm > 0 && pm < 0.2, hp === 'ln2') * 0.8, { w: 2.5, d: 8 })
     plate(G.xMlp, py0, py1, mAct)
     if (hp === 'ln1') subLabel('ln_1 ↗', G.xLn1, G.labY + 32, true)
-    else subLabel(hp === 'attn' ? 'attn ↗' : 'attn', G.xAttn, G.labY + 32, aAct > 0.5)
+    else subLabel('attn ↗', G.xAttn, G.labY + 32, aAct > 0.5 || hp === 'attn')
     if (hp === 'ln2') subLabel('ln_2 ↗', G.xLn2, G.labY + 32, true)
-    else subLabel(hp === 'mlp' ? 'mlp ↗' : 'mlp', G.xMlp, G.labY + 32, mAct > 0.5)
+    else subLabel('mlp ↗', G.xMlp, G.labY + 32, mAct > 0.5 || hp === 'mlp')
     // blocks 2–12, one plate each; the block whose head is shown stays lit
     G.stack.forEach((x, k) => {
       const run = ps > 0 && ps < 1 ? clamp(1 - Math.abs(ps * 11 - k - 0.5) / 1.3) : 0, sel = S.layer === k + 1 && pa > 0 ? 0.55 : 0
@@ -537,8 +537,8 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     subLabel('each: attn + mlp', (G.xS0 + G.xS1) / 2, G.labY + 32, false)
     const lnAct = pu > 0 && pu < 1 ? clamp(1 - Math.abs(pu - 0.2) / 0.2) : 0, wuAct = pu > 0 && pu < 1 ? clamp(1 - Math.abs(pu - 0.55) / 0.3) : 0
     const hovL = hp === 'ln', hovW = hp === 'wu'
-    plate(G.xLn, py0, py1, Math.max(lnAct, hovL ? 0.8 : 0)); subLabel(hovL ? 'ln_f ↗' : 'ln_f', G.xLn, G.labY + 32, lnAct > 0.1 || hovL)
-    plate(G.xWU, wu0, wu1, Math.max(wuAct, hovW ? 0.8 : 0), { w: 11, d: 11, hatch: 34 }); subLabel(hovW ? 'W_U ↗' : 'W_U', G.xWU, G.labY + 32, wuAct > 0.1 || hovW)
+    plate(G.xLn, py0, py1, Math.max(lnAct, hovL ? 0.8 : 0)); subLabel('ln_f ↗', G.xLn, G.labY + 32, lnAct > 0.1 || hovL)
+    plate(G.xWU, wu0, wu1, Math.max(wuAct, hovW ? 0.8 : 0), { w: 11, d: 11, hatch: 34 }); subLabel('W_U ↗', G.xWU, G.labY + 32, wuAct > 0.1 || hovW)
     G.wuY = [wu0, wu1]
 
     drawEmb(ys, sp, pe, isLast ? 1 - endFade : 1)

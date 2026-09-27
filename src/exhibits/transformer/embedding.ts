@@ -43,7 +43,7 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
     subtitle: 'token + position · GPT-2',
     back: { label: 'Forward pass', onClick: () => nav('anatomy') },
     specs: [
-      { label: 'shown', value: 'toy', real: 'GPT-2 small' },
+      { label: 'shown', value: 'toy scale' },
       { label: 'vocab', value: '50,257' },
       { label: 'd_model', value: String(D), real: '768' },
       { label: 'W_E params', value: '38.6M' },

@@ -34,7 +34,7 @@ export function mountMlp(root: HTMLElement, nav: Nav): () => void {
     subtitle: 'feed-forward · block 1',
     back: { label: 'Forward pass', onClick: () => nav('anatomy') },
     specs: [
-      { label: 'shown', value: 'toy', real: 'GPT-2 small' },
+      { label: 'shown', value: 'toy scale' },
       { label: 'tokens', value: String(N) },
       { label: 'd_model', value: String(TOY.d), real: '768' },
       { label: 'd_ff', value: String(TOY_FF), real: '3,072' },

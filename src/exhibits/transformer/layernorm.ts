@@ -35,9 +35,9 @@ export function mountLayerNorm(root: HTMLElement, nav: Nav): () => void {
     subtitle: 'pre-LN · ln_1 of block 1',
     back: { label: 'Forward pass', onClick: () => nav('anatomy') },
     specs: [
-      { label: 'shown', value: 'toy', real: 'GPT-2 small' },
+      { label: 'shown', value: 'toy scale' },
       { label: 'features', value: String(D), real: '768' },
-      { label: 'LayerNorms', value: '25', real: '2 per block + ln_f' },
+      { label: 'LayerNorms', value: '25', real: '2 per block + ln_f', realLabel: '' },
       { label: 'params each', value: String(2 * D), real: '1,536' },
       { label: 'ε', value: '1e-5' },
     ],
@@ -112,7 +112,7 @@ export function mountLayerNorm(root: HTMLElement, nav: Nav): () => void {
       if (b <= 0) return
       const hv = hoverPlate === key
       plate(x, py0, py1, hv ? 0.9 : 0.35 * b, { w: 8, d: 9 })
-      subLabel(hv ? lab + ' ↗' : lab, x, py1 + 26, hv)
+      subLabel(lab + ' ↗', x, py1 + 26, hv)
     }
     pa(L.ln1, b1, 'ln_1', ''); pa(L.attn, b1, 'attn', 'attn'); pa(L.ln2, b2, 'ln_2', ''); pa(L.mlp, b2, 'mlp', 'mlp')
     for (const [x, b] of [[L.add1, b1], [L.add2, b2]] as const) {

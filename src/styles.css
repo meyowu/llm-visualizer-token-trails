@@ -85,13 +85,14 @@ h1 .sub { font: 400 12px var(--mono); letter-spacing: .02em; color: var(--mute);
 .specs div { display: grid; gap: 3px; }
 .specs dt { font: 400 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--mute); }
 .specs dd { margin: 0; font: 500 14px var(--mono); font-variant-numeric: tabular-nums; }
-.specs dd small { font-weight: 400; font-size: 11px; color: var(--mute); margin-left: 4px; }
+.specs dd small { font-weight: 400; font-size: 11px; color: var(--mute); margin-left: 6px; }
+.specs dd small::before { content: '· '; }
 
 .stage { position: relative; min-height: 0; }
 /* the focused cell's formula and a short note, under the stage of a detail view */
-.formula { min-height: 58px; padding: 6px 28px 10px; }
+.formula { padding: 6px 28px 12px; } /* no min-height here: a grid item's min-height would cap its row */
 .f-line { min-height: 20px; font: 400 12.5px/1.6 var(--mono); color: var(--ink2); white-space: pre-wrap; font-variant-numeric: tabular-nums; }
-.f-note { font-size: 13px; line-height: 1.45; color: var(--mute); max-width: 96ch; }
+.f-note { font-size: 13px; line-height: 1.45; color: var(--mute); max-width: 96ch; min-height: 1.45em; }
 .f-ink { color: var(--ink); } .f-ink2 { color: var(--ink2); } .f-mute { color: var(--mute); }
 .stage-scroll { position: absolute; inset: 0; overflow-x: auto; overflow-y: hidden; }
 .stage-scroll.more-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
@@ -201,9 +202,9 @@ h1 .sub { font: 400 12px var(--mono); letter-spacing: .02em; color: var(--mute);
 .st-path small { font-size: 12.5px; color: var(--mute); }
 .st-go { border: 1px solid var(--ink2); border-radius: 8px; background: var(--ink); color: var(--bg); padding: 10px 18px; font: 500 14px var(--sans); cursor: pointer; }
 .st-go:hover { background: var(--ink2); }
-.st-legend { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 10px; }
-.st-legend li { display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: center; font-size: 13px; color: var(--ink2); }
-.st-legend svg { display: block; width: 64px; height: 20px; }
+.legend-list { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 10px; }
+.legend-list li { display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: center; font-size: 13px; color: var(--ink2); }
+.legend-list svg { display: block; width: 64px; height: 20px; }
 .st-keys { font-size: 13px; color: var(--mute) !important; }
 kbd { font: 500 11px var(--mono); border: 1px solid var(--line2); border-radius: 4px; padding: 1px 5px; color: var(--ink2); }
 @media (max-width: 860px) {
@@ -218,7 +219,15 @@ kbd { font: 500 11px var(--mono); border: 1px solid var(--line2); border-radius:
 .chapnav .count { font: 400 11px var(--mono); color: var(--mute); margin-right: 6px; }
 .chap { border: 1px solid var(--line2); border-radius: 6px; background: none; padding: 4px 10px; cursor: pointer; color: var(--ink2); font: 500 11.5px var(--mono); }
 .chap:hover { color: var(--ink); border-color: var(--mute); }
+.steps { order: 4; }
 .steps[open] { flex: 1 0 100%; }
+.legend-d { order: 5; }
+.legend-d[open] { flex: 1 0 100%; }
+.legend-d summary { cursor: pointer; width: max-content; font: 500 11px var(--mono); color: var(--mute); }
+.legend-d summary:hover { color: var(--ink2); }
+.legend-d .legend-list { margin: 12px 0 8px; max-width: 760px; }
+.legend-note { margin: 0; font-size: 12.5px; color: var(--mute); }
+.f-hint { margin: 4px 0 0; font-size: 12px; color: var(--faint); }
 .steps summary { cursor: pointer; width: max-content; font: 500 11px var(--mono); color: var(--mute); }
 .steps summary:hover { color: var(--ink2); }
 .steps ol { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; max-width: 900px; }

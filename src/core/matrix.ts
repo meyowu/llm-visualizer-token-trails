@@ -28,6 +28,14 @@ export const fmt = (v: number) => {
   if (a >= 0.995) return s + a.toFixed(1)
   return s + a.toFixed(2).slice(1)
 }
+/** Three significant digits, for the formula line, so its arithmetic can be checked by hand. */
+export const fmtF = (v: number) => {
+  if (!isFinite(v)) return fmt(v)
+  const s = v < 0 ? '−' : '', a = Math.abs(v)
+  if (a >= 99.5) return s + a.toFixed(0)
+  const t = a.toFixed(a >= 9.995 ? 1 : a >= 0.9995 ? 2 : 3)
+  return s + (a < 0.9995 ? t.slice(1) : t)
+}
 export const vmaxOf = (m: M) => Math.max(1e-6, ...m.flat().filter((v) => isFinite(v)).map(Math.abs))
 
 /**
@@ -90,6 +98,8 @@ export class MatrixKit {
   hits: { key: string; r: Rect; rows: number; cols: number }[] = []
   formula: { segs: Seg[]; note: string } | null = null
   hover: Cell | null = null
+  /** A cell pinned by a click or tap; it stays inspected until clicked again or Esc. */
+  pin: Cell | null = null
 
   /** sink: shows the formula line and note, e.g. frame.setFormula. */
   constructor(private stage: Stage, private tokens: TokLike[], private sink: (segs: Seg[] | null, note?: string) => void) {
@@ -104,12 +114,32 @@ export class MatrixKit {
       cv.style.cursor = this.hover ? 'crosshair' : 'default'
     })
     cv.addEventListener('pointerleave', () => { this.hover = null })
+    // click or tap a result cell to pin it; on touch there is no hover, so a tap is the inspection
+    cv.addEventListener('pointerdown', (e) => {
+      const [x, y] = stage.local(e)
+      let at: Cell | null = null
+      for (const h of this.hits) {
+        const j = Math.floor((x - h.r.x) / h.r.c), i = Math.floor((y - h.r.y) / h.r.c)
+        if (i >= 0 && j >= 0 && i < h.rows && j < h.cols) { at = { key: h.key, i, j }; break }
+      }
+      if (!at) return
+      const same = this.pin && this.pin.key === at.key && this.pin.i === at.i && this.pin.j === at.j
+      this.pin = same ? null : at
+      if (e.pointerType !== 'mouse') this.hover = null
+    })
+    const onKey = (e: KeyboardEvent) => {
+      if (!cv.isConnected) { document.removeEventListener('keydown', onKey); return }
+      if (e.key === 'Escape') this.pin = null
+    }
+    document.addEventListener('keydown', onKey)
   }
 
   private get ctx() { return this.stage.ctx }
   tokRGB = (i: number) => tokCol(this.tokens[i])
   tl = (i: number) => tokLabel(this.tokens[i].text)
-  hovered = (...keys: string[]) => (this.hover && keys.includes(this.hover.key) ? this.hover : null)
+  /** The inspected cell: the hovered one, else the pinned one. */
+  get focus(): Cell | null { return this.hover ?? this.pin }
+  hovered = (...keys: string[]) => { const f = this.focus; return f && keys.includes(f.key) ? f : null }
 
   /** Reset per-frame state. */
   begin() {
@@ -153,14 +183,22 @@ export class MatrixKit {
     for (let d = -c; d < c; d += 5) { ctx.beginPath(); ctx.moveTo(x + d, y + c); ctx.lineTo(x + d + c, y); ctx.stroke() }
     ctx.restore()
   }
-  cellText(t: string, x: number, y: number, c: number, fa: number, a: number, weak = false) {
+  /** Font size that fits the widest of `texts` in a cell of size c, or 0 when numbers would go below 7px. */
+  fitText(texts: string[], c: number) {
+    if (c < 14) return 0
+    const fs = clamp(c * 0.3, 8, 11)
+    this.ctx.font = F.mono(fs)
+    const w = Math.max(0, ...texts.map((t) => this.ctx.measureText(t).width))
+    const f = w > c - 3 ? (fs * (c - 3)) / w : fs
+    return f < 7 ? 0 : f
+  }
+  cellText(t: string, x: number, y: number, c: number, fa: number, a: number, weak = false, size?: number) {
     if (!t || c < 14) return
     const ctx = this.ctx
-    // shrink to fit the cell; skip the number when it would have to go below 7px
-    let fs = clamp(c * 0.3, 8, 11)
+    // one size for a whole matrix when given (so negative cells, with their − sign, keep their numbers too)
+    const fs = size ?? this.fitText([t], c)
+    if (!fs) return
     ctx.font = F.mono(fs)
-    const w = ctx.measureText(t).width
-    if (w > c - 3) { fs = (fs * (c - 3)) / w; if (fs < 7) return; ctx.font = F.mono(fs) }
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
     ctx.fillStyle = rgba(fa > 0.55 ? C.bg : weak ? C.ink2 : C.ink, (weak ? 0.7 : 0.9) * a)
     ctx.fillText(t, x + c / 2, y + c / 2 + 0.5)
@@ -171,6 +209,8 @@ export class MatrixKit {
     if (alpha <= 0.01) return
     const rows = vals.length, cols = vals[0].length, c = r.c, w = cols * c, h = rows * c
     const vmax = vmaxOf(vals)
+    const texts = o.noText ? null : vals.map((row, i) => row.map((v, j) => (o.text ? o.text(i, j) : fmt(v))))
+    const size = texts ? this.fitText(texts.flat(), c) : 0
     this.slab(r.x, r.y, w, h, alpha)
     for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++) {
       const x = r.x + j * c, y = r.y + i * c, rv = o.reveal ? o.reveal(i, j) : 1
@@ -183,7 +223,7 @@ export class MatrixKit {
         const hue = o.kind === 'row' ? o.rowCols?.[i] ?? this.tokRGB(i) : o.kind === 'col' ? this.tokRGB(j) : null
         fa = this.paintCell(x, y, c, v, vmax, hue, o.kind === 'w' ? 0.3 : 0.45, a)
       }
-      if (!o.noText) this.cellText(o.text ? o.text(i, j) : fmt(v), x, y, c, fa, a, o.kind === 'w')
+      if (texts && size) this.cellText(texts[i][j], x, y, c, fa, a, o.kind === 'w', size)
     }
     ctx.strokeStyle = rgba(C.ink, 0.22 * alpha); ctx.lineWidth = 1; ctx.strokeRect(r.x + 0.5, r.y + 0.5, w - 1, h - 1)
     if (o.colToks) {
@@ -213,7 +253,7 @@ export class MatrixKit {
 
   /** The hovered cell if it belongs to one of these GEMMs and is computed; otherwise the animated one. */
   resolve(states: Record<string, { g: Gemm; K: number }>): Focus | null {
-    const h = this.hover
+    const h = this.focus
     if (h && states[h.key] && states[h.key].g.rev(h.i, h.j)) return { key: h.key, i: h.i, j: h.j, k: states[h.key].K }
     for (const [key, s] of Object.entries(states)) if (s.g.cur) return { key, ...s.g.cur }
     return null
@@ -229,13 +269,13 @@ export class MatrixKit {
     shown.forEach((t, n) => {
       if (n) segs.push([' + ', C.mute])
       if (t < 0) segs.push(['…', C.mute])
-      else segs.push([`${fmt(a[t])}×${fmt(b[t])}`, !done && t === cur ? C.ink : C.ink2])
+      else segs.push([`${fmtF(a[t])}×${fmtF(b[t])}`, !done && t === cur ? C.ink : C.ink2])
     })
     let sum = 0
     for (let t = 0; t < upto; t++) sum += a[t] * b[t]
-    if (bias !== undefined && done) { segs.push([' + ', C.mute], [fmt(bias), C.ink2]); sum += bias }
-    if (v.more && done) { const r = v.more.sum(i, j); segs.push([' + ', C.mute], [`(${v.more.n} more terms: ${fmt(r)})`, C.ink2]); sum += r }
-    segs.push(['  =  ', C.mute], [(done && v.fmtC ? v.fmtC(sum) : fmt(sum)) + (done ? '' : ' …'), done ? C.ink : C.mute])
+    if (bias !== undefined && done) { segs.push([' + ', C.mute], [fmtF(bias), C.ink2]); sum += bias }
+    if (v.more && done) { const r = v.more.sum(i, j); segs.push([' + ', C.mute], [`(${v.more.n} more terms: ${fmtF(r)})`, C.ink2]); sum += r }
+    segs.push(['  ≈  ', C.mute], [(done && v.fmtC ? v.fmtC(sum) : fmtF(sum)) + (done ? '' : ' …'), done ? C.ink : C.mute])
     return segs
   }
 
@@ -286,7 +326,8 @@ export class MatrixKit {
 
   /** Hand this frame's formula (or none) to the strip under the stage. */
   drawFormula() {
-    this.sink(this.formula?.segs ?? null, this.formula?.note)
+    const pinned = !this.hover && this.pin && this.formula ? ' Pinned: click the cell again or press Esc to let go.' : ''
+    this.sink(this.formula?.segs ?? null, this.formula ? (this.formula.note ?? '') + pinned : undefined)
   }
 
 }

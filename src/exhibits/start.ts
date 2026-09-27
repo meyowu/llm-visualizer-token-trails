@@ -1,4 +1,5 @@
 import { rich, toggle } from '../core/frame'
+import { legendList } from '../core/legend'
 import { PROMPT_LABELS, nextDist, presets } from '../lib/gpt2/data'
 import type { Nav } from './registry'
 
@@ -13,13 +14,6 @@ const PATH: [string, string, string][] = [
   ['anatomy/unembed', 'Unembed & Sampling', 'How the last vector becomes probabilities, and one next token.'],
 ]
 
-const LEGEND: [string, string][] = [
-  ['<svg viewBox="0 0 64 20"><rect x="1" y="3" width="26" height="14" rx="4" fill="none" stroke="var(--t0)"/><rect x="35" y="3" width="26" height="14" rx="4" fill="none" stroke="var(--t2)"/></svg>', 'Each token keeps its own colour everywhere.'],
-  ['<svg viewBox="0 0 64 20"><path d="M2 10h30" stroke="var(--t1)" stroke-width="2"/><path d="M32 10h30" stroke="var(--ink2)" stroke-width="2"/></svg>', 'A lane is one token’s vector flowing through the model; its colour blends as it takes in other tokens.'],
-  ['<svg viewBox="0 0 64 20"><path d="M26 17l8-5V1l-8 5z" fill="none" stroke="var(--ink2)"/><path d="M40 17l8-5V1l-8 5z" fill="none" stroke="var(--mute)"/></svg>', 'A glass plate is a layer the lanes pass through.'],
-  ['<svg viewBox="0 0 64 20"><rect x="14" y="4" width="11" height="11" fill="var(--ink2)"/><rect x="39" y="4.5" width="10" height="10" fill="none" stroke="var(--ink2)"/></svg>', 'In a matrix, a filled cell is positive and an outlined cell is negative.'],
-  ['<svg viewBox="0 0 64 20"><text x="32" y="15" text-anchor="middle" fill="var(--ink)" font-size="14" font-family="var(--mono)">↗</text></svg>', 'Parts marked ↗ open a detail view. Hover any matrix cell for its formula.'],
-]
 
 /** The landing page: what the model does, a live next-token example, the path, and how to read the pictures. */
 export function mountStart(root: HTMLElement, nav: Nav): () => void {
@@ -51,7 +45,7 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
       </section>
       <section class="st-read">
         <h2>How to read the pictures</h2>
-        <ul class="st-legend"></ul>
+        ${legendList()}
         <p class="st-keys"><kbd>Space</kbd> play or pause · <kbd>←</kbd> <kbd>→</kbd> previous or next step. Each step pauses at its end so there is time to read; switch to <b>Auto</b> in the controls to play straight through.</p>
       </section>
       <section class="st-real">
@@ -83,7 +77,6 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
     ol.appendChild(li)
   })
   q('.st-go').addEventListener('click', () => nav('anatomy'))
-  q('.st-legend').innerHTML = LEGEND.map(([svg, t]) => `<li><span class="sw" aria-hidden="true">${svg}</span><span>${t}</span></li>`).join('')
   return () => {}
 }
 

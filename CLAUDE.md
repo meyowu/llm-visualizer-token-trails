@@ -25,7 +25,8 @@ src/core/player.ts          Player: phases, t, play/pause, step buttons, Step/Au
 src/core/prefs.ts           pref.get/set: reader preferences in localStorage (speed, pacing, temperature, strategy)
 src/core/frame.ts           createFrame(): header/specs, stage host, formula strip, caption line, controls; toggle(), stepper(), rich()
 src/core/draw.ts            primitives: chips, plate(), bracketLabel(), mathName()/mathRun(), fonts F
-src/core/matrix.ts          MatrixKit: drawMat (slabs), gemm() schedules, gemmOverlay, hover hits; formula goes to frame.setFormula
+src/core/matrix.ts          MatrixKit: drawMat (slabs), gemm() schedules, gemmOverlay, hover and pinned cells (mk.focus); formula → frame.setFormula
+src/core/legend.ts          the visual-language legend (start page and the How to read panel under every exhibit)
 src/core/theme.ts           canvas palette C (read from CSS tokens), rgba/mixc/blend/pop
 src/exhibits/start.ts       landing page (#/start, the default): live next-token demo, what a Transformer is, the path, legend
 src/exhibits/registry.ts    categories (Anatomy, Lineage, Training, Serving, Agents) → entries: exhibits or sub-headings;
@@ -63,7 +64,8 @@ src/exhibits/lineage/
   - One `sceneX(p)` per group of phases.
   - Each scene has a layout computed in `geom()`, laid out so that a GEMM's A row i lines up with C row i and B column j lines up with C column j (A left, B above, C at the intersection). Transitions lerp matrix rects between scene layouts.
   - Use `MatrixKit` from `core/matrix.ts`: `gemm(p, m, n, K, 'slow'|'fast')` schedules cells, `mk.resolve()` picks the hovered cell or the animated one, `mk.gemmOverlay()` draws the highlights and guides and sets the formula line. It supports a transposed B (`bT`, used for W_projᵀ in `mlp.ts`) and bias vectors.
-  - Call `mk.begin()` each frame and register hoverable result matrices with `mk.hit()`.
+  - Call `mk.begin()` each frame and register hoverable result matrices with `mk.hit()`. A click or tap pins a cell (`mk.pin`); read the inspected cell with `mk.focus` / `mk.hovered()`, never `mk.hover` alone.
+  - Specs: a plain value is what the drawing uses; `real` renders as "· GPT-2 768" (`realLabel` changes the prefix).
 - **Real vs toy numbers.** Never show a made-up number as GPT-2's. The overview and Unembed use a real GPT-2 small run (`src/lib/gpt2/data.ts`); when only part of a real vector fits, say how much is drawn (`8 drawn`, `dims 1–16 of 768`). Detail views that animate every GEMM compute real arithmetic at toy size (`TOY` in `model.ts`: d_model 8, d_head 4, 2 heads; `TOY_FF` 32), say `shown: toy` in the specs, and show the GPT-2 small shape next to each matrix (`real`, `N × 768`, `value / real`).
 - **Changing the real data.** Edit the prompts or fields in `scripts/gpt2-export.ts`, run `node scripts/gpt2-export.ts` (needs model.safetensors, merges.txt, vocab.json from huggingface.co/openai-community/gpt2 in ~/.cache/token-trails/gpt2), and commit the regenerated `src/data/gpt2.json`. Keep it small: it is bundled into the page.
 - **Visual language is fixed.** The user approved it; don't redesign it.
