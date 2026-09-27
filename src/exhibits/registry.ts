@@ -157,6 +157,9 @@ export const GLOSSARY: Exhibit = { name: 'Glossary', tag: 'terms in plain words'
 export const ROUTES: Record<string, Mount> = Object.fromEntries(
   [START, FOUNDATIONS, GLOSSARY, ...CATEGORIES.flatMap(exhibitsOf)].filter((e) => e.route && e.mount).map((e) => [e.route!, e.mount!]),
 )
+/** The display name of a live route ('serving/kv-cache' → 'KV Cache'). */
+export const pageName = (route: string): string | undefined =>
+  [START, FOUNDATIONS, GLOSSARY, ...CATEGORIES.flatMap(exhibitsOf)].find((e) => e.route === route)?.name
 export const DEFAULT_ROUTE = 'start'
 /** Old route prefixes that still resolve (prefix → replacement). */
 export const ALIASES: [string, string][] = [['transformer', 'anatomy']]

@@ -2,7 +2,7 @@ import { rich, toggle } from '../core/frame'
 import { legendList } from '../core/legend'
 import { lastPlace } from '../core/progress'
 import { PROMPT_LABELS, nextDist, presets } from '../lib/gpt2/data'
-import type { Nav } from './registry'
+import { pageName, type Nav } from './registry'
 
 /** The route of each step of the tour, in teaching order. */
 const PATH: [string, string, string][] = [
@@ -104,7 +104,7 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
   if (last && last.route !== 'start') {
     const b = document.createElement('button')
     b.type = 'button'; b.className = 'st-go st-resume'
-    const page = PATH.find(([r]) => r === last.route)?.[1] ?? last.route.split('/').pop()
+    const page = pageName(last.route) ?? last.route.split('/').pop()
     b.textContent = `Resume: ${page} ›`
     b.addEventListener('click', () => nav(`${last.route}?phase=${last.phase}`))
     q('.st-go').after(b)
