@@ -283,7 +283,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
       }
       ctx.font = F.small; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'
       ctx.fillStyle = rgba(w > 0.12 ? C.ink2 : C.mute, a * clamp(grow * 1.4))
-      ctx.fillText(w.toFixed(2), G.xAttn + 13, ys[j] - 3)
+      ctx.fillText(w.toFixed(2), G.xAttn + 24, ys[j] - 4)
     })
     ctx.beginPath(); ctx.arc(G.xAttn, ys[q], 3, 0, 7); ctx.fillStyle = rgba(C.ink, a); ctx.fill()
   }
@@ -315,6 +315,32 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     if (S.hover >= 0 && S.hover < rowsDone) { show = S.hover; grow = 1 }
     else if (qi >= 0) { show = qi; grow = eout(clamp(lp * 2.2)); fa = 1 - clamp((lp - 0.86) / 0.14) }
     if (show >= 0) drawArcs(ys, A[show], show, grow, fa * a)
+  }
+  /**
+   * Make the residual connection visible in block 1: the stream passes in front of the attn and
+   * mlp plates (the sub-layer only reads a copy), and a ⊕ on each lane marks where its output is
+   * added back.
+   */
+  function drawResidual(ys: number[], sp: number, pts: [number, RGB][][], front: number, a: number) {
+    const N = P.N, r = clamp(sp * 0.16, 3.2, 5)
+    for (const x of [G.xAttn, G.xMlp]) {
+      const xa = x + (x === G.xMlp ? 30 : 16), done = front > xa // clear of the MLP lens
+      for (let i = 0; i < N; i++) {
+        const y = ys[i], la = a * laneDim(i)
+        if (front > x + 10) {
+          ctx.strokeStyle = rgba(colorAt(pts[i], x), la); ctx.lineWidth = 1.6
+          ctx.beginPath(); ctx.moveTo(x - 10, y); ctx.lineTo(x + 10, y); ctx.stroke()
+        }
+        ctx.fillStyle = rgba(C.bg, la); ctx.beginPath(); ctx.arc(xa, y, r, 0, 7); ctx.fill()
+        ctx.strokeStyle = rgba(C.ink, (done ? 0.85 : 0.3) * la); ctx.lineWidth = 1
+        ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(xa - r * 0.55, y); ctx.lineTo(xa + r * 0.55, y); ctx.moveTo(xa, y - r * 0.55); ctx.lineTo(xa, y + r * 0.55); ctx.stroke()
+      }
+    }
+    if (front > G.xEmb1 + 8) {
+      ctx.font = F.small; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillStyle = rgba(C.mute, a)
+      ctx.fillText('residual stream', G.xEmb1 + 6, ys[0] - Math.max(6, sp * 0.3))
+    }
   }
   function drawMLP(ys: number[], sp: number, pts: [number, RGB][][], pm: number, py1: number, a: number) {
     if (pm <= 0 || pm >= 1) return
@@ -438,6 +464,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     drawEmb(ys, sp, pe, isLast ? 1 - endFade : 1)
     drawAttention(ys, sp, pa, compA)
     drawMLP(ys, sp, pts, pm, py1, compA)
+    drawResidual(ys, sp, pts, front, compA)
     drawParticles(ys, pts, front, pu, compA)
     drawChips(ys, sp, pT, sent, isLast ? 1 - endFade : 1)
     drawDist(ys, pts, pu, pS, 1 - endFade)
@@ -458,8 +485,8 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
         ? { t: "GPT-2's byte-level BPE splits the text into subwords, each an id in a 50,257-entry vocabulary. Ġ marks a token that begins with a space. Click the tokens to see the merges.", s: `ids [${P.seq.map((t) => t.id).join(', ')}]` }
         : { t: 'The token sampled in the last pass is appended to the sequence as is, with no re-tokenizing. There is no KV cache here, so the whole sequence is recomputed from scratch.', s: `${N} tokens · +${P.seq[N - 1].id}` }
       case 'embed': return { t: 'Each id selects one row of the embedding matrix W_E, and the position vector for slot i is added. From here on, every token is a 768-wide residual stream. Click the embedding strips to see the lookup.', s: `[${N} × 768]` }
-      case 'attn': return { t: 'Each position compares its query with the keys of every earlier position and pulls in their values, weighted by similarity. The causal mask hides the future. Click the attn plate to open up every matrix product.', s: `12 heads × [${N} × ${N}]` }
-      case 'mlp': return { t: 'Each position is expanded to 3,072 dimensions, passed through GELU, and projected back to 768. Positions exchange no information in this step. Click the mlp plate to see the matrix products and GELU.', s: `[${N} × 768] → [${N} × 3072]` }
+      case 'attn': return { t: 'Each position compares its query with the keys of every earlier position and pulls in their values, weighted by similarity. The causal mask hides the future. The result is added back to the stream at ⊕. Click the attn plate to open up every matrix product.', s: `12 heads × [${N} × ${N}]` }
+      case 'mlp': return { t: 'Each position is expanded to 3,072 dimensions, passed through GELU, and projected back to 768. Positions exchange no information in this step, and the result is added back at ⊕. Click the mlp plate to see the matrix products and GELU.', s: `[${N} × 768] → [${N} × 3072]` }
       case 'stack': return { t: 'The same block repeats 11 more times. Each block adds its result to the residual stream instead of replacing it; the blending colors trace information moving between positions. Click ln_f to see how LayerNorm works.', s: '12 blocks · ≈85M params' }
       case 'unembed': return { t: 'Only the last position is used: after ln_f it is dotted with every vocabulary vector, giving 50,257 logits. GPT-2 ties W_U to W_E.', s: '[1 × 768] · W_Eᵀ → [1 × 50,257]' }
       default: {
