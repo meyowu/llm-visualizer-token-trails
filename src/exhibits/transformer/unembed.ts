@@ -26,7 +26,7 @@ const PHASES = [
 ]
 /** Candidates drawn in the GEMM and as bars; dimensions of x drawn; tokens whose logits are stored exactly. */
 const K6 = 6, D = 8, TOPN = 256
-const STRATS = ['sample', 'greedy', 'top-k 3', 'top-p 0.9'] as const
+const STRATS = ['sample', 'greedy', 'top-k', 'top-p'] as const
 /** The logit chart shows gaps to the top logit down to this value. */
 const GAP_MIN = -12
 
@@ -72,7 +72,13 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
   const reduced = reducedMotion()
   const seq: Tok[] = []
   // temperature and strategy are remembered across visits
-  const S = { T: clamp(Number(pref.get('temperature')) || 0.8, 0.2, 2), strat: clamp(Number(pref.get('strategy')) || 0, 0, STRATS.length - 1), u: 0.22, preset: 0 }
+  const S = {
+    T: clamp(Number(pref.get('temperature')) || 0.8, 0.2, 2), strat: clamp(Number(pref.get('strategy')) || 0, 0, STRATS.length - 1),
+    k: clamp(Number(pref.get('top-k')) || 3, 1, 20), pp: clamp(Number(pref.get('top-p')) || 0.9, 0.5, 0.99), u: 0.22, preset: 0,
+    /** Counts of 100 random draws: the six named tokens, then everything else. */
+    tally: null as number[] | null,
+  }
+  const stratName = () => (STRATS[S.strat] === 'top-k' ? `top-k ${S.k}` : STRATS[S.strat] === 'top-p' ? `top-p ${S.pp.toFixed(2)}` : STRATS[S.strat])
   let R = load(S.preset, seq)
 
   const frame = createFrame(root, {
@@ -96,7 +102,7 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
   const mk = new MatrixKit(stage, seq, frame.setFormula)
   const nextCol = () => C.tok[seq.length % 7]
   /** A new draw is shown from the start of the Sample phase, so a changed setting never silently swaps the token. */
-  const redraw = () => { if (player.t > player.start('sample')) player.t = player.start('sample') + 0.001 }
+  const redraw = () => { S.tally = null; if (player.t > player.start('sample')) player.t = player.start('sample') + 0.001 }
 
   // controls: prompt, strategy, resample, temperature
   const temp = document.createElement('label')
@@ -110,19 +116,52 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
   resample.className = 'resample'; resample.textContent = 'Resample'
   resample.addEventListener('click', () => { S.u = Math.random(); if (player.t < player.start('sample')) player.t = player.start('sample') + 0.001; else redraw() })
   player.meta.prepend(resample)
-  toggle(player.meta, 'Sampling strategy', [...STRATS], S.strat, (i) => { S.strat = i; pref.set('strategy', String(i)); redraw() })
-  toggle(player.meta, 'Prompt', presets().map((p) => PROMPT_LABELS[p.key] ?? p.text), 0, (i) => { S.preset = i; R = load(i, seq) })
+  // k or p for the strategies that cut the tail
+  const param = document.createElement('label')
+  param.className = 'temp'
+  param.innerHTML = '<span></span><input type="range"><output></output>'
+  const pSpan = param.querySelector('span')!, pIn = param.querySelector('input')!, pOut = param.querySelector('output')!
+  function syncParam() {
+    const st = STRATS[S.strat]
+    param.hidden = st !== 'top-k' && st !== 'top-p'
+    if (st === 'top-k') { pSpan.textContent = 'k'; pIn.min = '1'; pIn.max = '20'; pIn.step = '1'; pIn.value = String(S.k); pOut.textContent = String(S.k); pIn.setAttribute('aria-label', 'k, tokens kept') }
+    if (st === 'top-p') { pSpan.textContent = 'p'; pIn.min = '0.5'; pIn.max = '0.99'; pIn.step = '0.01'; pIn.value = String(S.pp); pOut.textContent = S.pp.toFixed(2); pIn.setAttribute('aria-label', 'p, probability kept') }
+  }
+  pIn.addEventListener('input', () => {
+    if (STRATS[S.strat] === 'top-k') { S.k = +pIn.value; pref.set('top-k', pIn.value) } else { S.pp = +pIn.value; pref.set('top-p', pIn.value) }
+    syncParam(); redraw()
+  })
+  player.meta.prepend(param)
+  const many = document.createElement('button')
+  many.className = 'resample'; many.textContent = 'Sample 100×'
+  many.addEventListener('click', () => {
+    const sm = sampling(S.T), cdfs: number[] = []
+    let c = 0
+    sm.keep.forEach((q) => { c += q; cdfs.push(c) })
+    const t = new Array(K6 + 1).fill(0)
+    for (let n = 0; n < 100; n++) {
+      const u = Math.random(), k = STRATS[S.strat] === 'greedy' ? 0 : cdfs.findIndex((v) => u < v)
+      t[k >= 0 && k < K6 ? k : K6]++
+    }
+    S.tally = t
+    if (player.t < player.start('sample')) player.t = player.start('sample') + 0.001
+    player.setPlaying(true)
+  })
+  player.meta.prepend(many)
+  toggle(player.meta, 'Sampling strategy', [...STRATS], S.strat, (i) => { S.strat = i; pref.set('strategy', String(i)); syncParam(); redraw() })
+  syncParam()
+  toggle(player.meta, 'Prompt', presets().map((p) => PROMPT_LABELS[p.key] ?? p.text), 0, (i) => { S.preset = i; R = load(i, seq); S.tally = null })
 
   /* ---------- the distribution under the current strategy ---------- */
   function sampling(T: number) {
     const d = nextDist(R.next, T, TOPN), st = STRATS[S.strat], p = d.rows.map((r) => r.p)
     let keep = p.slice(), tail = d.rest
     if (st === 'greedy') { keep = p.map((_, k) => (k === 0 ? 1 : 0)); tail = 0 }
-    else if (st === 'top-k 3') { keep = p.map((v, k) => (k < 3 ? v : 0)); tail = 0 }
-    else if (st === 'top-p 0.9') {
+    else if (st === 'top-k') { keep = p.map((v, k) => (k < S.k ? v : 0)); tail = 0 }
+    else if (st === 'top-p') {
       let c = 0
-      keep = p.map((v) => { const k = c < 0.9; c += v; return k ? v : 0 })
-      tail = c < 0.9 ? Math.min(d.rest, 0.9 - c) : 0 // the nucleus reaches past the 256 stored tokens
+      keep = p.map((v) => { const k = c < S.pp; c += v; return k ? v : 0 })
+      tail = c < S.pp ? Math.min(d.rest, S.pp - c) : 0 // the nucleus reaches past the 256 stored tokens
     }
     const kz = keep.reduce((a, b) => a + b, 0) + tail
     keep = keep.map((v) => v / kz); tail /= kz
@@ -324,7 +363,20 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
     const sm = chart(1, S.T, () => 1, 1, 1)
     const { cdf } = L, w = cdf.x1 - cdf.x0, settled = p > 0.45, col = nextCol()
     ctx.font = F.label; spaced(true); ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = rgba(C.mute)
-    ctx.fillText(`${STRATS[S.strat].toUpperCase()} · KEPT, RENORMALISED, END TO END`, (cdf.x0 + cdf.x1) / 2, cdf.y + cdf.h + 6); spaced(false)
+    ctx.fillText(`${stratName().toUpperCase()} · KEPT, RENORMALISED, END TO END`, (cdf.x0 + cdf.x1) / 2, cdf.y + cdf.h + 6); spaced(false)
+    // 100 random draws: their counts approach the kept probabilities above
+    if (S.tally) {
+      const ty = cdf.y + cdf.h + 26
+      let tx = cdf.x0
+      S.tally.forEach((n, k) => {
+        if (!n) return
+        const sw = (n / 100) * w
+        ctx.fillStyle = rgba(k < K6 ? C.ink : C.mute, k < K6 ? 0.3 + 0.1 * (k % 2) : 0.15); ctx.fillRect(tx + 0.5, ty, Math.max(1, sw - 1), 12)
+        if (sw > 58) { ctx.font = F.mono(10.5); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.ink); ctx.fillText(`${k < K6 ? tokLabel(sm.d.rows[k].text) : 'others'} ${n}`, tx + 4, ty + 6.5) }
+        tx += sw
+      })
+      ctx.font = F.small; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = rgba(C.mute); ctx.fillText('100 random draws: the counts approach the kept probabilities', cdf.x0, ty + 16)
+    }
     let cx = cdf.x0
     sm.keep.forEach((q, k) => {
       if (q <= 0) return
@@ -362,7 +414,7 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
       const qx = lerp(ux, tx, f), qy = lerp(cdf.y, ty, f) - Math.sin(f * Math.PI) * 60
       drawChip(qx - 20, qy, { text, c: seq.length % 7 }, 1 - clamp((p - 0.85) / 0.1), 20, true)
     }
-    const segs: [string, RGB][] = [[STRATS[S.strat], C.ink], ['   →   ', C.mute]]
+    const segs: [string, RGB][] = [[stratName(), C.ink], ['   →   ', C.mute]]
     if (sm.tok) segs.push([tokLabel(sm.tok.text), C.ink], ['   ·   p = ', C.mute], [pctS(sm.p[sm.pick]), C.ink2], ['   ·   id ', C.mute], [String(sm.tok.id), C.ink2])
     else segs.push(['a token outside the top 256', C.ink])
     const why = greedy ? 'Greedy skips the draw and takes the top token.' : `u = ${S.u.toFixed(2)} lands in the slice [${sm.lo.toFixed(sm.hi - sm.lo < 0.01 ? 4 : 2)}, ${sm.hi.toFixed(sm.hi - sm.lo < 0.01 ? 4 : 2)}).`

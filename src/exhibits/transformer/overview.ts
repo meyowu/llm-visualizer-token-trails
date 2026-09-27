@@ -71,9 +71,8 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   let V = makeView(pr(), 0)
 
   // controls, prepended right to left: prompt, block, head, pass readout, then the player's speed toggle
-  const passEl = document.createElement('span')
-  passEl.className = 'pass'
-  player.meta.prepend(passEl)
+  // go back to an earlier pass (or on) without waiting for the loop
+  const passStep = stepper(player.meta, 'pass', 3, 0, (k) => { S.prevYs = null; setPass(Math.min(k, pr().passes.length - 1)) })
   const headStep = stepper(player.meta, 'head', 12, S.head, (h) => { S.head = h })
   const layerStep = stepper(player.meta, 'block', 12, S.layer, (l) => { S.layer = l })
   const presetToggle = toggle(player.meta, 'Prompt', PRESETS.map((p) => PROMPT_LABELS[p.key] ?? p.text), 0, (i) => { S.preset = i; startPreset() })
@@ -155,7 +154,8 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   const laneDim = (i: number) => (focus() >= 0 && focus() !== i ? 0.35 : 1)
 
   /* ---------- scene parts ---------- */
-  function drawTop(ci: number, lensMode: boolean) {
+  function drawTop(ci: number, lensMode: boolean, dim = 1) {
+    ctx.globalAlpha = dim
     const groups: [string, number, number][] = [
       ['tokenizer ↗', G.xTok, G.xTok + 120], ['embedding ↗', G.xEmb0, G.xEmb1],
       ['block 1', G.xLn1 - 10, G.xMlp + 34], ['blocks 2–12', G.xS0 - 10, G.xS1 + 10],
@@ -169,6 +169,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     ctx.textAlign = 'center'; ctx.fillText('dims 1–16 of 768', (G.xEmb0 + G.xEmb1) / 2, G.labY + 32)
     ctx.textAlign = 'left'
     ctx.fillText(lensMode ? 'last position, after block n' : 'GPT-2 small, real run · T = 1', G.xDist0, G.labY + 32)
+    ctx.globalAlpha = 1
   }
   function drawSentence(pT: number, pS: number, endFade: number, isLast: boolean, now: number) {
     ctx.font = F.label; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; spaced(true)
@@ -209,7 +210,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
         const ap = clamp((pT - 0.14 - i * 0.025) / 0.1)
         if (ap <= 0) return
         const f = eio(clamp((pT - 0.3 - i * 0.05) / 0.36)), w0 = chipW(t.text)
-        x = lerp(sent.cs[i] - w0 / 2, G.xTok, f); y = lerp(G.sentY + 30, ys[i], f)
+        x = lerp(sent.cs[i] - w0 / 2, G.xTok, f); y = lerp(G.sentY + 30 + (i % 2) * 24, ys[i], f)
         a *= ap; idA = clamp((f - 0.8) / 0.2)
       } else if (i === V.N - 1) glow = 1 - clamp(pT / 0.8)
       const hl = focus() === i
@@ -315,8 +316,8 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     const x = G.xAttn - 10
     row.forEach((w, j) => {
       if (j > q) return
-      const col = tokC(j)
-      if (j === q) {
+      const col = tokC(j), tiny = w < 0.02
+      if (tiny) { /* nothing to draw: the label says how little */ } else if (j === q) {
         ctx.beginPath(); ctx.arc(x - 6, ys[q], 2 + 9 * w * grow, 0, 7)
         ctx.lineWidth = 1 + 2.5 * w; ctx.strokeStyle = rgba(col, (0.4 + 0.6 * Math.sqrt(w)) * a); ctx.stroke()
       } else {
@@ -331,8 +332,8 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
         ctx.strokeStyle = rgba(col, (0.28 + 0.66 * Math.sqrt(w)) * a); ctx.stroke(); ctx.lineCap = 'butt'
       }
       ctx.font = F.small; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'
-      ctx.fillStyle = rgba(w > 0.12 ? C.ink2 : C.mute, a * clamp(grow * 1.4))
-      ctx.fillText(w.toFixed(2), G.xAttn + 24, ys[j] - 4)
+      ctx.fillStyle = rgba(w > 0.12 ? C.ink2 : C.mute, a * clamp(grow * 1.4) * (tiny ? 0.6 : 1))
+      ctx.fillText(tiny ? '<.02' : w.toFixed(2), G.xAttn + 24, ys[j] - 4)
     })
     ctx.beginPath(); ctx.arc(G.xAttn, ys[q], 3, 0, 7); ctx.fillStyle = rgba(C.ink, a); ctx.fill()
   }
@@ -517,7 +518,8 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     const front = frontX(pa, pm, ps, pu), pts = V.seq.map((_, i) => lanePts(i))
     const lensA = pu > 0 ? 1 - clamp(pu / 0.35) : pm > 0 ? clamp(pm / 0.3) : 0
 
-    drawTop(ci, lensA > 0.5 && front >= G.xMlp + 28)
+    const flying = pS > 0.5 ? Math.sin(Math.PI * clamp((pS - 0.5) / 0.4)) : 0
+    drawTop(ci, lensA > 0.5 && front >= G.xMlp + 28, 1 - 0.75 * flying)
     const sent = drawSentence(pT, pS, endFade, isLast, now)
     drawLanes(ys, pts, front, pu, compA)
 
@@ -555,8 +557,9 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     drawFlight(pS, isLast)
     const hint: Record<string, [number, number]> = {
       attn: [G.xAttn, py0 - 4], mlp: [G.xMlp, py0 - 4], ln1: [G.xLn1, py0 - 4], ln2: [G.xLn2, py0 - 4], tok: [G.xTok + 56, py0 - 4],
-      emb: [(G.xEmb0 + G.xEmb1) / 2, py0 - 4], ln: [G.xLn, py0 - 4], wu: [G.xWU, wu0 - 4],
+      emb: [(G.xEmb0 + G.xEmb1) / 2, py0 - 4], ln: [G.xLn, py0 - 4], wu: [G.xWU, wu0 - 4], bars: [G.xDist0 + G.distW / 2, G.mid - 3.75 * G.rowH - 8],
     }
+    if (hp === 'bars') { rr(G.xDist0 - 8, G.mid - 3.6 * G.rowH, G.distW + 12, 7.2 * G.rowH, 8); ctx.strokeStyle = rgba(C.ink, 0.35); ctx.lineWidth = 1; ctx.stroke() }
     if (hint[hp]) drawOpenHint(...hint[hp])
   }
 
@@ -593,7 +596,8 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   const inMat = (x: number, y: number) => { const m = G.mat; return !!m && prog('attn') > 0 && x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h }
   /** Plates that open a detail view, keyed by the route they open. */
   const plateAt = (x: number, y: number) => {
-    if ((Math.abs(x - G.xWU) < 16 && y > G.wuY[0] - 14 && y < G.wuY[1] + 14) || (x >= G.xDist0 - 10 && prog('unembed') > 0.4 && y > G.wuY[0] - 20 && y < G.wuY[1] + 30)) return 'wu'
+    if (Math.abs(x - G.xWU) < 16 && y > G.wuY[0] - 14 && y < G.wuY[1] + 14) return 'wu'
+    if (x >= G.xDist0 - 10 && prog('unembed') > 0.4 && y > G.wuY[0] - 20 && y < G.wuY[1] + 30) return 'bars'
     if (y < G.plateY[0] - 14 || y > G.plateY[1] + 14) return ''
     if (Math.abs(x - G.xLn1) < 7) return 'ln1'
     if (Math.abs(x - G.xLn2) < 7) return 'ln2'
@@ -606,7 +610,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   }
   const PLATE_ROUTES: Record<string, string> = {
     tok: 'anatomy/tokenizer', emb: 'anatomy/embedding', ln1: 'anatomy/layernorm', attn: 'anatomy/attention',
-    ln2: 'anatomy/layernorm', mlp: 'anatomy/mlp', ln: 'anatomy/unembed', wu: 'anatomy/unembed',
+    ln2: 'anatomy/layernorm', mlp: 'anatomy/mlp', ln: 'anatomy/unembed', wu: 'anatomy/unembed', bars: 'anatomy/unembed',
   }
   /** The detail view opens at the step that matches what the overview is showing. */
   const plateLink = (pl: string) => {
@@ -614,7 +618,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     if (pl === 'attn' && prog('attn') > 0.1) return at('softmax')
     if (pl === 'mlp' && prog('mlp') > 0) return at('gelu')
     if (pl === 'ln') return at('lnf')
-    if (pl === 'wu') return prog('pick') > 0 ? at('sample') : prog('unembed') > 0.4 ? at('softmax') : at('logits')
+    if (pl === 'wu' || pl === 'bars') return prog('pick') > 0 ? at('sample') : prog('unembed') > 0.4 ? at('softmax') : at('logits')
     if (pl === 'emb' && prog('embed') > 0.5) return at('pos')
     return PLATE_ROUTES[pl]
   }
@@ -664,14 +668,14 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     player.setPlaying(false)
   } else if (reduced) player.t = player.start('attn') + PHASES[2].dur * 0.7
   player.describe = (i) => { const c = caption(i); return [c.t, c.s] }
+  let shownPass = -1
   const stop = runLoop((dt, now) => {
     player.tick(dt)
     draw(now)
     player.updateUI()
     const ci = player.curIndex(), c = caption(ci)
     frame.setCaption(PHASES[ci].name, PHASES[ci].short ?? PHASES[ci].name, c.t, c.s)
-    const pt = `pass ${S.passIdx + 1} / ${pr().passes.length} · ${V.N} tokens`
-    if (passEl.textContent !== pt) passEl.textContent = pt
+    if (shownPass !== S.passIdx) { shownPass = S.passIdx; passStep.set(S.passIdx) }
   }, () => !player.playing)
   return () => {
     saved = { preset: S.preset, passIdx: S.passIdx, t: player.t, layer: S.layer, head: S.head, lock: S.lock }
