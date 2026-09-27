@@ -63,6 +63,21 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
   })
   const dot = (a: number[], b: number[]) => a.reduce((s, v, k) => s + v * b[k], 0)
 
+  // RoPE controls: pick the query and key tokens and shift both positions yourself
+  const R0 = { m: 4, n: 1, shift: 0, manual: false }
+  const ropeCtl = document.createElement('div')
+  ropeCtl.className = 'ropectl'
+  ropeCtl.setAttribute('role', 'group')
+  ropeCtl.setAttribute('aria-label', 'RoPE example')
+  const opts = seq.map((_, i) => `<option value="${i}">${mk.tl(i)} · ${i}</option>`).join('')
+  ropeCtl.innerHTML = `<label>q <select>${opts}</select></label><label>k <select>${opts}</select></label><label class="temp"><small>shift both</small><input type="range" min="0" max="10" step="0.5" value="0"><output>0</output></label>`
+  const [qSel, kSel] = ropeCtl.querySelectorAll('select'), shiftIn = ropeCtl.querySelector('input')!, shiftOut = ropeCtl.querySelector('output')!
+  qSel.value = String(R0.m); kSel.value = String(R0.n)
+  const manual = () => { R0.manual = true; R0.m = +qSel.value; R0.n = +kSel.value; R0.shift = +shiftIn.value; shiftOut.textContent = shiftIn.value; if (player.cur().id === 'rope') player.setPlaying(false) }
+  for (const el of [qSel, kSel, shiftIn]) el.addEventListener('input', manual)
+  ropeCtl.hidden = true
+  player.meta.prepend(ropeCtl)
+
   /* ---------- helpers ---------- */
   let pills: { x: number; y: number; w: number; h: number; phase: string }[] = []
   let hoverPill = ''
@@ -158,10 +173,10 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
         ctx.fillStyle = rgba(hue(i), fin); ctx.beginPath(); ctx.arc(cx + Math.cos(ang) * R * 0.9, y - Math.sin(ang) * R * 0.9, 2.4, 0, 7); ctx.fill()
       }
     }
-    // relative property: q at m = 4 (Ġthe) and k at n = 1 (Ġcat), both shifted by s
-    const ra = eout(clamp((p - 0.5) / 0.12)), m = 4, n = 1
+    // relative property: q at m and k at n, both shifted by s (animated, or set with the controls)
+    const ra = R0.manual ? 1 : eout(clamp((p - 0.5) / 0.12)), m = R0.m, n = R0.n
     if (ra > 0) {
-      const s = eio(clamp((p - 0.66) / 0.28)) * 10
+      const s = R0.manual ? R0.shift : eio(clamp((p - 0.66) / 0.28)) * 10
       const px = gx0 + PAIRS * dx + 40, BR = Math.min(avail * 0.28, 76), cx = px + BR + 10, cy = top + 70 + BR
       title('relative, not absolute', px, top + 12, ra)
       ctx.strokeStyle = rgba(C.ink, 0.2 * ra); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, BR, 0, 7); ctx.stroke()
@@ -177,10 +192,10 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
       const score = dot(rotate(qv[m], m + s), rotate(kv[n], n + s))
       const ly = cy + BR + 30
       caption(`q at position ${m + Math.round(s)} (${mk.tl(m)}) · k at ${n + Math.round(s)} (${mk.tl(n)})`, cx, ly, ra, C.ink2)
-      caption(`offset m − n = ${m - n}   ·   q·k = ${fmt(score)}`, cx, ly + 18, ra, C.ink)
-      caption(s > 0.05 ? `both shifted by +${s.toFixed(1)}: angle and score unchanged` : 'shift both positions…', cx, ly + 36, ra)
+      caption(`offset m − n = ${m - n}   ·   q·k = ${fmt(score)}${n > m ? '  (k after q: masked)' : ''}`, cx, ly + 18, ra, C.ink)
+      caption(s > 0.05 ? `both shifted by +${s.toFixed(1)}: angle and score unchanged` : R0.manual ? 'drag “shift both” below' : 'shift both positions…', cx, ly + 36, ra)
     }
-    mk.formula = { segs: [["q′ = R(m·θ) q,   k′ = R(n·θ) k   ⇒   q′ · k′ = f(q, k, m − n)", C.ink]], note: 'GPT-2 adds a learned position vector once, at the input. LLaMA rotates q and k in every attention layer, so scores depend only on how far apart two tokens are. LLaMA 3: 64 pairs per head, base 500,000.' }
+    mk.formula = { segs: [["q′ = R(m·θ) q,   k′ = R(n·θ) k   ⇒   q′ · k′ = f(q, k, m − n)", C.ink]], note: 'GPT-2 adds a learned position vector once, at the input. LLaMA rotates q and k in every attention layer, so the position part of each score depends only on the offset m − n, not on where the pair sits. Pick q, k and a shift below. LLaMA 3: 64 pairs per head, base 500,000.' }
   }
 
   /* ---------- scene 3: RMSNorm vs LayerNorm ---------- */
@@ -213,13 +228,19 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
   }
 
   /* ---------- scene 4: SwiGLU ---------- */
+  /** Hidden layers are drawn as their first HID units, then an ellipsis. */
+  const HID = 12
   function strip(vals: number[], x: number, y: number, cs: number, col: RGB, a: number, reveal = 1) {
-    const vmax = Math.max(1e-6, ...vals.map(Math.abs))
-    vals.forEach((v, k) => {
-      if (k / vals.length >= reveal) { ctx.strokeStyle = rgba(C.ink, 0.1 * a); ctx.lineWidth = 1; ctx.strokeRect(x + k * cs + 0.5, y + 0.5, cs - 1, cs - 1); return }
+    const shown = vals.slice(0, HID), vmax = Math.max(1e-6, ...vals.map(Math.abs))
+    shown.forEach((v, k) => {
+      if (k / shown.length >= reveal) { ctx.strokeStyle = rgba(C.ink, 0.1 * a); ctx.lineWidth = 1; ctx.strokeRect(x + k * cs + 0.5, y + 0.5, cs - 1, cs - 1); return }
       mk.paintCell(x + k * cs, y, cs, v, vmax, col, 0, a)
     })
-    return x + vals.length * cs
+    const end = x + shown.length * cs
+    if (vals.length <= HID) return end
+    ctx.font = F.mono(11); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.mute, a); ctx.fillText('…', end + 3, y + cs / 2 + 0.5)
+    ctx.font = F.mono(10.5); ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(String(vals.length), x + (end - x) / 2, y + cs + 4)
+    return end + 14
   }
   function arrowLabel(x0: number, x1: number, y: number, t: string, a: number) {
     ctx.strokeStyle = rgba(C.ink, 0.45 * a); ctx.lineWidth = 1
@@ -245,41 +266,46 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
   })()
   function sceneSwiglu(p: number) {
     const { W, H } = stage, avail = H - top - bot
-    const fin = eout(clamp(p / 0.08)), col = hue(1)
-    const cs = Math.floor(clamp((W - 2 * pad - 110 - 4 * 70) / (8 + 32 + 32 + 8), 7, 13)), gap = 70
-    const yA = top + avail * 0.2, yB = top + avail * 0.58, x0 = pad + 110
+    const fin = eout(clamp(p / 0.08)), col = hue(1), gap = 64
+    const x0 = pad + 110, cs = Math.floor(clamp((W - pad - x0 - 3 * gap - 3 * 14 - 50) / (8 + 3 * HID + 8), 7, 14))
+    const yA = top + avail * 0.16, yB = top + avail * 0.5
     const rev = (t0: number, t1: number) => clamp((p - t0) / (t1 - t0))
-    // GPT-2
-    title('GPT-2 · 2 matrices, 4 × width', pad, yA - 26, fin)
+    // GPT-2: widen, GELU, narrow
+    title('GPT-2 · 2 matrices, 4 × width', pad, yA - 30, fin)
     drawChip(pad, yA + cs / 2, seq[1], fin, 18)
     let x = strip(sw.x, x0, yA, cs, col, fin)
     let nx = x + gap; arrowLabel(x, nx, yA + cs / 2, '· W_fc', fin * rev(0.05, 0.1)); x = strip(sw.hA, nx, yA, cs, col, fin * rev(0.05, 0.1), rev(0.08, 0.2))
-    nx = x + gap; arrowLabel(x, nx, yA + cs / 2, 'GELU', fin * rev(0.2, 0.25)); x = strip(sw.gA, nx, yA, cs, col, fin * rev(0.2, 0.25), rev(0.22, 0.32))
-    miniCurve(x - gap + 8, yA - 44, gap - 16, 30, gelu, null, fin * rev(0.2, 0.25))
+    nx = x + gap; arrowLabel(x, nx, yA + cs / 2, 'GELU', fin * rev(0.2, 0.25))
+    miniCurve(x + 8, yA - 44, gap - 16, 30, gelu, null, fin * rev(0.2, 0.25))
+    x = strip(sw.gA, nx, yA, cs, col, fin * rev(0.2, 0.25), rev(0.22, 0.32))
     nx = x + gap; arrowLabel(x, nx, yA + cs / 2, '· W_proj', fin * rev(0.32, 0.36)); strip(sw.yA, nx, yA, cs, col, fin * rev(0.32, 0.36), rev(0.34, 0.42))
-    // LLaMA: gate and up side by side, multiplied, then down
-    const bA = fin * rev(0.42, 0.47)
-    title('LLaMA · 3 matrices, gated', pad, yB - 26, bA)
-    drawChip(pad, yB + cs * 1.4, seq[1], bA, 18)
-    const xs = strip(sw.x, x0, yB + cs * 0.9, cs, col, bA), yG = yB, yU = yB + cs * 2.6
+    // LLaMA: gate and up side by side, their product, then down
+    const bA = fin * rev(0.42, 0.47), yG = yB, yU = yB + cs * 3.4, yM = (yG + yU) / 2
+    title('LLaMA · 3 matrices, gated', pad, yB - 30, bA)
+    drawChip(pad, yM + cs / 2, seq[1], bA, 18)
+    const xs = strip(sw.x, x0, yM, cs, col, bA)
     nx = xs + gap
     ctx.strokeStyle = rgba(C.ink, 0.45 * bA); ctx.lineWidth = 1
-    ctx.beginPath(); ctx.moveTo(xs + 4, yB + cs * 1.4); ctx.lineTo(xs + 18, yG + cs / 2); ctx.moveTo(xs + 4, yB + cs * 1.4); ctx.lineTo(xs + 18, yU + cs / 2); ctx.stroke()
-    arrowLabel(xs + 14, nx, yG + cs / 2, '· W_gate', bA); arrowLabel(xs + 14, nx, yU + cs / 2, '· W_up', bA)
-    let xg = strip(sw.a, nx, yG, cs, col, bA, rev(0.47, 0.58)); strip(sw.u, nx, yU, cs, col, bA, rev(0.47, 0.58))
-    const sA = fin * rev(0.58, 0.63)
-    nx = xg + gap; arrowLabel(xg, nx, yG + cs / 2, 'SiLU', sA)
-    miniCurve(xg + 8, yG - 44, gap - 16, 30, silu, gelu, sA)
-    xg = strip(sw.s, nx, yG, cs, col, sA, rev(0.6, 0.7))
-    // ⊙: gate times up
-    const mA = fin * rev(0.7, 0.75), mx = nx, my = yU
-    ctx.strokeStyle = rgba(C.ink, 0.45 * mA); ctx.setLineDash([2, 3])
-    ctx.beginPath(); ctx.moveTo(xg + 6, yG + cs / 2); ctx.lineTo(xg + 26, yG + cs / 2); ctx.lineTo(xg + 26, my + cs * 2.2); ctx.stroke(); ctx.setLineDash([])
-    const pm = strip(sw.m, mx, my + cs * 1.8, cs, col, mA, rev(0.72, 0.82))
-    ctx.font = serifAt(16); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.ink, mA); ctx.fillText('⊙', xg + 26, my + cs * 2.3)
-    nx = pm + gap; arrowLabel(pm, nx, my + cs * 2.3, '· W_down', fin * rev(0.82, 0.86)); strip(sw.yB, nx, my + cs * 1.8, cs, col, fin * rev(0.82, 0.86), rev(0.84, 0.93))
-    caption('SiLU (solid) and GELU (dashed) are almost the same curve; the new part is the gate', x0, yU + cs * 6, sA, C.mute, 'left')
-    mk.formula = { segs: [['MLP(x)  =  W_down ( SiLU(W_gate x) ⊙ W_up x )', C.ink]], note: 'The gate decides, per hidden unit, how much of W_up x passes. Three matrices at 8/3 × width keep the parameter count of two at 4 ×; LLaMA 3 uses 14,336 = 3.5 × 4,096.' }
+    ctx.beginPath(); ctx.moveTo(xs + 4, yM + cs / 2); ctx.lineTo(xs + 16, yG + cs / 2); ctx.moveTo(xs + 4, yM + cs / 2); ctx.lineTo(xs + 16, yU + cs / 2); ctx.stroke()
+    arrowLabel(xs + 12, nx, yG + cs / 2, '· W_gate', bA); arrowLabel(xs + 12, nx, yU + cs / 2, '· W_up', bA)
+    const xa = strip(sw.a, nx, yG, cs, col, bA, rev(0.47, 0.58)), xu = strip(sw.u, nx, yU, cs, col, bA, rev(0.47, 0.58))
+    const sA = fin * rev(0.58, 0.63), ns = xa + gap
+    arrowLabel(xa, ns, yG + cs / 2, 'SiLU', sA)
+    miniCurve(xa + 8, yG - 44, gap - 16, 30, silu, gelu, sA)
+    const xsE = strip(sw.s, ns, yG, cs, col, sA, rev(0.6, 0.7))
+    // ⊙ node: SiLU(gate) from above, up from below, the product out to the right
+    const mA = fin * rev(0.7, 0.75), ox = xsE + 26, oy = yM + cs / 2
+    ctx.strokeStyle = rgba(C.ink, 0.5 * mA); ctx.lineWidth = 1
+    ctx.beginPath(); ctx.moveTo(xsE + 2, yG + cs / 2); ctx.lineTo(ox, yG + cs / 2); ctx.lineTo(ox, oy - 10); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(xu + 2, yU + cs / 2); ctx.lineTo(ox, yU + cs / 2); ctx.lineTo(ox, oy + 10); ctx.stroke()
+    ctx.fillStyle = rgba(C.bg, mA); ctx.beginPath(); ctx.arc(ox, oy, 10, 0, 7); ctx.fill(); ctx.strokeStyle = rgba(C.ink, 0.85 * mA); ctx.stroke()
+    ctx.font = serifAt(15); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.ink, mA); ctx.fillText('⊙', ox, oy + 0.5)
+    const nm = ox + 34
+    arrowLabel(ox + 10, nm, oy, '', mA)
+    const xm = strip(sw.m, nm, yM, cs, col, mA, rev(0.72, 0.82))
+    const nd = xm + gap; arrowLabel(xm, nd, oy, '· W_down', fin * rev(0.82, 0.86)); strip(sw.yB, nd, yM, cs, col, fin * rev(0.82, 0.86), rev(0.84, 0.93))
+    caption('SiLU (solid) and GELU (dashed) are almost the same curve; the new part is the gate', x0, yU + cs * 4.5, sA, C.mute, 'left')
+    mk.formula = { segs: [['MLP(x)  =  W_down ( SiLU(W_gate x) ⊙ W_up x )', C.ink]], note: 'The gate decides, per hidden unit, how much of W_up x passes. Three matrices at 8/3 × width keep the parameter count of two at 4 ×; LLaMA 3 uses 14,336 = 3.5 × 4,096. Hidden layers show their first 12 units.' }
   }
 
   /* ---------- scene 5: MHA, GQA, MQA ---------- */
@@ -343,8 +369,8 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
   })
 
   const CAPS: Record<string, [string, string]> = {
-    blocks: ['LLaMA keeps GPT-2\'s block: pre-norm, residual adds, causal attention. Four parts change, marked in the lower row. Click one to jump to it.', '4 changes · same block'],
-    rope: ['GPT-2 adds a learned position vector once at the input. LLaMA instead rotates each pair of query and key numbers by an angle that grows with position, inside every attention layer.', 'θⱼ = base^(−2j / d_head)'],
+    blocks: ['LLaMA keeps GPT-2\'s block: pre-norm, residual adds, causal attention. Four parts change, marked in the lower row; click one to jump to it. Also different: no bias terms anywhere, an untied output matrix (not W_Eᵀ), RMSNorm as the final norm, and a 128K-token vocabulary.', '4 changes · same block'],
+    rope: ['GPT-2 adds a learned position vector once at the input. LLaMA instead rotates each pair of query and key numbers by an angle that grows with position, inside every attention layer. Use the q, k and shift controls below to test it.', 'θⱼ = base^(−2j / d_head)'],
     rms: ['LayerNorm centres each token and scales it to unit spread. RMSNorm only rescales by the root mean square: simpler, slightly faster, and just as stable.', 'x / √(mean(x²) + ε)'],
     swiglu: ['GPT-2\'s MLP widens, applies GELU and narrows. LLaMA\'s runs two projections side by side and lets one gate the other, a pattern called SwiGLU.', 'W_down(SiLU(W_gate x) ⊙ W_up x)'],
     gqa: ['In GPT-2 every attention head has its own keys and values. LLaMA 3 shares each key/value head between 4 query heads, cutting the KV cache that limits context length and batch size.', '32 q heads · 8 kv heads'],
@@ -356,6 +382,8 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
     player.tick(dt)
     draw()
     player.updateUI()
+    const inRope = player.cur().id === 'rope'
+    if (ropeCtl.hidden === inRope) ropeCtl.hidden = !inRope
     const cur = player.cur(), [t, s] = CAPS[cur.id]
     frame.setCaption(cur.name, cur.short ?? cur.name, t, s)
   }, () => !player.playing)

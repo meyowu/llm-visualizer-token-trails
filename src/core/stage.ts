@@ -92,7 +92,7 @@ export class Stage {
 /** Time of the last pointer, key, wheel, resize or theme event: anything that can change a still frame. */
 let lastPoke = performance.now()
 export const poke = () => { lastPoke = performance.now() }
-for (const ev of ['pointermove', 'pointerdown', 'pointerup', 'keydown', 'wheel', 'resize', 'focusin']) window.addEventListener(ev, poke, { passive: true, capture: true })
+for (const ev of ['pointermove', 'pointerdown', 'pointerup', 'keydown', 'wheel', 'resize', 'focusin', 'input', 'change']) window.addEventListener(ev, poke, { passive: true, capture: true })
 
 /**
  * requestAnimationFrame loop with a capped dt; returns a stop function. While `idle()` is true

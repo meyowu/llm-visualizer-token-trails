@@ -140,6 +140,8 @@ h1 .sub { font: 400 12px var(--mono); letter-spacing: .02em; color: var(--mute);
 .textin span { font: 400 11px var(--mono); color: var(--mute); }
 .textin input { width: 230px; border: 1px solid var(--line2); border-radius: 6px; background: var(--panel); color: var(--ink); padding: 5px 9px; font: 400 12.5px var(--mono); }
 .textin input:focus { outline: none; border-color: var(--ink2); }
+.ropectl { display: flex; align-items: center; gap: 12px; font: 400 11px var(--mono); color: var(--mute); }
+.ropectl select { margin-left: 4px; border: 1px solid var(--line2); border-radius: 6px; background: var(--panel); color: var(--ink); padding: 4px 6px; font: 400 11.5px var(--mono); }
 .resample { border: 1px solid var(--line2); border-radius: 6px; background: none; padding: 5px 10px; cursor: pointer; color: var(--ink2); font: 500 11px var(--mono); }
 .resample:hover { border-color: var(--mute); color: var(--ink); }
 .temp { display: flex; align-items: center; gap: 8px; }
