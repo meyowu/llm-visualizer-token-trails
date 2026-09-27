@@ -16,12 +16,14 @@ There are no tests. To verify a change: typecheck, then open the page and step t
 ## Layout
 
 ```
-src/main.ts                 rail nav, hash router (#/route?phase=id), tour order with previous/next (Shift+←/→), zoom transitions
+src/main.ts                 rail nav (collapsible; a drawer on phones), hash router (#/route?phase=id), page titles,
+                            tour order with previous/next (Shift+←/→), zoom transitions
 src/styles.css              design tokens (dark-first, light via prefers-color-scheme / data-theme) + frame styles
 src/core/stage.ts           Stage: DPR-aware canvas with a min size; scaled to fit a narrower host (phones get a full-size toggle);
                             runLoop(step, idle) skips frames while idle and nothing was poke()d
 src/core/player.ts          Player: phases, t, play/pause, step buttons, Step/Auto pacing, speed, timeline, keys, All steps list
                             (player.describe), ?phase= in the URL; openAtPhase() for links
+src/core/fonts.ts           registerFonts(): the three families as self-hosted woff2 (@fontsource files), Latin, Latin Ext, Greek
 src/core/prefs.ts           pref.get/set: reader preferences in localStorage (speed, pacing, temperature, strategy)
 src/core/frame.ts           createFrame(): header/specs, stage host, formula strip, caption line, controls; toggle(), stepper(), rich()
 src/core/draw.ts            primitives: chips, plate(), bracketLabel(), mathName()/mathRun(), fonts F
@@ -72,7 +74,7 @@ src/exhibits/lineage/
   - Colors come only from `C` / the CSS tokens. Never hard-code hex in drawing code, and check both themes.
   - Each token keeps its hue (`--t0…--t6`, token i → `i % 7`) everywhere. Information mixing between tokens is shown by blending hues: the overview uses real attention (`mixing()` in `data.ts`, first-token sinks count as no-ops), the toy detail views use `laneMix()` in `model.ts`, averaged over heads.
   - Layers are tilted glass plates. Matrices are slabs with a 5px depth face. A filled cell is positive, an outlined cell is negative.
-  - Fonts: EB Garamond italic for names and math (`serifAt()`, scaled up 10%), Geist for UI text, JetBrains Mono for labels and numbers (`MONO`, never under 10.5px on canvas). Group labels are uppercase mono over thin brackets. Use the constants in `core/draw.ts`, never a hard-coded font string.
+  - Fonts (self-hosted, see `core/fonts.ts`; no Google Fonts): EB Garamond italic for names and math (`serifAt()`, scaled up 10%), Geist for UI text, JetBrains Mono for labels and numbers (`MONO`, never under 10.5px on canvas). Group labels are uppercase mono over thin brackets. Use the constants in `core/draw.ts`, never a hard-coded font string.
   - Keep canvas text minimal, using real units and terms of art (GPT-2 ids, Ġ, 768 → 3072, FLOPs). Explanations go in the caption line: one or two plain sentences per phase. The formula strip under the stage (HTML, via `mk.formula` / `frame.setFormula`) carries the focused cell's arithmetic and a short note.
 - Seeds are chosen for readable patterns (`WEIGHT_SEED` in `model.ts`). Changing a seed changes every number shown, so re-check the attention patterns if you touch it.
 

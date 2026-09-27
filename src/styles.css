@@ -34,9 +34,15 @@ button { font: inherit; color: inherit; }
 .m sub { font-size: .72em; line-height: 0; vertical-align: -0.28em; margin-left: .03em; }
 
 .app { display: grid; grid-template-columns: 252px minmax(0, 1fr); height: 100%; }
+.app.collapsed { grid-template-columns: 56px minmax(0, 1fr); }
 
 /* ---------- rail ---------- */
-.rail { background: var(--bg2); border-right: 1px solid var(--line); padding: 24px 18px 20px; display: flex; flex-direction: column; gap: 26px; overflow-y: auto; }
+.rail { position: relative; background: var(--bg2); border-right: 1px solid var(--line); padding: 24px 18px 20px; display: flex; flex-direction: column; gap: 26px; overflow-y: auto; }
+.rail-btn { position: absolute; top: 20px; right: 10px; border: 1px solid var(--line2); border-radius: 6px; background: none; padding: 2px 8px 4px; cursor: pointer; color: var(--mute); font: 500 14px/1 var(--mono); }
+.rail-btn:hover { color: var(--ink); border-color: var(--mute); }
+.collapsed .rail { padding: 24px 8px; align-items: center; }
+.collapsed .rail .brand b, .collapsed .rail .tagline, .collapsed .rail .nav, .collapsed .rail .rail-foot { display: none; }
+.collapsed .rail-btn { position: static; margin-top: 14px; }
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand b { font: italic 400 24px/1 var(--serif); letter-spacing: -.01em; }
 .brand svg { flex: none; }
@@ -119,7 +125,7 @@ h1 .sub { font: 400 12px var(--mono); letter-spacing: .02em; color: var(--mute);
 .step.held { color: var(--ink); border-color: var(--ink2); animation: held 1.6s ease-in-out infinite; }
 @keyframes held { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--ink) 12%, transparent); } }
 @media (prefers-reduced-motion: reduce) { .step.held { animation: none; } }
-.tl { flex: 1 1 420px; display: flex; gap: 4px; min-width: 0; touch-action: none; cursor: pointer; }
+.tl { flex: 1 1 420px; display: flex; gap: 4px; min-width: 0; touch-action: pan-y; cursor: pointer; }
 .seg { min-width: 0; display: grid; gap: 8px; padding: 8px 0 2px; border: 0; background: none; cursor: pointer; text-align: left; color: var(--mute); font: 500 11.5px/1.1 var(--mono); letter-spacing: .02em; }
 .seg .track { display: block; height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; }
 .seg .fill { display: block; height: 100%; background: var(--ink); transform-origin: left; transform: scaleX(0); }
@@ -152,15 +158,16 @@ h1 .sub { font: 400 12px var(--mono); letter-spacing: .02em; color: var(--mute);
 .temp output { min-width: 3.2em; color: var(--ink); font-variant-numeric: tabular-nums; }
 
 @media (max-width: 860px) {
-  .app { display: block; height: auto; }
-  .rail { border-right: 0; border-bottom: 1px solid var(--line); padding: 18px 16px; gap: 14px; overflow: visible; }
-  .nav { flex-direction: row; gap: 18px; overflow-x: auto; padding-bottom: 6px; }
-  .group ul, .kids { display: flex; gap: 2px; }
-  .group .kids { border-left: 0; margin: 0; padding: 0; }
-  .group > ul > li { display: flex; }
-  .group .subh { display: none; }
-  .ex { white-space: nowrap; }
-  .rail-foot { display: none; }
+  .app, .app.collapsed { display: block; height: auto; }
+  /* the rail becomes a sticky top bar; the menu opens the full nav as a drawer under it */
+  .rail, .collapsed .rail { position: sticky; top: 0; z-index: 20; flex-direction: row; align-items: center; border-right: 0; border-bottom: 1px solid var(--line); padding: 10px 16px; gap: 12px; overflow: visible; }
+  .rail .brand b { font-size: 20px; }
+  .rail .tagline, .rail-foot { display: none; }
+  .rail-btn, .collapsed .rail-btn { position: static; margin: 0 0 0 auto; padding: 5px 10px; font-size: 12px; }
+  .rail > div:first-child { display: flex; align-items: center; flex: 1; }
+  .rail .nav, .collapsed .rail .nav { display: none; }
+  .menu-open .rail .nav { display: flex; position: absolute; top: 100%; left: 0; right: 0; max-height: 75vh; overflow-y: auto; padding: 14px 12px 20px; background: var(--bg2); border-bottom: 1px solid var(--line); box-shadow: 0 12px 30px rgba(0, 0, 0, .35); }
+  .collapsed .rail .brand b { display: inline; }
   .main { height: auto; overflow: visible; }
   .view { display: block; height: auto; overflow: visible; }
   .head { padding: 18px 16px 4px; }

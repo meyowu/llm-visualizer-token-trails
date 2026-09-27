@@ -68,6 +68,8 @@ export interface MatOpts {
   colToks?: boolean
   /** Hide numbers even when cells are large enough. */
   noText?: boolean
+  /** Width the label may use (default: the matrix plus three cells); the real shape is dropped past it. */
+  labelW?: number
   /** Custom cell painter; returns fill alpha. */
   paint?: (x: number, y: number, c: number, i: number, j: number, a: number) => number
   text?: (i: number, j: number) => string
@@ -233,16 +235,18 @@ export class MatrixKit {
     if (o.label !== 'none') {
       const la = alpha * (o.labelAlpha ?? 1)
       const ly = o.label === 'bottom' ? r.y + h + 24 : r.y - (o.colToks ? 28 : 11)
-      this.label(o.name, o.shape, o.real, r.x, ly, la)
+      this.label(o.name, o.shape, o.real, r.x, ly, la, o.labelW ?? w + 3 * c)
     }
   }
   /** Italic name, then the toy shape and (fainter) the real shape. */
-  label(name: string, shape: string, real: string | undefined, x: number, y: number, a: number) {
+  /** `maxW`: room before the next matrix; the real shape is left out when it would run into it. */
+  label(name: string, shape: string, real: string | undefined, x: number, y: number, a: number, maxW = Infinity) {
     const ctx = this.ctx
     const w1 = mathName(name, x, y, a, 18)
     ctx.font = F.mono(10.5); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'
     ctx.fillStyle = rgba(C.mute, a); ctx.fillText(shape, x + w1 + 8, y)
-    if (real) { const w2 = ctx.measureText(shape).width; ctx.fillStyle = rgba(C.mute, 0.55 * a); ctx.fillText('· ' + real, x + w1 + 8 + w2 + 6, y) }
+    const w2 = ctx.measureText(shape).width
+    if (real && w1 + 8 + w2 + 6 + ctx.measureText('· ' + real).width <= maxW) { ctx.fillStyle = rgba(C.mute, 0.55 * a); ctx.fillText('· ' + real, x + w1 + 8 + w2 + 6, y) }
   }
   /** Token chips to the left of a row-per-token matrix. */
   rowChips(r: Rect, a: number, hl = -1) {

@@ -1,15 +1,39 @@
 import './styles.css'
+import { registerFonts } from './core/fonts'
 import { rich } from './core/frame'
 import { openAtPhase } from './core/player'
+import { pref } from './core/prefs'
 import { poke } from './core/stage'
 import { watchTheme } from './core/theme'
 import { reducedMotion } from './core/util'
 import { ALIASES, CATEGORIES, DEFAULT_ROUTE, ROUTES, START, exhibitsOf, isHeading, type Exhibit } from './exhibits/registry'
 
+registerFonts()
 watchTheme(poke)
+// canvases drawn before a font arrived redraw with it
+document.fonts?.addEventListener('loadingdone', poke)
 
 const railNav = document.querySelector('.nav') as HTMLElement
 const main = document.querySelector('.main') as HTMLElement
+const app = document.querySelector('.app') as HTMLElement
+
+/* ---------- rail: collapsible on wide screens, a drawer on phones ---------- */
+const railBtn = document.querySelector('.rail-btn') as HTMLButtonElement
+const phone = matchMedia('(max-width: 860px)')
+function syncRailBtn() {
+  const openNow = phone.matches ? app.classList.contains('menu-open') : !app.classList.contains('collapsed')
+  railBtn.setAttribute('aria-expanded', String(openNow))
+  railBtn.textContent = phone.matches ? (openNow ? 'Close' : 'Menu') : openNow ? '‹' : '›'
+  railBtn.setAttribute('aria-label', phone.matches ? (openNow ? 'Close the menu' : 'Open the menu') : openNow ? 'Collapse the sidebar' : 'Expand the sidebar')
+}
+if (pref.get('rail') === 'collapsed') app.classList.add('collapsed')
+railBtn.addEventListener('click', () => {
+  if (phone.matches) app.classList.toggle('menu-open')
+  else pref.set('rail', app.classList.toggle('collapsed') ? 'collapsed' : 'open')
+  syncRailBtn()
+})
+phone.addEventListener('change', syncRailBtn)
+syncRailBtn()
 
 /* ---------- rail ---------- */
 /** Categories the reader has opened; the one holding the current route is always open. */
@@ -142,6 +166,8 @@ function go(target: string, origin?: { x: number; y: number }, push = true) {
   openAtPhase(null)
   chapterNav(route, root)
   current = { route, root, destroy }
+  document.title = route === 'start' ? 'Token Trails' : `${nameOf(route)} · ${CATEGORIES.find((c) => exhibitsOf(c).some((e) => e.route === route))?.title ?? ''} · Token Trails`
+  app.classList.remove('menu-open'); syncRailBtn()
   renderRail(route)
   if (old) transition(old, root, depth(route) >= depth(old.route) ? 'in' : 'out', origin)
 }
