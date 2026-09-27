@@ -1,4 +1,4 @@
-import { F, rr, spaced, useCtx } from '../../core/draw'
+import { F, fillRich, rr, spaced, useCtx } from '../../core/draw'
 import { createFrame } from '../../core/frame'
 import { Player } from '../../core/player'
 import { Stage, runLoop } from '../../core/stage'
@@ -258,8 +258,8 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
     const y = stage.H - 46
     let x = pad
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.font = F.mono(12)
-    for (const [t, col] of formula.segs) { ctx.fillStyle = rgba(col); ctx.fillText(t, x, y); x += ctx.measureText(t).width }
-    if (formula.note) { ctx.font = F.body; ctx.fillStyle = rgba(C.mute); ctx.fillText(formula.note, pad, y + 21) }
+    for (const [t, col] of formula.segs) { ctx.fillStyle = rgba(col); x += fillRich(t, x, y) }
+    if (formula.note) { ctx.font = F.body; ctx.fillStyle = rgba(C.mute); fillRich(formula.note, pad, y + 21) }
   }
 
   function draw() {

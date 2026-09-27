@@ -1,4 +1,5 @@
 import './styles.css'
+import { rich } from './core/frame'
 import { watchTheme } from './core/theme'
 import { reducedMotion } from './core/util'
 import { CATEGORIES, DEFAULT_ROUTE, ROUTES } from './exhibits/registry'
@@ -23,7 +24,7 @@ function renderRail(active: string) {
       el.className = 'ex' + (ex.route ? '' : ' soon')
       el.innerHTML = '<span></span><small></small>'
       el.querySelector('span')!.textContent = ex.name
-      el.querySelector('small')!.textContent = ex.tag
+      el.querySelector('small')!.innerHTML = rich(ex.tag)
       if (ex.route) {
         const a = el as HTMLAnchorElement
         a.href = '#/' + ex.route

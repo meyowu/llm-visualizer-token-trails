@@ -108,7 +108,48 @@ export function subLabel(t: string, x: number, y: number, on: boolean) {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
   ctx.fillStyle = rgba(on ? C.ink : C.mute, on ? 1 : 0.85)
-  ctx.fillText(t, x, y)
+  fillRich(t, x, y)
+}
+
+/* ---------- subscripts: "W_Q", "ln_f", "d_model" render as W with a subscript Q, and so on ---------- */
+
+const SUB_RE = /([A-Za-z]+)_([A-Za-z0-9]+)/g
+/** Split text into [run, isSubscript] pieces. */
+export function richSegs(t: string): [string, boolean][] {
+  const out: [string, boolean][] = []
+  let last = 0
+  for (const m of t.matchAll(SUB_RE)) {
+    const i = m.index!
+    out.push([t.slice(last, i) + m[1], false], [m[2], true])
+    last = i + m[0].length
+  }
+  out.push([t.slice(last), false])
+  return out.filter(([s]) => s.length > 0)
+}
+const subFont = (font: string) => font.replace(/(\d+(?:\.\d+)?)px/, (_, n) => `${Math.round(parseFloat(n) * 0.72 * 10) / 10}px`)
+const fontPx = (font: string) => parseFloat(/(\d+(?:\.\d+)?)px/.exec(font)?.[1] ?? '12')
+/** Width of text as fillRich would draw it with the current font. */
+export function measureRich(t: string): number {
+  const main = ctx.font, sf = subFont(main)
+  let w = 0
+  for (const [s, sub] of richSegs(t)) { ctx.font = sub ? sf : main; w += ctx.measureText(s).width + (sub ? 0.5 : 0) }
+  ctx.font = main
+  return w
+}
+/** fillText with real subscripts; honours the current textAlign. Returns the width drawn. */
+export function fillRich(t: string, x: number, y: number): number {
+  if (!t.includes('_')) { ctx.fillText(t, x, y); return ctx.measureText(t).width }
+  const main = ctx.font, sf = subFont(main), align = ctx.textAlign, w = measureRich(t), dy = fontPx(main) * 0.28
+  let cx = align === 'center' ? x - w / 2 : align === 'right' || align === 'end' ? x - w : x
+  ctx.textAlign = 'left'
+  for (const [s, sub] of richSegs(t)) {
+    ctx.font = sub ? sf : main
+    ctx.fillText(s, cx, sub ? y + dy : y)
+    cx += ctx.measureText(s).width + (sub ? 0.5 : 0)
+  }
+  ctx.font = main
+  ctx.textAlign = align
+  return w
 }
 
 /** Uppercase mono group label with a thin bracket underneath, spanning [a, b]. */
@@ -146,17 +187,14 @@ export function mathRun(parts: [string, boolean][], x: number, y: number, a: num
 
 /** Italic math name with `_` subscripts, e.g. "W_Q" → W with subscript Q. Returns the width drawn. */
 export function mathName(name: string, x: number, y: number, a: number, size = 19, col: RGB = C.ink) {
-  const [base, sub] = name.split('_')
   ctx.textAlign = 'left'
   ctx.textBaseline = 'alphabetic'
-  ctx.font = `italic 400 ${size}px Newsreader, Georgia, serif`
   ctx.fillStyle = rgba(col, a)
-  ctx.fillText(base, x, y)
-  let w = ctx.measureText(base).width
-  if (sub) {
-    ctx.font = `italic 400 ${Math.round(size * 0.62)}px Newsreader, Georgia, serif`
-    ctx.fillText(sub, x + w + 1, y + size * 0.22)
-    w += ctx.measureText(sub).width + 1
+  let w = 0
+  for (const [s, sub] of richSegs(name)) {
+    ctx.font = `italic 400 ${sub ? Math.round(size * 0.62) : size}px Newsreader, Georgia, serif`
+    ctx.fillText(s, x + w + (sub ? 1 : 0), sub ? y + size * 0.22 : y)
+    w += ctx.measureText(s).width + (sub ? 1 : 0)
   }
   return w
 }

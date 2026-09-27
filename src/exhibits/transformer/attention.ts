@@ -3,7 +3,7 @@ import { Player } from '../../core/player'
 import { Stage, runLoop } from '../../core/stage'
 import { C, blend, rgba } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
-import { F, chipW, drawChip, mathName, mathRun, plate, subLabel, useCtx } from '../../core/draw'
+import { F, chipW, drawChip, fillRich, mathName, mathRun, plate, subLabel, useCtx } from '../../core/draw'
 import { MatrixKit, fmt, gemm, lr, type M, type Rect } from '../../core/matrix'
 import type { Nav } from '../registry'
 import { TOY, attention, promptTokens, transpose } from './model'
@@ -157,8 +157,8 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
       ctx.beginPath(); ctx.arc(x + 4, y - 4, 3.5, 0, 7)
       if (done) { ctx.fillStyle = rgba(C.ink2, a); ctx.fill() } else { ctx.strokeStyle = rgba(on ? C.ink : C.faint, a); ctx.lineWidth = 1.2; ctx.stroke() }
       ctx.font = F.mono(12, on ? 500 : 400); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'
-      ctx.fillStyle = rgba(on ? C.ink : done ? C.ink2 : C.mute, a); ctx.fillText(name, x + 16, y)
-      if (on || done) { ctx.font = F.body; ctx.fillStyle = rgba(C.mute, a * (on ? 1 : 0.7)); ctx.fillText(note, x + 16, y + 16) }
+      ctx.fillStyle = rgba(on ? C.ink : done ? C.ink2 : C.mute, a); fillRich(name, x + 16, y)
+      if (on || done) { ctx.font = F.body; ctx.fillStyle = rgba(C.mute, a * (on ? 1 : 0.7)); fillRich(note, x + 16, y + 16) }
     })
   }
   function sceneScores(ps: number, pc: number, pm: number, pso: number) {
@@ -321,7 +321,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
         ctx.beginPath(); ctx.moveTo(xp + 8, y); ctx.lineTo(lerp(xp + 8, xEnd, e), y); ctx.stroke()
       }
       ctx.font = F.small; ctx.textAlign = 'right'; ctx.fillStyle = rgba(C.mute, clamp(pr * 2 - 1))
-      ctx.fillText('→ ln_2 · MLP', xEnd, L.Out.y - 10)
+      fillRich('→ ln_2 · MLP', xEnd, L.Out.y - 10)
     }
 
     const f = resolve({ Out: { g, K: TOY.d } })

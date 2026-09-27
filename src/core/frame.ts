@@ -23,17 +23,19 @@ export interface Frame {
 }
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
+/** Escape text and render identifiers like W_Q or d_model with a real subscript. */
+export const rich = (s: string) => esc(s).replace(/([A-Za-z]+)_([A-Za-z0-9]+)/g, '<span class="m">$1<sub>$2</sub></span>')
 
 export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
   root.innerHTML = `
     <header class="head">
       <div>
         ${o.back ? `<button class="back" type="button">← ${esc(o.back.label)}</button>` : ''}
-        <p class="eyebrow">${esc(o.eyebrow)}</p>
-        <h1>${esc(o.title)}<span class="sub">${esc(o.subtitle)}</span></h1>
+        <p class="eyebrow">${rich(o.eyebrow)}</p>
+        <h1>${esc(o.title)}<span class="sub">${rich(o.subtitle)}</span></h1>
       </div>
       <dl class="specs">
-        ${o.specs.map((s) => `<div><dt>${esc(s.label)}</dt><dd>${esc(s.value)}${s.real ? `<small>/ ${esc(s.real)}</small>` : ''}</dd></div>`).join('')}
+        ${o.specs.map((s) => `<div><dt>${rich(s.label)}</dt><dd>${rich(s.value)}${s.real ? `<small>/ ${rich(s.real)}</small>` : ''}</dd></div>`).join('')}
       </dl>
     </header>
     <section class="stage"></section>
@@ -54,13 +56,14 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
       const key = a + b + c + d
       if (key === last) return
       last = key
-      title.textContent = a
-      short.textContent = b === a ? '' : b
-      text.textContent = c
-      shape.textContent = d
+      title.innerHTML = rich(a)
+      short.innerHTML = b === a ? '' : rich(b)
+      text.innerHTML = rich(c)
+      shape.innerHTML = rich(d)
     },
     setSubtitle(s) {
-      if (sub.textContent !== s) sub.textContent = s
+      const html = rich(s)
+      if (sub.innerHTML !== html) sub.innerHTML = html
     },
   }
 }

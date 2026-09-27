@@ -1,4 +1,4 @@
-import { F, mathName, plate, rr, subLabel, useCtx } from '../../core/draw'
+import { F, fillRich, mathName, plate, rr, subLabel, useCtx } from '../../core/draw'
 import { createFrame } from '../../core/frame'
 import { MatrixKit, fmt, type Rect } from '../../core/matrix'
 import { Player } from '../../core/player'
@@ -130,7 +130,7 @@ export function mountLayerNorm(root: HTMLElement, nav: Nav): () => void {
     const la = clamp((p - 0.6) / 0.25)
     const lab = (x: number, name: string, eq: string) => {
       mathName(name, x, L.sy - 44, la, 20)
-      ctx.font = F.mono(10.5); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.mute, la); ctx.fillText(eq, x, L.sy - 26)
+      ctx.font = F.mono(10.5); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.mute, la); fillRich(eq, x, L.sy - 26)
     }
     lab(L.sx0, 'h', 'from the embedding')
     lab(L.add1 + 22, 'h′', '= h + attn(ln_1(h))')

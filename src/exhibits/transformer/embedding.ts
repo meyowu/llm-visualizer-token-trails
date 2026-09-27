@@ -1,4 +1,4 @@
-import { F, chipW, drawChip, mathName, spaced, useCtx } from '../../core/draw'
+import { F, chipW, drawChip, fillRich, mathName, spaced, useCtx } from '../../core/draw'
 import { createFrame } from '../../core/frame'
 import { MatrixKit, fmt, lr, type M, type Rect } from '../../core/matrix'
 import { Player } from '../../core/player'
@@ -232,7 +232,7 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
       ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(lerp(x0, x1, eio(clamp(e * 1.2 - i * 0.05))), y); ctx.stroke()
     }
     ctx.font = F.small; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.mute, clamp(e * 2 - 1))
-    ctx.fillText('→ block 1 · ln_1', x1, hr.y - 10)
+    fillRich('→ block 1 · ln_1', x1, hr.y - 10)
     ctx.font = F.label; spaced(true); ctx.textAlign = 'left'; ctx.fillStyle = rgba(C.mute, e)
     ctx.fillText('RESIDUAL STREAM', x0 + 16, hr.y - 10); spaced(false)
     mk.formula = { segs: [['h₀  =  W_E[ids] + W_P[0 : N]', C.ink]], note: 'Each row is now one lane of the residual stream. At the very end, the same W_E is reused, transposed, to score every vocabulary token.' }

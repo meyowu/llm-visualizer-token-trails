@@ -1,4 +1,4 @@
-import { F, chipW, drawChip, mathName, tokCol, tokLabel, type TokLike } from './draw'
+import { F, chipW, drawChip, fillRich, mathName, tokCol, tokLabel, type TokLike } from './draw'
 import type { Stage } from './stage'
 import { C, rgba, type RGB } from './theme'
 import { clamp, lerp } from './util'
@@ -278,7 +278,7 @@ export class MatrixKit {
     const ctx = this.ctx, y = this.stage.H - 46
     let x = this.pad
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.font = F.mono(12)
-    for (const [t, col, a] of this.formula.segs) { ctx.fillStyle = rgba(col, a ?? 1); ctx.fillText(t, x, y); x += ctx.measureText(t).width }
-    if (this.formula.note) { ctx.font = F.body; ctx.fillStyle = rgba(C.mute); ctx.fillText(this.formula.note, this.pad, y + 21) }
+    for (const [t, col, a] of this.formula.segs) { ctx.fillStyle = rgba(col, a ?? 1); x += fillRich(t, x, y) }
+    if (this.formula.note) { ctx.font = F.body; ctx.fillStyle = rgba(C.mute); fillRich(this.formula.note, this.pad, y + 21) }
   }
 }

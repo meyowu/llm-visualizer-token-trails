@@ -29,6 +29,9 @@ body { background: var(--bg); color: var(--ink); font: 14px/1.55 var(--sans); -w
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--t0); outline-offset: 2px; border-radius: 4px; }
 [hidden] { display: none !important; }
+/* identifiers with a subscript (W_Q → W with a lowered Q), kept out of uppercase and letter-spacing */
+.m { text-transform: none; letter-spacing: 0; white-space: nowrap; }
+.m sub { font-size: .72em; line-height: 0; vertical-align: -0.28em; margin-left: .03em; }
 
 .app { display: grid; grid-template-columns: 252px minmax(0, 1fr); height: 100%; }
 

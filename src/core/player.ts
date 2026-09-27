@@ -1,3 +1,4 @@
+import { rich } from './frame'
 import { clamp } from './util'
 
 export interface Phase {
@@ -61,8 +62,8 @@ export class Player {
       b.className = 'seg'
       b.style.flex = `${p.dur} 1 0`
       b.innerHTML = `<span class="track"><span class="fill"></span></span><span class="lbl"></span>`
-      b.querySelector('.lbl')!.textContent = p.short ?? p.name
-      b.setAttribute('aria-label', p.name)
+      b.querySelector('.lbl')!.innerHTML = rich(p.short ?? p.name)
+      b.setAttribute('aria-label', p.name.replace(/_/g, ' '))
       b.addEventListener('click', (e) => { if (e.detail === 0) this.t = p.start + 0.001 })
       tl.appendChild(b)
       this.segs.push({ el: b, fill: b.querySelector('.fill') as HTMLElement })
