@@ -1,4 +1,4 @@
-import { clamp, gauss, hash, rng } from '../../core/util'
+import { gauss, rng } from '../../core/util'
 
 /* ---------- tokens ---------- */
 
@@ -11,52 +11,9 @@ export interface Tok {
 
 export const PROMPT = ['The', ' cat', ' sat', ' on', ' the']
 
-/** Real GPT-2 token ids for the words the exhibit uses; anything else gets a stable fake id. */
-const IDS: Record<string, number> = {
-  'The': 464, ' cat': 3797, ' sat': 3332, ' on': 319, ' the': 262, ' mat': 2603, ' floor': 4314, ' bed': 3996,
-  ' ground': 2323, '.': 13, ',': 11, ' and': 290, ' in': 287, ' with': 351, ' while': 981, ' It': 632, ' The': 383,
-  ' She': 1375, ' He': 679, '\n': 198, ' was': 373, ' couch': 18507, ' edge': 5743,
-}
-export const tokId = (t: string) => IDS[t] ?? 1000 + (hash(t) % 40000)
-export const promptTokens = (): Tok[] => PROMPT.map((t, i) => ({ text: t, id: tokId(t), c: i % 7 }))
-
-/* ---------- next-token distribution (canned, temperature-aware) ---------- */
-
-const NOUNS = new Set([' mat', ' floor', ' couch', ' bed', ' edge', ' ground', ' windowsill', ' porch', ' rug', ' roof', ' keyboard'])
-export const FUNCTION_WORDS = new Set(['The', ' the', ' on', ' in', ' with', ' and', '.', ',', ' while', '\n', ' It', ' The', ' She', ' He', ' Then', ' was'])
-export const TAIL = [' windowsill', ' porch', ' rug', ' keyboard', ' roof']
-
-function nextLogits(last: string): [string, number][] {
-  if (last === ' the') return [[' mat', 3.2], [' floor', 2.3], [' couch', 1.9], [' bed', 1.6], [' edge', 1.4], [' ground', 1.3]]
-  if (NOUNS.has(last)) return [['.', 3.0], [',', 2.3], [' and', 2.0], [' while', 1.1], [' in', 0.9], [' with', 0.8]]
-  if (last === '.') return [[' It', 2.4], [' The', 2.2], ['\n', 1.5], [' She', 1.3], [' He', 1.2], [' Then', 0.9]]
-  if (last === ',') return [[' and', 2.6], [' purring', 1.9], [' watching', 1.6], [' then', 1.3], [' as', 1.2], [' still', 1.0]]
-  if (last === ' The') return [[' cat', 3.0], [' dog', 1.8], [' sun', 1.5], [' room', 1.3], [' house', 1.1], [' mat', 1.0]]
-  if ([' It', ' She', ' He', ' Then', '\n'].includes(last)) return [[' was', 2.8], [' looked', 1.9], [' seemed', 1.7], [' purred', 1.6], [' had', 1.4], [' yawned', 1.3]]
-  return [['.', 2.4], [' softly', 1.8], [' and', 1.7], [',', 1.6], [' quietly', 1.2], [' again', 1.0]]
-}
-
-export interface DistRow {
-  text: string | null
-  p: number
-  other?: boolean
-}
-
-/** Top-6 candidates plus one row for the remaining 50,251 vocabulary entries. */
-/** Toy logit shared by every token outside the top 6; the "others" row is 50,251 × exp(−11 / T). */
-export const TAIL_LOGIT = -11
-/** The canned top-6 logits after `last`, highest first. */
-export const topLogits = (last: string) => nextLogits(last).slice().sort((a, b) => b[1] - a[1])
-
-export function dist(last: string, T: number): DistRow[] {
-  const L = nextLogits(last)
-  const ex = L.map(([, l]) => Math.exp(l / T))
-  const rest = 50251 * Math.exp(-11 / T)
-  const Z = ex.reduce((a, b) => a + b, 0) + rest
-  const rows: DistRow[] = L.map(([s], k) => ({ text: s, p: ex[k] / Z })).sort((a, b) => b.p - a.p)
-  rows.push({ text: null, p: rest / Z, other: true })
-  return rows
-}
+/** GPT-2 ids of the prompt's tokens. */
+const IDS: Record<string, number> = { 'The': 464, ' cat': 3797, ' sat': 3332, ' on': 319, ' the': 262 }
+export const promptTokens = (): Tok[] => PROMPT.map((t, i) => ({ text: t, id: IDS[t], c: i % 7 }))
 
 /* ---------- toy attention block (real arithmetic at toy scale) ---------- */
 
@@ -160,6 +117,14 @@ export function attention(seq: Tok[]): Attn {
   return { h, X, heads, concat, Wo: W.Wo, out, resid: h.map((r, i) => r.map((v, k) => v + out[i][k])) }
 }
 
+/**
+ * Where each lane's information comes from after the toy attention block: the stream keeps 45% of
+ * itself and takes 55% from attention, averaged over the heads (the attention output of a lane is
+ * that average, before W_O). Used to colour the lanes in every detail view.
+ */
+export const laneMix = (att: Attn): M =>
+  att.heads[0].A.map((_, i) => att.heads[0].A.map((__, k) => 0.45 * (k === i ? 1 : 0) + (0.55 * att.heads.reduce((s, h) => s + (h.A[i][k] ?? 0), 0)) / att.heads.length))
+
 /* ---------- toy MLP block ---------- */
 
 /** GPT-2's tanh approximation of GELU ("gelu_new"). */
@@ -199,59 +164,4 @@ export function mlp(seq: Tok[], att: Attn = attention(seq)): Mlp {
   const G = H.map((r) => r.map(gelu))
   const Y = matmul(G, WM.Wproj).map((r) => r.map((v, j) => v + WM.bproj[j]))
   return { h, X, Wfc: WM.Wfc, bfc: WM.bfc, H, G, Wproj: WM.Wproj, bproj: WM.bproj, Y, out: h.map((r, i) => r.map((v, k) => v + Y[i][k])) }
-}
-
-/* ---------- forward-pass data for the overview ---------- */
-
-export interface Pass {
-  N: number
-  seq: Tok[]
-  emb: number[][]
-  /** 12 heads; heads 1–2 come from the toy block above, the rest are synthetic. */
-  att: M[]
-  /** Colour-mixing weights after each of the 12 blocks. */
-  mix: M[]
-  /** 24 MLP neuron activations per token, in [0, 1]. */
-  act: number[][]
-}
-
-export function buildPass(seq: Tok[]): Pass {
-  const N = seq.length
-  const emb = seq.map((t) => { const r = rng(t.id * 9973 + 17); return Array.from({ length: 16 }, () => clamp(gauss(r) * 0.5, -1, 1)) })
-  const toy = attention(seq)
-  const att: M[] = []
-  for (let h = 0; h < 12; h++) {
-    if (h < TOY.heads) { att.push(toy.heads[h].A); continue }
-    const r = rng(h * 7919 + N * 31 + seq[N - 1].id)
-    const H: M = []
-    for (let i = 0; i < N; i++) {
-      const lg: number[] = []
-      for (let j = 0; j <= i; j++) {
-        let v = gauss(r) * 0.9 + (j === 0 ? 1.0 : 0) + (j === i ? 0.8 : 0) + (i - j === 1 ? 0.5 : 0)
-        if (h === 2 && !FUNCTION_WORDS.has(seq[j].text)) v += 1.1
-        lg.push(v)
-      }
-      const m = Math.max(...lg), e = lg.map((x) => Math.exp(x - m)), z = e.reduce((a, b) => a + b, 0)
-      H.push(e.map((x) => x / z))
-    }
-    att.push(H)
-  }
-  const mix: M[] = []
-  let Mx: M = seq.map((_, i) => seq.map((__, k) => (k === i ? 1 : 0)))
-  Mx = mixStep(Mx, att[0], 0.45)
-  mix.push(Mx)
-  for (let l = 1; l < 12; l++) { Mx = mixStep(Mx, att[l], 0.78); mix.push(Mx) }
-  // MLP neurons in the overview are the toy block's first 24 GELU outputs, positive part, normalised
-  const G = mlp(seq, toy).G, gmax = Math.max(...G.flat())
-  const act = G.map((row) => row.slice(0, 24).map((g) => Math.max(0, g) / gmax))
-  return { N, seq, emb, att, mix, act }
-}
-
-/** Colour mixing through one attention layer: keep `self` of your own hue, take the rest from what you attend to. */
-export function mixStep(Mx: M, A: M, self: number): M {
-  return Mx.map((row, i) => row.map((v, k) => {
-    let a = 0
-    for (let j = 0; j <= i; j++) a += A[i][j] * Mx[j][k]
-    return self * v + (1 - self) * a
-  }))
 }

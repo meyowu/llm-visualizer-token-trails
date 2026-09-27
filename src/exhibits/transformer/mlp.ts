@@ -6,7 +6,7 @@ import { C, blend, rgba } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
 import { chipW, F, mathName, plate, serifAt, subLabel, useCtx } from '../../core/draw'
 import type { Nav } from '../registry'
-import { GELU_MIN, TOY, TOY_FF, attention, gelu, mlp, promptTokens, transpose } from './model'
+import { GELU_MIN, TOY, TOY_FF, attention, gelu, laneMix, mlp, promptTokens, transpose } from './model'
 
 /*
  * The MLP of block 1, opened up at toy scale (d_model 8, d_ff 32 — the same 4× as GPT-2's
@@ -69,7 +69,7 @@ export function mountMlp(root: HTMLElement, nav: Nav): () => void {
   const mk = new MatrixKit(stage, seq, pad)
   const { tl } = mk
   // The residual stream after attention already carries mixed colours; the MLP never mixes positions.
-  const laneCols = () => att.heads[0].A.map((row, i) => blend(seq.map((_, k) => mk.tokRGB(k)), row.map((w, k) => 0.55 * w + (k === i ? 0.45 : 0))))
+  const laneCols = () => laneMix(att).map((w) => blend(seq.map((_, k) => mk.tokRGB(k)), w))
 
   /** Bias vector as a one-row slab, labelled on the given side. */
   function drawBias(r: Rect, vals: number[], name: string, shape: string, real: string, a: number, side: 'left' | 'right') {

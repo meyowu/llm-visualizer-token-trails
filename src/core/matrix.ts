@@ -79,6 +79,10 @@ export interface GemmView {
   bias?: number[]
   /** Where the bias row is drawn, to highlight its cell once the dot product is done. */
   biasR?: Rect
+  /** Terms of the dot product that are not drawn (e.g. 760 of 768 dimensions): how many, and their sum for cell (i, j). */
+  more?: { n: number; sum: (i: number, j: number) => number }
+  /** Format for the finished result, when fmt() rounds away the differences that matter. */
+  fmtC?: (v: number) => string
 }
 
 /** Stateful helper for one detail view: draws matrices, tracks hover targets and the formula line. */
@@ -229,7 +233,8 @@ export class MatrixKit {
     let sum = 0
     for (let t = 0; t < upto; t++) sum += a[t] * b[t]
     if (bias !== undefined && done) { segs.push([' + ', C.mute], [fmt(bias), C.ink2]); sum += bias }
-    segs.push(['  =  ', C.mute], [fmt(sum) + (done ? '' : ' …'), done ? C.ink : C.mute])
+    if (v.more && done) { const r = v.more.sum(i, j); segs.push([' + ', C.mute], [`(${v.more.n} more terms: ${fmt(r)})`, C.ink2]); sum += r }
+    segs.push(['  =  ', C.mute], [(done && v.fmtC ? v.fmtC(sum) : fmt(sum)) + (done ? '' : ' …'), done ? C.ink : C.mute])
     return segs
   }
 

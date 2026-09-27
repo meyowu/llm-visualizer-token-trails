@@ -89,3 +89,24 @@ export function toggle(parent: HTMLElement, label: string, options: string[], va
   parent.prepend(el)
   return { set: (i: number) => set(i, false) }
 }
+
+/** A ‹ label n › stepper placed in the player's meta slot; wraps around at both ends. */
+export function stepper(parent: HTMLElement, label: string, count: number, value: number, onChange: (i: number) => void) {
+  const el = document.createElement('div')
+  el.className = 'stepper'
+  el.setAttribute('role', 'group')
+  el.setAttribute('aria-label', label)
+  el.innerHTML = `<button type="button" aria-label="Previous ${esc(label)}">‹</button><output></output><button type="button" aria-label="Next ${esc(label)}">›</button>`
+  const [prev, next] = el.querySelectorAll('button'), out = el.querySelector('output')!
+  let v = value
+  function set(i: number, notify: boolean) {
+    v = (i + count) % count
+    out.textContent = `${label} ${v + 1}`
+    if (notify) onChange(v)
+  }
+  prev.addEventListener('click', () => set(v - 1, true))
+  next.addEventListener('click', () => set(v + 1, true))
+  set(value, false)
+  parent.prepend(el)
+  return { set: (i: number) => set(i, false) }
+}

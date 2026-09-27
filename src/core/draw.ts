@@ -28,8 +28,10 @@ export interface TokLike {
 }
 
 /** GPT-2 byte-level BPE display: Ġ marks a leading space, Ċ a newline. */
-export const tokLabel = (t: string) => (t === '\n' ? 'Ċ' : t.startsWith(' ') ? 'Ġ' + t.slice(1) : t)
-export const tokDisp = (t: string) => (t === '\n' ? ' ↵' : t)
+/** GPT-2's spelling of a token: a leading space shows as Ġ, a newline as Ċ. */
+export const tokLabel = (t: string) => (t.startsWith(' ') ? 'Ġ' + t.slice(1) : t).replace(/\n/g, 'Ċ')
+/** A token as running text, with newlines shown as ↵. */
+export const tokDisp = (t: string) => t.replace(/\n/g, ' ↵')
 export const tokCol = (t: TokLike): RGB => C.tok[t.c % 7]
 
 export function spaced(on: boolean) {

@@ -6,7 +6,7 @@ import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
 import { F, chipW, drawChip, fillRich, mathName, mathRun, plate, subLabel, useCtx } from '../../core/draw'
 import { MatrixKit, fmt, gemm, lr, type M, type Rect } from '../../core/matrix'
 import type { Nav } from '../registry'
-import { TOY, attention, promptTokens, transpose } from './model'
+import { TOY, attention, laneMix, promptTokens, transpose } from './model'
 
 /*
  * Attention, opened up. One head of block 1 at toy scale (d_model 8, d_head 4), with every
@@ -107,7 +107,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
   /* ---------- colour of a token after attention (matches the overview's lanes) ---------- */
   const hues = () => seq.map((_, i) => tokRGB(i))
   const oCols = (A: M) => A.map((row) => blend(hues(), row))
-  const laneCols = () => R.heads[0].A.map((row, i) => blend(hues(), row.map((w, k) => 0.55 * w + (k === i ? 0.45 : 0))))
+  const laneCols = () => laneMix(R).map((w) => blend(hues(), w))
 
   /* ---------- scene 1: X · W_Q, W_K, W_V ---------- */
   function sceneQKV(p: number) {

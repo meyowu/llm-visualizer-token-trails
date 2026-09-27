@@ -20,21 +20,26 @@ src/main.ts                 rail nav from the registry, hash router, zoom transi
 src/styles.css              design tokens (dark-first, light via prefers-color-scheme / data-theme) + frame styles
 src/core/stage.ts           Stage: DPR-aware canvas (min size, scrolls horizontally when narrow), runLoop()
 src/core/player.ts          Player: phases, t, play/pause, speed, scrubbable timeline, keyboard shortcuts
-src/core/frame.ts           createFrame(): header/specs, stage host, caption line, controls; toggle()
+src/core/frame.ts           createFrame(): header/specs, stage host, caption line, controls; toggle(), stepper()
 src/core/draw.ts            primitives: chips, plate(), bracketLabel(), mathName()/mathRun(), fonts F
 src/core/matrix.ts          MatrixKit: drawMat (slabs), gemm() schedules, gemmOverlay, hover hits, formula line
 src/core/theme.ts           canvas palette C (read from CSS tokens), rgba/mixc/blend/pop
 src/exhibits/registry.ts    categories (Anatomy, Lineage, Training, Serving, Agents) → entries: exhibits or sub-headings;
                             an exhibit may have `children` (its steps); live when it has `route` and `mount`
+src/lib/gpt2/
+  bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
+  data.ts                   decodes src/data/gpt2.json: presets, nextDist() at any T, headKind(), mixing() (lane colours)
+src/data/gpt2.json          real GPT-2 small activations for 3 prompts × 3 greedy passes (made by scripts/gpt2-export.ts)
+scripts/gpt2-export.ts      offline GPT-2 small forward pass in plain TS (Node 23+); weights in ~/.cache/token-trails/gpt2
 src/exhibits/transformer/
-  model.ts                  GPT-2 ids, canned next-token distribution, toy attention + MLP blocks, overview pass data
-  overview.ts               forward pass, tokenizer → sampling; attn/mlp plates open the detail views
+  model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
+  overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
   tokenizer.ts              tokenizer detail view: pre-split, bytes, BPE merges by rank, ids (id = 256 + merge rank)
   embedding.ts              embedding detail view: onehot · W_E as a lookup, + W_P, into the stream
   layernorm.ts              pre-LN stream schematic, then ln_1 as dots on number lines (μ, σ, γ, β)
   attention.ts              attention detail view, every GEMM animated cell by cell
   mlp.ts                    MLP detail view: up-projection, GELU curve, down-projection, residual
-  unembed.ts                ln_f, logits = x · W_Eᵀ (tied), temperature, softmax, sampling strategies
+  unembed.ts                ln_f, logits = x · W_Eᵀ (tied), temperature, softmax, sampling strategies; real GPT-2 numbers
 src/exhibits/lineage/
   llama.ts                  LLaMA 3 vs GPT-2: blocks, RoPE, RMSNorm, SwiGLU, GQA (real numbers are LLaMA 3 8B)
 ```
@@ -54,10 +59,11 @@ src/exhibits/lineage/
   - Each scene has a layout computed in `geom()`, laid out so that a GEMM's A row i lines up with C row i and B column j lines up with C column j (A left, B above, C at the intersection). Transitions lerp matrix rects between scene layouts.
   - Use `MatrixKit` from `core/matrix.ts`: `gemm(p, m, n, K, 'slow'|'fast')` schedules cells, `mk.resolve()` picks the hovered cell or the animated one, `mk.gemmOverlay()` draws the highlights and guides and sets the formula line. It supports a transposed B (`bT`, used for W_projᵀ in `mlp.ts`) and bias vectors.
   - Call `mk.begin()` each frame and register hoverable result matrices with `mk.hit()`.
-- **Toy vs real scale.** Compute real arithmetic at toy size (`TOY` in `model.ts`: d_model 8, d_head 4, 2 heads; `TOY_FF` 32). Always show the GPT-2 small shape next to it (`real` on matrices, `N × 768` etc., and `value / real` in the header specs).
+- **Real vs toy numbers.** Never show a made-up number as GPT-2's. The overview and Unembed use a real GPT-2 small run (`src/lib/gpt2/data.ts`); when only part of a real vector fits, say how much is drawn (`8 drawn`, `dims 1–16 of 768`). Detail views that animate every GEMM compute real arithmetic at toy size (`TOY` in `model.ts`: d_model 8, d_head 4, 2 heads; `TOY_FF` 32), say `shown: toy` in the specs, and show the GPT-2 small shape next to each matrix (`real`, `N × 768`, `value / real`).
+- **Changing the real data.** Edit the prompts or fields in `scripts/gpt2-export.ts`, run `node scripts/gpt2-export.ts` (needs model.safetensors, merges.txt, vocab.json from huggingface.co/openai-community/gpt2 in ~/.cache/token-trails/gpt2), and commit the regenerated `src/data/gpt2.json`. Keep it small: it is bundled into the page.
 - **Visual language is fixed.** The user approved it; don't redesign it.
   - Colors come only from `C` / the CSS tokens. Never hard-code hex in drawing code, and check both themes.
-  - Each token keeps its hue (`--t0…--t6`, token i → `i % 7`) everywhere. Information mixing between tokens is shown by blending hues, and the blend must match the overview's lanes (`mixStep` / `laneCols`).
+  - Each token keeps its hue (`--t0…--t6`, token i → `i % 7`) everywhere. Information mixing between tokens is shown by blending hues: the overview uses real attention (`mixing()` in `data.ts`, first-token sinks count as no-ops), the toy detail views use `laneMix()` in `model.ts`, averaged over heads.
   - Layers are tilted glass plates. Matrices are slabs with a 5px depth face. A filled cell is positive, an outlined cell is negative.
   - Fonts: EB Garamond italic for names and math (`serifAt()`, scaled up 10%), Geist for UI text, JetBrains Mono for labels and numbers (`MONO`, never under 10.5px on canvas). Group labels are uppercase mono over thin brackets. Use the constants in `core/draw.ts`, never a hard-coded font string.
   - Keep canvas text minimal, using real units and terms of art (GPT-2 ids, Ġ, 768 → 3072, FLOPs). Explanations go in the caption line: one or two plain sentences per phase. The canvas formula line carries a short note for the focused cell.

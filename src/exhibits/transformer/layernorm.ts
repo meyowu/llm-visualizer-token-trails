@@ -6,7 +6,7 @@ import { Stage, runLoop } from '../../core/stage'
 import { C, blend, pop, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
 import type { Nav } from '../registry'
-import { LN, LN_EPS, TOY, attention, embedRow, lnStats, promptTokens } from './model'
+import { LN, LN_EPS, TOY, attention, embedRow, laneMix, lnStats, promptTokens } from './model'
 
 /*
  * Pre-LN residual stream: the stream runs straight through each block, and every sub-layer reads a
@@ -73,7 +73,7 @@ export function mountLayerNorm(root: HTMLElement, nav: Nav): () => void {
 
   const nxPos = (v: number) => L.nx0 + ((clamp(v, -XR, XR) + XR) / (2 * XR)) * (L.nx1 - L.nx0)
   const hues = seq.map((_, i) => tokRGB(i))
-  const afterAttn = (): RGB[] => att.heads[0].A.map((row, i) => blend(hues, row.map((w, k) => 0.55 * w + (k === i ? 0.45 : 0))))
+  const afterAttn = (): RGB[] => laneMix(att).map((w) => blend(hues, w))
 
   /* ---------- scene 1: the residual stream through one block ---------- */
   let hoverPlate = ''
