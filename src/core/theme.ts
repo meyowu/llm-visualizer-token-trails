@@ -31,6 +31,15 @@ export function readTheme() {
     bg: g('--bg'), ink: g('--ink'), ink2: g('--ink2'), mute: g('--mute'), faint: g('--faint'), neg: g('--neg'),
     tok: [0, 1, 2, 3, 4, 5, 6].map((i) => g('--t' + i)),
   })
+  // Windows High Contrast and other forced colours: draw the canvas in the system colours too
+  if (matchMedia('(forced-colors: active)').matches) {
+    const sys = (name: string): RGB => {
+      const el = document.createElement('i'); el.style.color = name; document.body.appendChild(el)
+      const m = getComputedStyle(el).color.match(/\d+/g) ?? ['0', '0', '0']; el.remove()
+      return [+m[0], +m[1], +m[2]]
+    }
+    Object.assign(C, { bg: sys('Canvas'), ink: sys('CanvasText'), ink2: sys('CanvasText'), mute: sys('GrayText'), faint: sys('GrayText'), neg: sys('CanvasText') })
+  }
   C.dark = (C.bg[0] + C.bg[1] + C.bg[2]) / 3 < 128
 }
 
@@ -39,6 +48,7 @@ export function watchTheme(onChange: () => void = () => {}) {
   const update = () => { readTheme(); onChange() }
   update()
   matchMedia('(prefers-color-scheme: light)').addEventListener('change', update)
+  matchMedia('(forced-colors: active)').addEventListener('change', update)
   new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-palette'] })
 }
 

@@ -9,6 +9,25 @@ import { reducedMotion } from './core/util'
 import { ALIASES, CATEGORIES, DEFAULT_ROUTE, FOUNDATIONS, GLOSSARY, ROUTES, START, exhibitsOf, isHeading, type Exhibit } from './exhibits/registry'
 
 registerFonts()
+// light / dark: follow the system until the reader picks one
+const themeBtn = document.querySelector('.theme-btn') as HTMLButtonElement
+const THEMES = ['system', 'light', 'dark'] as const
+function applyTheme(t: string) {
+  if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
+  else delete document.documentElement.dataset.theme
+  themeBtn.textContent = t === 'light' ? '☀ Light' : t === 'dark' ? '☾ Dark' : '◐ System theme'
+  themeBtn.setAttribute('aria-label', `Theme: ${t}. Click to change.`)
+}
+applyTheme(pref.get('theme') ?? 'system')
+themeBtn.addEventListener('click', () => {
+  const next = THEMES[(THEMES.indexOf((pref.get('theme') ?? 'system') as (typeof THEMES)[number]) + 1) % THEMES.length]
+  pref.set('theme', next); applyTheme(next)
+})
+// the skip link lands on the current page's title
+;(document.querySelector('.skip') as HTMLButtonElement).addEventListener('click', () => {
+  const h1 = current?.root.querySelector('h1') as HTMLElement | null
+  if (h1) { h1.tabIndex = -1; h1.focus() }
+})
 if (pref.get('palette') === 'cvd') document.documentElement.dataset.palette = 'cvd'
 watchTheme(poke)
 // canvases drawn before a font arrived redraw with it
@@ -89,6 +108,7 @@ function renderRail(active: string) {
     h.innerHTML = '<span class="chev" aria-hidden="true"></span><span class="t"></span><span class="n"></span>'
     h.querySelector('.t')!.textContent = cat.title
     h.querySelector('.n')!.textContent = `${live} / ${all.length}`
+    h.querySelector('.n')!.setAttribute('aria-label', `${live} of ${all.length} live`)
     h.dataset.cat = cat.id
     h.addEventListener('click', () => { if (open.has(cat.id)) open.delete(cat.id); else open.add(cat.id); renderRail(active) })
     const ul = document.createElement('ul')
@@ -196,7 +216,13 @@ function go(target: string, origin?: { x: number; y: number }, push = true) {
   const root = document.createElement('div')
   root.className = 'view'
   main.appendChild(root)
-  const destroy = ROUTES[route](root, go)
+  let destroy: () => void
+  try { destroy = ROUTES[route](root, go) } catch (err) {
+    // a page that fails to start says so instead of leaving a blank screen
+    console.error(err)
+    root.innerHTML = `<header class="head"><div><p class="eyebrow">Something went wrong</p><div class="titlebar"><h1>This page did not load</h1></div><p class="start-body">Try reloading the page; the error is in the browser console.</p></div></header>`
+    destroy = () => {}
+  }
   openAtPhase(null)
   chapterNav(route, root)
   current = { route, root, destroy }

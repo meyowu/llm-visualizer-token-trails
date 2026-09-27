@@ -24,7 +24,7 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
     <header class="head">
       <div>
         <p class="eyebrow">Start here</p>
-        <h1>A language model predicts the next token<span class="sub">and nothing else</span></h1>
+        <div class="titlebar"><h1>A language model predicts the next token</h1><p class="sub">and nothing else</p></div>
       </div>
     </header>
     <div class="start-body">

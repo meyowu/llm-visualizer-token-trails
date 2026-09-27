@@ -35,6 +35,7 @@ export class Stage {
     this.ctx = this.canvas.getContext('2d')!
     this.ro = new ResizeObserver(() => this.resize())
     this.ro.observe(host)
+    this.watchDpr()
     this.resize()
   }
 
@@ -59,6 +60,12 @@ export class Stage {
     this.edges()
     poke()
     this.onResize?.()
+  }
+
+  /** Re-render at the new resolution when the window moves to a screen with another pixel ratio. */
+  private watchDpr() {
+    const mq = matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`)
+    mq.addEventListener('change', () => { if (this.host.isConnected) { this.resize(); this.watchDpr() } }, { once: true })
   }
 
   /** Fade the edge the drawing continues past, while it scrolls sideways. */

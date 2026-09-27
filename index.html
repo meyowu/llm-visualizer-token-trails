@@ -4,9 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Token Trails</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%230B0D11'/%3E%3Cpath d='M3 7h18M3 12h18M3 17h18' stroke='%23434A58' stroke-width='1.4'/%3E%3Cpath d='M9 17C3 15 3 9 9 7' fill='none' stroke='%237FB2FF' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M9 17C5 16 5 13 9 12' fill='none' stroke='%23FF8FB5' stroke-width='1.8' stroke-linecap='round'/%3E%3Ccircle cx='9' cy='17' r='2' fill='%23E9EBEF'/%3E%3C/svg%3E" />
     <meta name="description" content="Follow the tokens: animated, explorable walk-throughs of the Transformer, inference engines and agents." />
   </head>
   <body>
+    <button class="skip" type="button">Skip to the exhibit</button>
     <div class="app">
       <aside class="rail">
         <div>
@@ -27,6 +29,7 @@
           <div class="legend"><span><i class="on"></i>Live</span><span><i></i>In progress</span></div>
           <div><kbd>Space</kbd> play / pause · <kbd>←</kbd> <kbd>→</kbd> step through phases</div>
           <div>Click a part marked ↗ on the canvas to open its details.</div>
+          <button class="theme-btn" type="button"></button>
         </div>
       </aside>
       <main class="main"></main>

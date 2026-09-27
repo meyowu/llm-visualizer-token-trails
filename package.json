@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "build:artifact": "vite build --mode artifact && node scripts/artifact.mjs",
+    "build:artifact": "tsc --noEmit && vite build --mode artifact && node scripts/artifact.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },

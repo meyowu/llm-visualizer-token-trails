@@ -54,7 +54,7 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
       <div>
         ${o.back ? `<button class="back" type="button">← ${esc(o.back.label)}</button>` : ''}
         <p class="eyebrow">${rich(o.eyebrow)}</p>
-        <h1>${esc(o.title)}<span class="sub">${rich(o.subtitle)}</span></h1>
+        <div class="titlebar"><h1>${esc(o.title)}</h1><p class="sub">${rich(o.subtitle)}</p></div>
       </div>
       <dl class="specs">
         ${o.specs.map((s) => `<div><dt>${rich(s.label)}</dt><dd>${rich(s.value)}${s.real ? `<small>${rich([s.realLabel ?? 'GPT-2', s.real].filter(Boolean).join(' '))}</small>` : ''}</dd></div>`).join('')}
@@ -88,7 +88,7 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
   root.appendChild(live)
   if (!pref.get('legend-seen')) { legend.open = true; pref.set('legend-seen', '1') }
   const q = <T extends HTMLElement>(s: string) => root.querySelector(s) as T
-  const title = q('.cap-title b'), short = q('.cap-title em'), text = q('.cap-text'), shape = q('.cap-shape'), sub = q('h1 .sub')
+  const title = q('.cap-title b'), short = q('.cap-title em'), text = q('.cap-text'), shape = q('.cap-shape'), sub = q('.titlebar .sub')
   const fLine = root.querySelector('.f-line'), fNote = root.querySelector('.f-note')
   let last = '', lastF = '', lastFAt = 0
   let pendingF: (() => void) | null = null

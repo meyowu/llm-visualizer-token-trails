@@ -75,8 +75,9 @@ export function mountLayerNorm(root: HTMLElement, nav: Nav): () => void {
   geom()
 
   const nxPos = (v: number) => L.nx0 + ((clamp(v, -XR, XR) + XR) / (2 * XR)) * (L.nx1 - L.nx0)
-  const hues = seq.map((_, i) => tokRGB(i))
-  const afterAttn = (): RGB[] => laneMix(att).map((w) => blend(hues, w))
+  // read at draw time, so a theme switch recolours them
+  let hues = seq.map((_, i) => tokRGB(i))
+  const afterAttn = (): RGB[] => { hues = seq.map((_, i) => tokRGB(i)); return laneMix(att).map((w) => blend(hues, w)) }
 
   /* ---------- scene 1: the residual stream through one block ---------- */
   let hoverPlate = ''

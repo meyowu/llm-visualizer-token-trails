@@ -68,7 +68,7 @@ export interface MatOpts {
   colToks?: boolean
   /** Hide numbers even when cells are large enough. */
   noText?: boolean
-  /** Width the label may use (default: the matrix plus three cells); the real shape is dropped past it. */
+  /** Width the label may use (default: the matrix plus one cell); the real shape is dropped past it. */
   labelW?: number
   /** Custom cell painter; returns fill alpha. */
   paint?: (x: number, y: number, c: number, i: number, j: number, a: number) => number
@@ -259,7 +259,7 @@ export class MatrixKit {
     if (o.label !== 'none') {
       const la = alpha * (o.labelAlpha ?? 1)
       const ly = o.label === 'bottom' ? r.y + h + 24 : r.y - (o.colToks ? 28 : 11)
-      this.label(o.name, o.shape, o.real, r.x, ly, la, o.labelW ?? w + 3 * c)
+      this.label(o.name, o.shape, o.real, r.x, ly, la, o.labelW ?? w + c)
     }
   }
   /** Italic name, then the toy shape and (fainter) the real shape. */

@@ -193,7 +193,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
       ctx.fillStyle = rgba(C.tok[V.next.c], clamp((pS - 0.9) / 0.05) * fa)
       ctx.fillText(s, x, G.sentY); x += ctx.measureText(s).width
     }
-    const blink = 0.5 + 0.5 * Math.sin(now / 180)
+    const blink = reduced || !player.playing ? 1 : 0.5 + 0.5 * Math.sin(now / 180)
     ctx.fillStyle = rgba(C.ink, blink * 0.7 * baseA * fa); ctx.fillRect(x + 4, G.sentY - 19, 1.5, 23)
     // split marks go before the space, which belongs to the token that follows (Ġ)
     if (S.passIdx === 0 && pT > 0 && pT < 0.75) {

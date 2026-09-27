@@ -43,7 +43,8 @@ interface Run {
   WT: M
   Z: M
   next: Next
-  lanes: RGB[]
+  /** Where each lane's information came from, for its colour. */
+  mix: number[][]
 }
 
 function load(k: number, seq: Tok[]): Run {
@@ -55,14 +56,13 @@ function load(k: number, seq: Tok[]): Run {
   const sigma = Math.sqrt(u.h.reduce((s, v) => s + (v - mu) ** 2, 0) / u.h.length + 1e-5)
   const cands = u.rows.map((r) => ({ text: r.text, id: r.id, z: dot(u.xf, r.v) }))
   const mix = mixing(pass.att)[11]
-  const hues = seq.map((t) => C.tok[t.c])
   return {
     seq, h: u.h, xf: u.xf, mu, sigma, cands,
     xs: [Array.from(u.xf.subarray(0, D))],
     WT: Array.from({ length: D }, (_, d) => u.rows.map((r) => r.v[d])),
     Z: [cands.map((c) => c.z)],
     next: pass.next,
-    lanes: mix.map((row) => blend(hues, row)),
+    mix,
   }
 }
 /** More decimals than fmt(): GPT-2's logits sit near −80 and differ in the first decimal. */
@@ -116,8 +116,9 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
   temp.innerHTML = '<small>temperature</small><span>T</span><input id="un-temp" type="range" min="0.2" max="2" step="0.05"><output></output>'
   player.meta.append(temp)
   const tIn = temp.querySelector('input')!, tOut = temp.querySelector('output')!
-  tIn.value = String(S.T); tOut.textContent = S.T.toFixed(2)
-  tIn.addEventListener('input', () => { S.T = +tIn.value; tOut.textContent = S.T.toFixed(2); pref.set('temperature', tIn.value); redraw() })
+  const tText = () => { tOut.textContent = S.T.toFixed(2); tIn.setAttribute('aria-valuetext', `${S.T.toFixed(2)}: ${S.T < 1 ? 'more decisive' : S.T > 1 ? 'more random' : 'the model as trained'}`) }
+  tIn.value = String(S.T); tText()
+  tIn.addEventListener('input', () => { S.T = +tIn.value; tText(); pref.set('temperature', tIn.value); redraw() })
   const resample = document.createElement('button')
   resample.className = 'resample'; resample.textContent = 'Resample'
   resample.addEventListener('click', () => { S.u = Math.random(); if (player.t < player.start('sample')) player.t = player.start('sample') + 0.001; else redraw() })
@@ -209,7 +210,7 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
     let xx0 = pad
     seq.forEach((t) => { const s = tokDisp(t.text); ctx.fillStyle = rgba(C.ink); ctx.fillText(s, xx0, L.sentY); xx0 += ctx.measureText(s).width })
     if (appendA > 0) { ctx.fillStyle = rgba(nextCol(), appendA); ctx.fillText(tokDisp(text), xx0, L.sentY); xx0 += ctx.measureText(tokDisp(text)).width }
-    ctx.fillStyle = rgba(C.ink, 0.5 + 0.5 * Math.sin(performance.now() / 180)); ctx.fillRect(xx0 + 4, L.sentY - 19, 1.5, 23)
+    ctx.fillStyle = rgba(C.ink, reduced || !player.playing ? 1 : 0.5 + 0.5 * Math.sin(performance.now() / 180)); ctx.fillRect(xx0 + 4, L.sentY - 19, 1.5, 23)
     return xx0
   }
   /** Logit of the token at a rank (1-based): exact for the top 256, from 64 quantiles beyond. */
@@ -281,7 +282,7 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
     const yl = L.xr.y + L.xr.c / 2, N = seq.length
     for (let i = 0; i < N; i++) {
       const y = yl + (i - (N - 1)) * 10, last = i === N - 1
-      ctx.strokeStyle = rgba(R.lanes[i], (last ? 0.9 : 0.25) * a); ctx.lineWidth = last ? 1.8 : 1
+      ctx.strokeStyle = rgba(blend(seq.map((t) => C.tok[t.c]), R.mix[i]), (last ? 0.9 : 0.25) * a); ctx.lineWidth = last ? 1.8 : 1
       ctx.beginPath(); ctx.moveTo(L.lx, y); ctx.lineTo(last ? L.lnX - 8 : L.lnX - 30, y); ctx.stroke()
       if (last) { ctx.beginPath(); ctx.moveTo(L.lnX + 8, y); ctx.lineTo(L.xr.x - 4, y); ctx.stroke() }
     }
