@@ -2,8 +2,10 @@ import { clamp } from './util'
 
 export interface Phase {
   id: string
-  en: string
-  zh: string
+  /** Full name, shown in the caption. */
+  name: string
+  /** Timeline label; defaults to name. */
+  short?: string
   dur: number
 }
 export interface TimedPhase extends Phase {
@@ -53,14 +55,14 @@ export class Player {
     const tl = document.createElement('div')
     tl.className = 'tl'
     tl.setAttribute('role', 'group')
-    tl.setAttribute('aria-label', '阶段')
+    tl.setAttribute('aria-label', 'Phases')
     this.phases.forEach((p) => {
       const b = document.createElement('button')
       b.className = 'seg'
       b.style.flex = `${p.dur} 1 0`
       b.innerHTML = `<span class="track"><span class="fill"></span></span><span class="lbl"></span>`
-      b.querySelector('.lbl')!.textContent = p.en
-      b.setAttribute('aria-label', `${p.en} · ${p.zh}`)
+      b.querySelector('.lbl')!.textContent = p.short ?? p.name
+      b.setAttribute('aria-label', p.name)
       b.addEventListener('click', (e) => { if (e.detail === 0) this.t = p.start + 0.001 })
       tl.appendChild(b)
       this.segs.push({ el: b, fill: b.querySelector('.fill') as HTMLElement })
@@ -76,7 +78,7 @@ export class Player {
     const speed = document.createElement('div')
     speed.className = 'toggle'
     speed.setAttribute('role', 'group')
-    speed.setAttribute('aria-label', '速度')
+    speed.setAttribute('aria-label', 'Speed')
     ;[0.5, 1, 2].forEach((s) => {
       const b = document.createElement('button')
       b.textContent = s + '×'
@@ -121,7 +123,7 @@ export class Player {
     if (v && !this.onEnd && this.t >= this.total) this.t = 0
     this.playing = v
     this.icon.setAttribute('d', v ? PAUSE_ICON : PLAY_ICON)
-    this.btn.setAttribute('aria-label', v ? '暂停' : '播放')
+    this.btn.setAttribute('aria-label', v ? 'Pause' : 'Play')
   }
 
   seekPhase(dir: number) {

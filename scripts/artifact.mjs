@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 
 const file = 'dist-artifact/index.html'
 let html = readFileSync(file, 'utf8')
-const title = html.match(/<title>[\s\S]*?<\/title>/)?.[0] ?? '<title>Latent Atlas</title>'
+const title = html.match(/<title>[\s\S]*?<\/title>/)?.[0] ?? '<title>Token Trails</title>'
 html = html
   .replace(/<title>[\s\S]*?<\/title>/, '')
   .replace(/<!doctype html>/i, '')

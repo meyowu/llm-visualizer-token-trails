@@ -8,13 +8,13 @@ import type { Nav } from '../registry'
 import { PROMPT, TAIL, buildPass, dist, promptTokens, tokId, type DistRow, type Pass, type Tok } from './model'
 
 const PHASES = [
-  { id: 'tokenize', en: 'Tokenize', zh: '分词', dur: 2.4 },
-  { id: 'embed', en: 'Embed', zh: '嵌入', dur: 1.8 },
-  { id: 'attn', en: 'Attention', zh: '注意力', dur: 4.8 },
-  { id: 'mlp', en: 'MLP', zh: '前馈', dur: 2.2 },
-  { id: 'stack', en: 'Blocks', zh: '层层叠加', dur: 1.8 },
-  { id: 'unembed', en: 'Unembed', zh: '解嵌入', dur: 2.0 },
-  { id: 'sample', en: 'Sample', zh: '采样', dur: 2.8 },
+  { id: 'tokenize', name: 'Tokenize', dur: 2.4 },
+  { id: 'embed', name: 'Embed', dur: 1.8 },
+  { id: 'attn', name: 'Attention', dur: 4.8 },
+  { id: 'mlp', name: 'MLP', dur: 2.2 },
+  { id: 'stack', name: 'Blocks 2–12', short: 'Blocks', dur: 1.8 },
+  { id: 'unembed', name: 'Unembed', dur: 2.0 },
+  { id: 'sample', name: 'Sample', dur: 2.8 },
 ]
 const MAXPASS = 3
 const U = [0.22, 0.35, 0.3]
@@ -25,7 +25,7 @@ interface Pick { idx: number; text: string; d: DistRow[]; u: number }
 export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   const reduced = reducedMotion()
   const frame = createFrame(root, {
-    eyebrow: 'Transformer · 前向总览',
+    eyebrow: 'Transformer',
     title: 'Forward pass',
     subtitle: 'decoder-only · GPT-2 small',
     specs: [
@@ -33,7 +33,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
       { label: 'vocab', value: '50,257' }, { label: 'context', value: '1,024' }, { label: 'params', value: '124M' },
     ],
   })
-  const stage = new Stage(frame.stageHost, 980, 460, 'Transformer 前向计算的动画：文本被分词、嵌入，经过注意力与前馈层，最后由 LM head 给出下一个 token 的概率并采样。')
+  const stage = new Stage(frame.stageHost, 980, 460, 'Animation of a Transformer forward pass: text is tokenized and embedded, flows through attention and MLP layers, and the LM head produces next-token probabilities that are sampled.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
 
@@ -396,7 +396,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   }
   /** Hover hint on a plate that opens a detail view. */
   function drawOpenHint(x: number, y: number) {
-    const t = '展开细节 ↗'
+    const t = 'Open details ↗'
     ctx.font = F.body
     const w = ctx.measureText(t).width + 16
     rr(x - w / 2, y - 26, w, 20, 10)
@@ -446,16 +446,16 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     const N = P.N
     switch (PHASES[ci].id) {
       case 'tokenize': return S.passIdx === 0
-        ? { t: 'GPT-2 的字节级 BPE 把文本切成子词，每一段对应词表 50,257 项中的一个 id。Ġ 表示这个 token 自带一个前导空格。', s: `ids [${P.seq.map((t) => t.id).join(', ')}]` }
-        : { t: '上一轮采样出的 token 直接接到序列末尾，不必重新分词。这里没有 KV cache，所以整段序列会从头再算一遍。', s: `${N} tokens · +${P.seq[N - 1].id}` }
-      case 'embed': return { t: '每个 id 从嵌入矩阵 W_E 中取出一行，再加上第 i 个位置的位置向量。从这里开始，每个 token 都是一条 768 维的残差流。', s: `[${N} × 768]` }
-      case 'attn': return { t: '每个位置用自己的 query 比对此前所有位置的 key，按相似度加权汇入它们的 value；因果掩码挡住了未来。点击 attn 板，展开看每一步矩阵乘法。', s: `12 heads × [${N} × ${N}]` }
-      case 'mlp': return { t: '每个位置各自升到 3,072 维，经过 GELU，再投影回 768 维。这一步里，位置之间互不交流。', s: `[${N} × 768] → [${N} × 3072]` }
-      case 'stack': return { t: '同样的块再重复 11 次。每个块把结果加回残差流，而不是覆盖它；线条颜色的混合，就是信息在位置之间流动的痕迹。', s: '12 blocks · ≈85M params' }
-      case 'unembed': return { t: '只取最后一个位置：经过 ln_f 后，与词表中每个 token 的向量做点积，得到 50,257 个 logit。GPT-2 的 W_U 与 W_E 共享同一份权重。', s: '[1 × 768] · W_Eᵀ → [1 × 50,257]' }
+        ? { t: "GPT-2's byte-level BPE splits the text into subwords, each an id in a 50,257-entry vocabulary. Ġ marks a token that begins with a space.", s: `ids [${P.seq.map((t) => t.id).join(', ')}]` }
+        : { t: 'The token sampled in the last pass is appended to the sequence as is, with no re-tokenizing. There is no KV cache here, so the whole sequence is recomputed from scratch.', s: `${N} tokens · +${P.seq[N - 1].id}` }
+      case 'embed': return { t: 'Each id selects one row of the embedding matrix W_E, and the position vector for slot i is added. From here on, every token is a 768-wide residual stream.', s: `[${N} × 768]` }
+      case 'attn': return { t: 'Each position compares its query with the keys of every earlier position and pulls in their values, weighted by similarity. The causal mask hides the future. Click the attn plate to open up every matrix product.', s: `12 heads × [${N} × ${N}]` }
+      case 'mlp': return { t: 'Each position is expanded to 3,072 dimensions, passed through GELU, and projected back to 768. Positions exchange no information in this step.', s: `[${N} × 768] → [${N} × 3072]` }
+      case 'stack': return { t: 'The same block repeats 11 more times. Each block adds its result to the residual stream instead of replacing it; the blending colors trace information moving between positions.', s: '12 blocks · ≈85M params' }
+      case 'unembed': return { t: 'Only the last position is used: after ln_f it is dotted with every vocabulary vector, giving 50,257 logits. GPT-2 ties W_U to W_E.', s: '[1 × 768] · W_Eᵀ → [1 × 50,257]' }
       default: {
         const p = S.pick, pp = p.d[p.idx].p
-        return { t: 'softmax(logit / T) 把分数变成概率，按概率抽出一个 token 接到序列末尾，进入下一轮。拖动 T：调低更确定，调高则概率流向长尾。', s: `u ${p.u.toFixed(2)} → ${tokLabel(p.text)} · ${(pp * 100).toFixed(1)}%` }
+        return { t: 'softmax(logit / T) turns scores into probabilities; one token is drawn, appended, and the next pass begins. Drag T: lower is more decisive, higher leaks probability into the long tail.', s: `u ${p.u.toFixed(2)} → ${tokLabel(p.text)} · ${(pp * 100).toFixed(1)}%` }
       }
     }
   }
@@ -486,7 +486,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     draw(now)
     player.updateUI()
     const ci = player.curIndex(), c = caption(ci)
-    frame.setCaption(PHASES[ci].zh, PHASES[ci].en, c.t, c.s)
+    frame.setCaption(PHASES[ci].name, PHASES[ci].short ?? PHASES[ci].name, c.t, c.s)
     const pt = `pass ${S.passIdx + 1} / ${MAXPASS} · ${P.N} tokens`
     if (passEl.textContent !== pt) passEl.textContent = pt
   })

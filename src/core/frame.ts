@@ -17,7 +17,8 @@ export interface FrameOptions {
 export interface Frame {
   stageHost: HTMLElement
   controls: HTMLElement
-  setCaption(zh: string, en: string, text: string, shape: string): void
+  /** title: phase name; sub: optional short form (hidden when equal to title). */
+  setCaption(title: string, sub: string, text: string, shape: string): void
   setSubtitle(s: string): void
 }
 
@@ -41,10 +42,10 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
       <p class="cap-text"></p>
       <code class="cap-shape"></code>
     </section>
-    <section class="controls" aria-label="播放控制"></section>`
+    <section class="controls" aria-label="Playback"></section>`
   if (o.back) root.querySelector('.back')!.addEventListener('click', o.back.onClick)
   const q = <T extends HTMLElement>(s: string) => root.querySelector(s) as T
-  const zh = q('.cap-title b'), en = q('.cap-title em'), text = q('.cap-text'), shape = q('.cap-shape'), sub = q('h1 .sub')
+  const title = q('.cap-title b'), short = q('.cap-title em'), text = q('.cap-text'), shape = q('.cap-shape'), sub = q('h1 .sub')
   let last = ''
   return {
     stageHost: q('.stage'),
@@ -53,8 +54,8 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
       const key = a + b + c + d
       if (key === last) return
       last = key
-      zh.textContent = a
-      en.textContent = b
+      title.textContent = a
+      short.textContent = b === a ? '' : b
       text.textContent = c
       shape.textContent = d
     },

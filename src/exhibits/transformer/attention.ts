@@ -14,13 +14,13 @@ import { TOY, attention, promptTokens, transpose, type M } from './model'
  */
 
 const PHASES = [
-  { id: 'qkv', en: 'Q · K · V', zh: '投影', dur: 8 },
-  { id: 'scores', en: 'QKᵀ', zh: '打分', dur: 6.5 },
-  { id: 'scale', en: '÷ √d', zh: '缩放', dur: 2 },
-  { id: 'mask', en: 'Mask', zh: '因果掩码', dur: 2 },
-  { id: 'softmax', en: 'Softmax', zh: '归一化', dur: 3.5 },
-  { id: 'av', en: 'A · V', zh: '加权求和', dur: 7.5 },
-  { id: 'out', en: 'W_O', zh: '输出投影', dur: 6 },
+  { id: 'qkv', name: 'Projections', short: 'Q · K · V', dur: 8 },
+  { id: 'scores', name: 'Scores', short: 'QKᵀ', dur: 6.5 },
+  { id: 'scale', name: 'Scale', short: '÷ √d', dur: 2 },
+  { id: 'mask', name: 'Causal mask', short: 'Mask', dur: 2 },
+  { id: 'softmax', name: 'Softmax', dur: 3.5 },
+  { id: 'av', name: 'Weighted sum', short: 'A · V', dur: 7.5 },
+  { id: 'out', name: 'Output projection', short: 'W_O', dur: 6 },
 ]
 
 interface Rect { x: number; y: number; c: number }
@@ -65,7 +65,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     eyebrow: 'Transformer · Attention',
     title: 'Attention',
     subtitle: 'causal self-attention · block 1 · head 1',
-    back: { label: '前向总览', onClick: () => nav('transformer') },
+    back: { label: 'Forward pass', onClick: () => nav('transformer') },
     specs: [
       { label: 'shown', value: 'toy', real: 'GPT-2 small' },
       { label: 'tokens', value: String(N) },
@@ -74,10 +74,10 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
       { label: 'heads', value: String(TOY.heads), real: '12' },
     ],
   })
-  const stage = new Stage(frame.stageHost, 1040, 520, '注意力的逐步计算：X 乘以 W_Q、W_K、W_V 得到 Q、K、V；Q 乘以 K 的转置得到分数，缩放、掩码、softmax 后得到注意力权重 A；A 乘以 V，再经 W_O 投影并加回残差流。')
+  const stage = new Stage(frame.stageHost, 1040, 520, 'Step-by-step attention: X times W_Q, W_K and W_V gives Q, K and V; Q times K transposed gives scores, which are scaled, masked and softmaxed into attention weights A; A times V is projected by W_O and added back to the residual stream.')
   const ctx = stage.ctx
   const player = new Player(PHASES, frame.controls, { playing: !reduced })
-  toggle(player.meta, '注意力头', ['head 1', 'head 2'], 0, (i) => {
+  toggle(player.meta, 'Attention head', ['head 1', 'head 2'], 0, (i) => {
     S.head = i
     frame.setSubtitle(`causal self-attention · block 1 · head ${i + 1}`)
   })
@@ -316,7 +316,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     const f = resolve(st)
     if (f) {
       const k = f.key as 'Q' | 'K' | 'V', role = { Q: 'query', K: 'key', V: 'value' }[k]
-      gemmOverlay({ A: L.X, Av: R.X, B: Wr[k], Bv: W[k], C: Rr[k], f, names: [k, 'X', 'W_' + k], note: `${tl(f.i)} 的 ${role} 向量，第 ${f.j} 维：X 的第 ${f.i} 行与 W_${k} 的第 ${f.j} 列逐项相乘再相加。` })
+      gemmOverlay({ A: L.X, Av: R.X, B: Wr[k], Bv: W[k], C: Rr[k], f, names: [k, 'X', 'W_' + k], note: `${tl(f.i)}'s ${role} vector, dim ${f.j}: row ${f.i} of X times column ${f.j} of W_${k}, term by term, summed.` })
     }
   }
 
@@ -352,7 +352,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     } else drawMat({ r: L.KT, vals: transpose(h.K), kind: 'col', alpha: 1, name: 'Kᵀ', shape: '4 × 5', real: '64 × N', colToks: true })
     rowChips(lr(Lq.X, L.Q, tr), 1)
     drawMat({ r: lr(Lq.Q, L.Q, tr), vals: h.Q, kind: 'row', alpha: 1, name: 'Q', shape: '5 × 4', real: 'N × 64', labelAlpha: tr })
-    drawMat({ r: lr(Lq.V, L.Vp, tr), vals: h.V, kind: 'row', alpha: lerp(1, 0.35, tr), name: 'V', shape: '5 × 4 · 稍后使用', labelAlpha: tr })
+    drawMat({ r: lr(Lq.V, L.Vp, tr), vals: h.V, kind: 'row', alpha: lerp(1, 0.35, tr), name: 'V', shape: '5 × 4 · used later', labelAlpha: tr })
 
     const g = gemm((ps - 0.22) / 0.75, N, N, 4, 'slow')
     const scaleT = eio(clamp(pc / 0.6))
@@ -382,27 +382,27 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
       ctx.fillStyle = rgba(C.mute, a); ctx.fillText('Σ 1.00', L.S.x + N * c + 12, L.S.y + (i + 0.5) * c)
     }
     drawOps(L.opsX, L.S.y, c, [
-      ['Q · Kᵀ', clamp((ps - 0.22) / 0.75), '每格一个点积'],
-      ['÷ √d_head', pc, `÷ ${Math.sqrt(TOY.dh)}　(GPT-2: ÷ 8)`],
-      ['mask', pm, 'j > i 的位置设为 −∞'],
-      ['softmax', pso, '逐行归一化，和为 1'],
+      ['Q · Kᵀ', clamp((ps - 0.22) / 0.75), 'one dot product per cell'],
+      ['÷ √d_head', pc, `÷ ${Math.sqrt(TOY.dh)}  (GPT-2: ÷ 8)`],
+      ['mask', pm, 'set j > i to −∞'],
+      ['softmax', pso, 'each row sums to 1'],
     ], tr)
 
     const f = resolve({ S: { g, K: 4 } })
     if (f && pc === 0) {
-      gemmOverlay({ A: L.Q, Av: h.Q, B: L.KT, Bv: transpose(h.K), C: L.S, f, names: ['S', 'Q', 'Kᵀ'], note: `${tl(f.i)} 的 query 与 ${tl(f.j)} 的 key 做点积：分数越高，${tl(f.i)} 越关注 ${tl(f.j)}。` })
+      gemmOverlay({ A: L.Q, Av: h.Q, B: L.KT, Bv: transpose(h.K), C: L.S, f, names: ['S', 'Q', 'Kᵀ'], note: `${tl(f.i)}'s query · ${tl(f.j)}'s key: the higher the score, the more ${tl(f.i)} attends to ${tl(f.j)}.` })
     } else if (pso > 0) {
       const i = S.hover?.key === 'S' ? S.hover.i : Math.min(N - 1, Math.floor(clamp(pso / 0.87) * N))
       const row = h.Ss[i].slice(0, i + 1), arow = h.A[i].slice(0, i + 1)
       formula = {
         segs: [[`A[${i}]`, C.ink], ['  =  softmax( ', C.mute], [row.map(fmt).join(', '), C.ink2], [' )  =  ', C.mute], [arow.map((v) => v.toFixed(2)).join(', '), C.ink]],
-        note: `${tl(i)} 能看到的 ${i + 1} 个 token：exp 之后除以总和，最大的分数拿走最多的权重。`,
+        note: `The ${i + 1} tokens ${tl(i)} can see: exponentiate, divide by the sum. The largest score takes most of the weight.`,
       }
       ctx.strokeStyle = rgba(C.ink, 0.9); ctx.lineWidth = 1.5; ctx.strokeRect(L.S.x - 1, L.S.y + i * c - 1, N * c + 2, c + 2)
     } else if (pm > 0) {
-      formula = { segs: [['S′[i,j]  =  −∞', C.ink], ['    当 j > i', C.mute]], note: '第 i 个 token 只能看到自己和它之前的 token；exp(−∞) = 0，这些位置的权重会变成 0。' }
+      formula = { segs: [['S′[i,j]  =  −∞', C.ink], ['    when j > i', C.mute]], note: 'Token i sees only itself and earlier tokens. exp(−∞) = 0, so these weights become 0.' }
     } else if (pc > 0) {
-      formula = { segs: [['S′  =  S / √d_head  =  S / ', C.ink], [String(Math.sqrt(TOY.dh)), C.ink]], note: `缩放后，${tl(N - 1)} 那一行的分数从 [${h.S[N - 1].map(fmt).join(', ')}] 变成 [${h.Ss[N - 1].map(fmt).join(', ')}]。` }
+      formula = { segs: [['S′  =  S / √d_head  =  S / ', C.ink], [String(Math.sqrt(TOY.dh)), C.ink]], note: `After scaling, the ${tl(N - 1)} row goes from [${h.S[N - 1].map(fmt).join(', ')}] to [${h.Ss[N - 1].map(fmt).join(', ')}].` }
     }
   }
 
@@ -449,7 +449,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     drawMat({ r: L.O, vals: h.O, kind: 'row', alpha: tr, name: 'O', shape: '5 × 4', real: 'N × 64', reveal: g.rev, rowCols: oCols(h.A) })
     hits.push({ key: 'O', r: L.O, rows: N, cols: TOY.dh }, { key: 'A', r: L.A, rows: N, cols: N })
     const f = resolve({ O: { g, K: N } })
-    if (f) gemmOverlay({ A: L.A, Av: h.A, B: L.V, Bv: h.V, C: L.O, f, names: ['O', 'A', 'V'], note: `${tl(f.i)} 的输出第 ${f.j} 维：各 token 的 value 第 ${f.j} 维，按 ${tl(f.i)} 的注意力权重加权求和。` })
+    if (f) gemmOverlay({ A: L.A, Av: h.A, B: L.V, Bv: h.V, C: L.O, f, names: ['O', 'A', 'V'], note: `${tl(f.i)}'s output, dim ${f.j}: dim ${f.j} of every value, weighted by ${tl(f.i)}'s attention.` })
     const row = S.hover && (S.hover.key === 'A' || S.hover.key === 'O') ? S.hover.i : f ? f.i : pav >= 0.95 ? N - 1 : -1
     if (row >= 0) drawPanel(row, tr)
   }
@@ -504,8 +504,8 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     }
 
     const f = resolve({ Out: { g, K: TOY.d } })
-    if (f) gemmOverlay({ A: L.CC, Av: R.concat, B: L.Wo, Bv: R.Wo, C: L.Out, f, names: ['out', 'concat', 'W_O'], note: `${tl(f.i)} 的注意力输出第 ${f.j} 维：W_O 把两个头各自找到的信息混在一起。` })
-    else if (pr > 0) formula = { segs: [['h′  =  h + attn_out', C.ink]], note: '注意力的结果加回残差流，而不是替换它。每一行的颜色，就是这个 token 从其他 token 那里汇集来的信息。' }
+    if (f) gemmOverlay({ A: L.CC, Av: R.concat, B: L.Wo, Bv: R.Wo, C: L.Out, f, names: ['out', 'concat', 'W_O'], note: `${tl(f.i)}'s attention output, dim ${f.j}: W_O mixes what the two heads found.` })
+    else if (pr > 0) formula = { segs: [['h′  =  h + attn_out', C.ink]], note: "The result is added to the residual stream, not substituted for it. Each row's color is what that token gathered from the others." }
   }
 
   /* ---------- frame ---------- */
@@ -523,13 +523,13 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
   }
 
   const CAPS: Record<string, [string, string]> = {
-    qkv: ['ln_1 之后的 X 分别乘以 W_Q、W_K、W_V，得到每个 token 的 query、key、value。结果里的每一格，都是 X 的一行与 W 的一列做点积。GPT-2 把三者合成一次 GEMM：X · W_qkv。', 'GPT-2 [N×768]·[768×2304] · 17.7 MFLOPs'],
-    scores: ['Q 乘以 K 的转置。第 i 行第 j 列，是 token i 的 query 与 token j 的 key 的点积，表示 i 应该多关注 j。', 'GPT-2 12 × [N×64]·[64×N]'],
-    scale: ['除以 √d_head。点积的方差随维度增长，缩放之后 softmax 才不会一开始就饱和。', 'toy ÷ 2 · GPT-2 ÷ 8'],
-    mask: ['把右上三角设为 −∞。生成第 i 个 token 时，模型还看不到它后面的 token。', 'causal: j > i → −∞'],
-    softmax: ['逐行 softmax，把分数变成和为 1 的权重，−∞ 经过 exp 变成 0。每一行就是一个 token 的注意力分布。', 'A = softmax(S / √d + mask)'],
-    av: ['用注意力权重对 V 的行加权求和。输出的第 i 行，是所有可见 token 的 value 按权重混合的结果，颜色也随之混合。右侧拆开了当前这一行。', 'GPT-2 12 × [N×N]·[N×64]'],
-    out: ['各个头的输出拼接起来，乘以 W_O 把各头的信息混合，再加回残差流，交给下一步 MLP。', 'GPT-2 [N×768]·[768×768] · 5.9 MFLOPs'],
+    qkv: ['X (after ln_1) is multiplied by W_Q, W_K and W_V to give every token a query, key and value. Each cell of a result is one row of X dotted with one column of W. GPT-2 fuses the three into a single GEMM: X · W_qkv.', 'GPT-2 [N×768]·[768×2304] · 17.7 MFLOPs'],
+    scores: ["Q times K transposed. Row i, column j is the dot product of token i's query with token j's key: how much i should attend to j.", 'GPT-2 12 × [N×64]·[64×N]'],
+    scale: ['Divide by √d_head. Dot products grow with dimension; scaling keeps softmax from saturating from the start.', 'toy ÷ 2 · GPT-2 ÷ 8'],
+    mask: ['Set the upper triangle to −∞. When predicting token i, the model cannot see the tokens after it.', 'causal: j > i → −∞'],
+    softmax: ["Softmax each row, turning scores into weights that sum to 1; −∞ becomes 0 after exp. Each row is one token's attention distribution.", 'A = softmax(S / √d + mask)'],
+    av: ['Weight the rows of V by attention and sum them. Output row i blends the values of every visible token, and its color blends with them. The panel on the right breaks down the current row.', 'GPT-2 12 × [N×N]·[N×64]'],
+    out: ["Concatenate the heads' outputs, multiply by W_O to mix them, and add the result back to the residual stream for the MLP.", 'GPT-2 [N×768]·[768×768] · 5.9 MFLOPs'],
   }
 
   /* ---------- pointer ---------- */
@@ -551,7 +551,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
     draw()
     player.updateUI()
     const cur = player.cur(), [t, s] = CAPS[cur.id]
-    frame.setCaption(cur.zh, cur.en, t, s)
+    frame.setCaption(cur.name, cur.short ?? cur.name, t, s)
   })
   return () => { stop(); player.destroy(); stage.destroy() }
 }
