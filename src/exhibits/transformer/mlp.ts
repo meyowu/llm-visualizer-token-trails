@@ -128,15 +128,23 @@ export function mountMlp(root: HTMLElement, nav: Nav): () => void {
     ctx.stroke()
     // activations
     const lc = laneCols()
+    // the row being worked on stands out; finished rows fade, and a rug under the axis shows where inputs pile up
+    let cur = focus?.i ?? -1
+    if (cur < 0) for (let i = 0; i < N; i++) if (rowP(i) > 0) cur = i
     for (let i = 0; i < N; i++) {
       const rp = rowP(i)
       if (rp <= 0) continue
+      const on = i === cur
       for (let k = 0; k < TOY_FF; k++) {
         const h = R.H[i][k]
-        ctx.fillStyle = rgba(lc[i], a * rp * 0.85); ctx.beginPath(); ctx.arc(X(h), Y(gelu(h)), 2.3, 0, 7); ctx.fill()
+        ctx.fillStyle = rgba(lc[i], a * rp * (on ? 0.95 : 0.22)); ctx.beginPath(); ctx.arc(X(h), Y(gelu(h)), on ? 3 : 1.8, 0, 7); ctx.fill()
       }
     }
     ctx.restore()
+    for (let i = 0; i < N; i++) {
+      const rp = rowP(i), on = i === cur
+      if (rp > 0) for (let k = 0; k < TOY_FF; k++) { const h = R.H[i][k]; if (h >= xmin && h <= xmax) { ctx.fillStyle = rgba(lc[i], a * rp * (on ? 0.9 : 0.25)); ctx.fillRect(X(h) - 0.5, P.y1 + 4, 1, on ? 8 : 5) } }
+    }
     if (focus) {
       const h = R.H[focus.i][focus.k], g = gelu(h), fx = X(h), fy = Y(g)
       ctx.setLineDash([2, 3]); ctx.strokeStyle = rgba(C.ink, 0.6 * a); ctx.lineWidth = 1

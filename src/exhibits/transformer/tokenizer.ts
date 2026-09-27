@@ -5,7 +5,7 @@ import { pref } from '../../core/prefs'
 import { Stage, poke, runLoop } from '../../core/stage'
 import { C, mixc, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
-import { Gpt2Bpe, PRETOKENIZE_SOURCE, type PieceTrace } from '../../lib/gpt2/bpe'
+import { Gpt2Bpe, PRETOKENIZE_SOURCE, symbolBytes, type PieceTrace } from '../../lib/gpt2/bpe'
 import { teach } from '../learn'
 import type { Nav } from '../registry'
 
@@ -350,6 +350,10 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
     else if (pm <= 0) sceneBytes(pb)
     else if (pi <= 0) sceneMerge(pm)
     else sceneIds(pi)
+    if (hover && pb > 0 && pm <= 0) {
+      const b = symbolBytes(hover.sym)[0], ch = b >= 33 && b <= 126 ? `"${String.fromCharCode(b)}"` : b === 32 ? 'a space' : 'part of a character'
+      formula = { segs: [[`${ch}  →  byte 0x${hex2(b)} (${b})  →  stand-in `, C.mute], [hover.sym, C.ink]], note: 'GPT-2 gives each of the 256 byte values a printable stand-in, so a byte like a space or a control code can be written, and merged, like any letter.' }
+    }
     if (hover && pm > 0 && pi <= 0) {
       const n = [...hover.sym].length
       formula = { segs: [[`"${hover.sym}"`, C.ink], ['  =  ', C.mute], [`${n} byte${n > 1 ? 's' : ''}`, C.ink2]], note: 'Hover a symbol to see how many bytes it has swallowed so far.' }

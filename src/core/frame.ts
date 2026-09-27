@@ -90,7 +90,8 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
   const q = <T extends HTMLElement>(s: string) => root.querySelector(s) as T
   const title = q('.cap-title b'), short = q('.cap-title em'), text = q('.cap-text'), shape = q('.cap-shape'), sub = q('h1 .sub')
   const fLine = root.querySelector('.f-line'), fNote = root.querySelector('.f-note')
-  let last = '', lastF = ''
+  let last = '', lastF = '', lastFAt = 0
+  let pendingF: (() => void) | null = null
   return {
     stageHost: q('.stage'),
     controls: q('.controls'),
@@ -115,10 +116,12 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
         return `<span${role ? ` class="${role}"` : ''}${role && !op ? '' : ` style="${role ? '' : `color:rgb(${c.map((v) => v | 0).join(',')});`}${op}"`}>${rich(t)}</span>`
       }).join('')
       const key = line + '|' + note
-      if (key === lastF) return
-      lastF = key
-      fLine.innerHTML = line
-      fNote.innerHTML = segs ? rich(note) : ''
+      if (key === lastF) { pendingF = null; return }
+      // during fast sweeps the focused cell changes every frame: show at most ~6 formulas a second
+      const now = performance.now(), apply = () => { lastF = key; lastFAt = performance.now(); pendingF = null; fLine.innerHTML = line; fNote.innerHTML = segs ? rich(note) : '' }
+      if (announce || now - lastFAt > 160) { apply(); return }
+      if (!pendingF) setTimeout(() => pendingF?.(), 170)
+      pendingF = apply
     },
   }
 }

@@ -97,16 +97,18 @@ export interface GemmView {
 
 /** Stateful helper for one detail view: draws matrices, tracks hover targets and the formula line. */
 export class MatrixKit {
-  hits: { key: string; r: Rect; rows: number; cols: number }[] = []
+  hits: { key: string; r: Rect; rows: number; cols: number; shown?: (i: number, j: number) => boolean }[] = []
+  /** Matrices drawn this frame, so a hit can tell which of its cells are visible yet. */
+  private drawn: { r: Rect; alpha: number; reveal?: (i: number, j: number) => number }[] = []
   formula: { segs: Seg[]; note: string } | null = null
   hover: Cell | null = null
   /** A cell pinned by a click or tap; it stays inspected until clicked again or Esc. */
   pin: Cell | null = null
 
-  /** sink: shows the formula line and note, e.g. frame.setFormula. */
   /** Set by a keyboard move, so the next formula is read out. */
   private announce = false
 
+  /** sink: shows the formula line and note, e.g. frame.setFormula. */
   constructor(private stage: Stage, private tokens: TokLike[], private sink: (segs: Seg[] | null, note?: string, announce?: boolean) => void) {
     const cv = stage.canvas
     cv.addEventListener('pointermove', (e) => {
@@ -114,7 +116,7 @@ export class MatrixKit {
       this.hover = null
       for (const h of this.hits) {
         const j = Math.floor((x - h.r.x) / h.r.c), i = Math.floor((y - h.r.y) / h.r.c)
-        if (i >= 0 && j >= 0 && i < h.rows && j < h.cols) { this.hover = { key: h.key, i, j }; break }
+        if (i >= 0 && j >= 0 && i < h.rows && j < h.cols && (!h.shown || h.shown(i, j))) { this.hover = { key: h.key, i, j }; break }
       }
       cv.style.cursor = this.hover ? 'crosshair' : 'default'
     })
@@ -125,7 +127,7 @@ export class MatrixKit {
       let at: Cell | null = null
       for (const h of this.hits) {
         const j = Math.floor((x - h.r.x) / h.r.c), i = Math.floor((y - h.r.y) / h.r.c)
-        if (i >= 0 && j >= 0 && i < h.rows && j < h.cols) { at = { key: h.key, i, j }; break }
+        if (i >= 0 && j >= 0 && i < h.rows && j < h.cols && (!h.shown || h.shown(i, j))) { at = { key: h.key, i, j }; break }
       }
       if (!at) return
       const same = this.pin && this.pin.key === at.key && this.pin.i === at.i && this.pin.j === at.j
@@ -162,11 +164,16 @@ export class MatrixKit {
   /** Reset per-frame state. */
   begin() {
     this.hits = []
+    this.drawn = []
     this.formula = null
   }
+  /** A hoverable result matrix; cells it has not revealed yet (or a faded-out matrix) cannot be inspected. */
   hit(key: string, r: Rect, rows: number, cols: number) {
-    this.hits.push({ key, r, rows, cols })
+    const d = this.drawn.find((m) => Math.abs(m.r.x - r.x) < 0.5 && Math.abs(m.r.y - r.y) < 0.5)
+    const shown = d ? (i: number, j: number) => d.alpha > 0.3 && (!d.reveal || d.reveal(i, j) > 0) : undefined
+    this.hits.push({ key, r, rows, cols, shown })
   }
+
 
   /** The 2.5D slab under a matrix: a right and a bottom face. */
   slab(x: number, y: number, w: number, h: number, a: number) {
@@ -201,14 +208,14 @@ export class MatrixKit {
     for (let d = -c; d < c; d += 5) { ctx.beginPath(); ctx.moveTo(x + d, y + c); ctx.lineTo(x + d + c, y); ctx.stroke() }
     ctx.restore()
   }
-  /** Font size that fits the widest of `texts` in a cell of size c, or 0 when numbers would go below 7px. */
+  /** Font size that fits the widest of `texts` in a cell of size c, or 0 when numbers would go below 8.5px. */
   fitText(texts: string[], c: number) {
     if (c < 14) return 0
     const fs = clamp(c * 0.3, 8, 11)
     this.ctx.font = F.mono(fs)
     const w = Math.max(0, ...texts.map((t) => this.ctx.measureText(t).width))
     const f = w > c - 3 ? (fs * (c - 3)) / w : fs
-    return f < 7 ? 0 : f
+    return f < 8.5 ? 0 : f
   }
   cellText(t: string, x: number, y: number, c: number, fa: number, a: number, weak = false, size?: number) {
     if (!t || c < 14) return
@@ -224,6 +231,7 @@ export class MatrixKit {
 
   drawMat(o: MatOpts) {
     const ctx = this.ctx, { r, vals, alpha } = o
+    this.drawn.push({ r, alpha, reveal: o.reveal })
     if (alpha <= 0.01) return
     const rows = vals.length, cols = vals[0].length, c = r.c, w = cols * c, h = rows * c
     const vmax = vmaxOf(vals)

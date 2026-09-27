@@ -27,6 +27,12 @@ function bytesToUnicode(): { byteChar: string[]; order: number[] } {
 }
 
 let charByte: Map<string, number> | null = null
+/** The byte values behind a vocabulary symbol ("Ġ" → [32]). */
+export function symbolBytes(symbol: string): number[] {
+  if (!charByte) { const { byteChar } = bytesToUnicode(); charByte = new Map(byteChar.map((c, b) => [c, b])) }
+  return [...symbol].map((ch) => charByte!.get(ch) ?? 63)
+}
+
 /** The text a vocabulary symbol stands for ("Ġcat" → " cat"); symbols that are only part of a UTF-8 character stay as they are. */
 export function symbolText(symbol: string): string {
   if (symbol === '<|endoftext|>') return symbol

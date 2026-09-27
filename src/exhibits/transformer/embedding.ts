@@ -133,6 +133,8 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
     for (let j = 1; j < D; j++) { const x = B.x + (j / D) * B.w; ctx.beginPath(); ctx.moveTo(x, B.y); ctx.lineTo(x, B.y + B.h); ctx.stroke() }
     ctx.strokeStyle = rgba(C.ink, 0.22 * a); ctx.strokeRect(B.x + 0.5, B.y + 0.5, B.w - 1, B.h - 1)
     ctx.fillStyle = rgba(C.ink, 0.12 * a); ctx.fillRect(B.x, B.y, B.w, logPos(256) * B.h)
+    ctx.font = F.mono(10.5); ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = rgba(C.mute, a)
+    ctx.fillText('ids 0–255: bytes', B.x + 6, B.y + 6); ctx.fillText('0.5% of rows, log scale', B.x + 6, B.y + 21)
     // id labels beside their bands, pushed apart where ids sit close on the log axis
     const labY: number[] = []
     seq.map((t, i) => ({ i, y: B.y + logPos(t.id) * B.h })).sort((p, q) => p.y - q.y).forEach(({ i, y }, n, all) => {
