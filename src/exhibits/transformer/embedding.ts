@@ -265,16 +265,24 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
       ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(lerp(x0, x1, eio(clamp(e * 1.2 - i * 0.05))), y); ctx.stroke()
     }
     ctx.font = F.small; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.mute, clamp(e * 2 - 1))
-    fillRich('→ block 1 · ln_1', x1, hr.y - 10)
+    fillRich('→ block 1 · ln_1 ↗', x1, hr.y - 10)
+    nextLink = e > 0.5 ? { x: x1 - 150, y: hr.y - 26, w: 150, h: 22 } : null
     ctx.font = F.label; spaced(true); ctx.textAlign = 'left'; ctx.fillStyle = rgba(C.mute, e)
     ctx.fillText('RESIDUAL STREAM', x0 + 16, hr.y - 10); spaced(false)
     mk.formula = { segs: [['h₀  =  W_E[ids] + W_P[0 : N]', C.ink]], note: 'Each row is now one lane of the residual stream. At the very end, the same W_E is reused, transposed, to score every vocabulary token.' }
   }
 
+  /** The "→ block 1 · ln_1" label at the end, a link to the next step. */
+  let nextLink: { x: number; y: number; w: number; h: number } | null = null
+  const onLink = (e: PointerEvent | MouseEvent) => { if (!nextLink) return false; const [x, y] = stage.local(e); return x >= nextLink.x && x <= nextLink.x + nextLink.w && y >= nextLink.y && y <= nextLink.y + nextLink.h }
+  stage.canvas.addEventListener('click', (e) => { if (onLink(e)) nav('anatomy/layernorm', { x: e.clientX, y: e.clientY }) })
+  stage.canvas.addEventListener('pointermove', (e) => { if (onLink(e)) stage.canvas.style.cursor = 'pointer' })
+
   function draw() {
     useCtx(ctx)
     stage.begin()
     mk.begin()
+    nextLink = null
     const pl = prog('lookup'), pp = prog('pos'), ps = prog('stream')
     if (pl <= 0) sceneOneHot(prog('onehot'))
     else if (pp <= 0) sceneLookup(pl)

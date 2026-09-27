@@ -134,7 +134,10 @@ h1 .sub { font: 400 12px var(--mono); letter-spacing: .02em; color: var(--mute);
 @media (prefers-reduced-motion: reduce) { .step.held { animation: none; } }
 .tl { flex: 1 1 420px; display: flex; gap: 4px; min-width: 0; touch-action: pan-y; cursor: pointer; }
 .seg { min-width: 0; display: grid; gap: 8px; padding: 8px 0 2px; border: 0; background: none; cursor: pointer; text-align: left; color: var(--mute); font: 500 11.5px/1.1 var(--mono); letter-spacing: .02em; }
-.seg .track { display: block; height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.seg .track { position: relative; display: block; height: 3px; border-radius: 2px; background: var(--line); }
+.seg .fill { border-radius: 2px; }
+.seg .knob { display: none; position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--ink); }
+.seg.on .knob { display: block; }
 .seg .fill { display: block; height: 100%; background: var(--ink); transform-origin: left; transform: scaleX(0); }
 .seg .lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seg.on { color: var(--ink); }
@@ -285,3 +288,12 @@ abbr.term { text-decoration: underline dotted; text-decoration-color: var(--mute
 .code-d pre { margin: 10px 0 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg2); overflow-x: auto; font: 400 12.5px/1.6 var(--mono); color: var(--mute); max-width: 900px; }
 .code-d pre span { display: inline-block; min-width: 100%; }
 .code-d pre span.on { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+
+.ex .soon-pill { grid-column: 2; justify-self: start; margin-top: 3px; font: 500 10px var(--mono); letter-spacing: .04em; color: var(--mute); border: 1px solid var(--line2); border-radius: 8px; padding: 0 6px; }
+.pipeline { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 12px; font: 400 11px var(--mono); color: var(--mute); }
+.pipeline button { border: 0; background: none; padding: 2px 4px; cursor: pointer; color: var(--mute); font: inherit; border-radius: 4px; }
+.pipeline button:hover { color: var(--ink); }
+.pipeline button[aria-current] { color: var(--bg); background: var(--ink); }
+.pipeline .sep { color: var(--faint); }
+.compare { border: 1px solid var(--line2); border-radius: 6px; background: none; padding: 5px 10px; cursor: pointer; color: var(--ink2); font: 500 11px var(--mono); }
+.compare:hover { border-color: var(--mute); color: var(--ink); }

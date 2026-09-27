@@ -1,5 +1,6 @@
 import { rich } from './frame'
 import { withTerms } from './glossary'
+import { setParams } from './link'
 import { pref } from './prefs'
 import { clamp } from './util'
 
@@ -116,18 +117,28 @@ export class Player {
       const b = document.createElement('button')
       b.className = 'seg'
       b.style.flex = `${p.dur} 1 0`
-      b.innerHTML = `<span class="track"><span class="fill"></span></span><span class="lbl"></span>`
+      b.innerHTML = `<span class="track"><span class="fill"></span><span class="knob"></span></span><span class="lbl"></span>`
       b.querySelector('.lbl')!.innerHTML = rich(p.short ?? p.name)
-      b.setAttribute('aria-label', p.name.replace(/_/g, ' '))
+      // the accessible name starts with the visible label
+      const short = (p.short ?? p.name).replace(/_/g, ' '), full = p.name.replace(/_/g, ' ')
+      b.setAttribute('aria-label', short === full ? full : `${short}: ${full}`)
+      b.title = full
       b.addEventListener('click', (e) => { if (e.detail === 0) this.t = p.start + 0.001 })
       tl.appendChild(b)
       this.segs.push({ el: b, fill: b.querySelector('.fill') as HTMLElement })
     })
-    let dragging = false
-    tl.addEventListener('pointerdown', (e) => { dragging = true; tl.setPointerCapture(e.pointerId); this.seekFromX(e.clientX) })
+    // a label jumps to the start of its step; the track seeks and drags, paused while dragging
+    let dragging = false, wasPlaying = false
+    tl.addEventListener('pointerdown', (e) => {
+      const seg = (e.target as HTMLElement).closest('.seg'), lbl = (e.target as HTMLElement).closest('.lbl')
+      if (lbl && seg) { const p = this.phases[this.segs.findIndex((s) => s.el === seg)]; this.setHeld(false); this.t = p.start + 0.001; return }
+      dragging = true; wasPlaying = this.playing; this.setPlaying(false)
+      tl.setPointerCapture(e.pointerId); this.seekFromX(e.clientX)
+    })
     tl.addEventListener('pointermove', (e) => { if (dragging) this.seekFromX(e.clientX) })
-    tl.addEventListener('pointerup', () => { dragging = false })
-    tl.addEventListener('pointercancel', () => { dragging = false })
+    const endDrag = () => { if (dragging && wasPlaying) this.setPlaying(true); dragging = false }
+    tl.addEventListener('pointerup', endDrag)
+    tl.addEventListener('pointercancel', endDrag)
 
     this.meta = document.createElement('div')
     this.meta.className = 'meta'
@@ -174,6 +185,8 @@ export class Player {
       if (p) this.t = p.start + 0.001
       pendingPhase = null
     }
+    // clicking the current page in the rail starts it over
+    controls.closest('.view')?.addEventListener('tt-restart', () => { this.card.hidden = true; this.setHeld(false); this.t = 0; this.setPlaying(true) })
 
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName
@@ -292,9 +305,11 @@ export class Player {
     if (atEnd && this.card.hidden) this.showRecap()
     else if (!atEnd && this.card.dataset.kind === 'recap' && !this.card.hidden) this.card.hidden = true
     this.segs.forEach((s, i) => {
-      const p = this.phases[i]
-      s.fill.style.transform = `scaleX(${clamp((this.t - p.start) / p.dur)})`
+      const p = this.phases[i], f = clamp((this.t - p.start) / p.dur)
+      s.fill.style.transform = `scaleX(${f})`
       s.el.classList.toggle('on', i === ci)
+      if (i === ci) { s.el.setAttribute('aria-current', 'step'); (s.el.querySelector('.knob') as HTMLElement).style.left = `${f * 100}%` }
+      else s.el.removeAttribute('aria-current')
     })
     if (ci !== this.shown) {
       this.shown = ci
@@ -307,9 +322,7 @@ export class Player {
   /** Keep the address pointing at the current step, so a copied link opens here. */
   private linkPhase(id: string) {
     if (!this.btn.isConnected || this.btn.closest('.leaving')) return
-    const [route] = location.hash.replace(/^#\/?/, '').split('?')
-    const want = `#/${route}?phase=${id}`
-    if (location.hash !== want) try { history.replaceState(history.state, '', want) } catch { /* sandboxed frames may refuse */ }
+    setParams({ phase: id })
   }
 
   /** Show a question card; playback waits until it is answered or skipped. */

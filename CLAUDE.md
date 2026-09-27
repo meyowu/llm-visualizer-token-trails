@@ -24,6 +24,7 @@ src/core/stage.ts           Stage: DPR-aware canvas with a min size; scaled to f
 src/core/player.ts          Player: phases, t, play/pause, step buttons, Step/Auto pacing, speed, timeline, keys, All steps list
                             (player.describe), ?phase= in the URL; openAtPhase() for links
 src/core/fonts.ts           registerFonts(): the three families as self-hosted woff2 (@fontsource files), Latin, Latin Ext, Greek
+src/core/link.ts            getParams()/setParams(): page state in the address (#/route?phase=…&head=6.6), replaceState only
 src/core/prefs.ts           pref.get/set: reader preferences in localStorage (speed, pacing, temperature, strategy)
 src/core/frame.ts           createFrame(): header/specs, stage host, formula strip, caption line, controls; toggle(), stepper(), rich()
 src/core/draw.ts            primitives: chips, plate(), bracketLabel(), mathName()/mathRun(), fonts F

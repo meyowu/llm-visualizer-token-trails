@@ -28,7 +28,7 @@ const theta = (j: number) => Math.pow(BASE, (-2 * j) / DH)
 const XR = 4
 const silu = (x: number) => x / (1 + Math.exp(-x))
 
-export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
+export function mountLlama(root: HTMLElement, nav: Nav): () => void {
   const reduced = reducedMotion()
   const seq = promptTokens(), N = seq.length, D = 8
   const frame = createFrame(root, {
@@ -79,6 +79,15 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
   for (const el of [qSel, kSel, shiftIn]) el.addEventListener('input', manual)
   ropeCtl.hidden = true
   player.meta.prepend(ropeCtl)
+  // each step links back to the GPT-2 part it changes
+  const COMPARE: Record<string, [string, string]> = {
+    blocks: ['GPT-2’s block', 'anatomy/layernorm?phase=stream'], rope: ['GPT-2’s positions', 'anatomy/embedding?phase=pos'],
+    rms: ['GPT-2’s LayerNorm', 'anatomy/layernorm?phase=mean'], swiglu: ['GPT-2’s MLP', 'anatomy/mlp'], gqa: ['GPT-2’s attention', 'anatomy/attention'],
+  }
+  const compare = document.createElement('button')
+  compare.type = 'button'; compare.className = 'compare'
+  compare.addEventListener('click', () => nav(COMPARE[player.cur().id][1]))
+  player.meta.prepend(compare)
 
   /* ---------- helpers ---------- */
   let pills: { x: number; y: number; w: number; h: number; phase: string }[] = []
@@ -386,6 +395,8 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
     player.updateUI()
     const inRope = player.cur().id === 'rope'
     if (ropeCtl.hidden === inRope) ropeCtl.hidden = !inRope
+    const cmp = `Compare: ${COMPARE[player.cur().id][0]} ↗`
+    if (compare.textContent !== cmp) compare.textContent = cmp
     const cur = player.cur(), [t, s] = CAPS[cur.id]
     frame.setCaption(cur.name, cur.short ?? cur.name, t, s)
   }, () => !player.playing)

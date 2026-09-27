@@ -1,5 +1,6 @@
 import { chipW, drawChip, F, plate, rr, serifAt, spaced, subLabel, tokDisp, tokLabel, tokText, useCtx } from '../../core/draw'
 import { createFrame, toggle } from '../../core/frame'
+import { getParams, setParams } from '../../core/link'
 import { pref } from '../../core/prefs'
 import { MatrixKit, fmt, gemm, type M, type Rect } from '../../core/matrix'
 import { Player } from '../../core/player'
@@ -78,6 +79,11 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
     /** Counts of 100 random draws: the six named tokens, then everything else. */
     tally: null as number[] | null,
   }
+  // a shared link sets temperature and strategy too
+  const q = getParams()
+  if (q.has('T')) S.T = clamp(+q.get('T')! || 0.8, 0.2, 2)
+  if (q.has('strategy')) { const i = (STRATS as readonly string[]).indexOf(q.get('strategy')!); if (i >= 0) S.strat = i }
+  const linkSampling = () => setParams({ T: S.T.toFixed(2), strategy: STRATS[S.strat] })
   const stratName = () => (STRATS[S.strat] === 'top-k' ? `top-k ${S.k}` : STRATS[S.strat] === 'top-p' ? `top-p ${S.pp.toFixed(2)}` : STRATS[S.strat])
   let R = load(S.preset, seq)
 
@@ -102,7 +108,7 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
   const mk = new MatrixKit(stage, seq, frame.setFormula)
   const nextCol = () => C.tok[seq.length % 7]
   /** A new draw is shown from the start of the Sample phase, so a changed setting never silently swaps the token. */
-  const redraw = () => { S.tally = null; if (player.t > player.start('sample')) player.t = player.start('sample') + 0.001 }
+  const redraw = () => { S.tally = null; linkSampling(); if (player.t > player.start('sample')) player.t = player.start('sample') + 0.001 }
 
   // controls: prompt, strategy, resample, temperature
   const temp = document.createElement('label')

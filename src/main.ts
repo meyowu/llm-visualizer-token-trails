@@ -47,6 +47,10 @@ function exhibitLink(ex: Exhibit, active: string): HTMLElement {
   el.innerHTML = '<span></span><small></small>'
   el.querySelector('span')!.textContent = ex.name
   el.querySelector('small')!.innerHTML = rich(ex.tag)
+  if (!ex.route) {
+    el.insertAdjacentHTML('beforeend', '<em class="soon-pill">soon<span class="sr-only"> (coming soon)</span></em>')
+    el.title = 'In progress'
+  }
   if (ex.route) {
     const a = el as HTMLAnchorElement
     a.href = '#/' + ex.route
@@ -131,6 +135,25 @@ function chapterNav(route: string, root: HTMLElement) {
     row.appendChild(b)
   }
   head.prepend(row)
+  if (route.startsWith('anatomy')) pipeline(route, head)
+}
+
+/** Where this step sits in the forward pass: a clickable strip under the title. */
+const PIPE: [string, string][] = [['tokenize', 'anatomy/tokenizer'], ['embed', 'anatomy/embedding'], ['ln', 'anatomy/layernorm'], ['attn', 'anatomy/attention'], ['ln', 'anatomy/layernorm'], ['mlp', 'anatomy/mlp'], ['× 12', 'anatomy'], ['ln_f · unembed · sample', 'anatomy/unembed']]
+function pipeline(route: string, head: Element) {
+  const strip = document.createElement('nav')
+  strip.className = 'pipeline'
+  strip.setAttribute('aria-label', 'Where this step sits in the forward pass')
+  PIPE.forEach(([label, to], i) => {
+    if (i) strip.insertAdjacentHTML('beforeend', '<span class="sep" aria-hidden="true">→</span>')
+    const b = document.createElement('button')
+    b.type = 'button'
+    b.innerHTML = rich(label)
+    if (to === route && !(label === 'ln' && i === 4)) b.setAttribute('aria-current', 'step')
+    b.addEventListener('click', () => go(to))
+    strip.appendChild(b)
+  })
+  head.appendChild(strip)
 }
 
 window.addEventListener('keydown', (e) => {
@@ -151,7 +174,9 @@ function parse(): string {
     h = to + h.slice(from.length)
     try { history.replaceState(null, '', '#/' + h + (qs ? '?' + qs : '')) } catch { /* sandboxed frames may refuse */ }
   }
-  return ROUTES[h] ? h + (qs ? '?' + qs : '') : DEFAULT_ROUTE
+  if (ROUTES[h]) return h + (qs ? '?' + qs : '')
+  if (h) try { history.replaceState(null, '', '#/' + DEFAULT_ROUTE) } catch { /* sandboxed frames may refuse */ }
+  return DEFAULT_ROUTE
 }
 
 const depth = (r: string) => r.split('/').length
@@ -159,9 +184,12 @@ const depth = (r: string) => r.split('/').length
 /** Open a route, e.g. 'anatomy/unembed' or 'anatomy/unembed?phase=sample' to start at a phase. */
 function go(target: string, origin?: { x: number; y: number }, push = true) {
   const [route, qs] = target.split('?')
-  if (!ROUTES[route] || current?.route === route) return
+  if (!ROUTES[route]) return
+  if (current?.route === route) { current.root.dispatchEvent(new Event('tt-restart')); return }
   if (push) {
-    try { history.pushState(null, '', '#/' + target) } catch { /* sandboxed frames may refuse */ }
+    // "← Forward pass" and the like: if that is where we came from, go back instead of stacking history
+    if (!qs && history.state?.prev === route) { try { history.back(); return } catch { /* fall through */ } }
+    try { history.pushState({ prev: current?.route ?? null }, '', '#/' + target) } catch { /* sandboxed frames may refuse */ }
   }
   openAtPhase(new URLSearchParams(qs ?? '').get('phase'))
   const old = current

@@ -1,4 +1,5 @@
 import { createFrame, stepper, toggle } from '../../core/frame'
+import { getParams, setParams } from '../../core/link'
 import { Player } from '../../core/player'
 import { Stage, runLoop } from '../../core/stage'
 import { C, blend, mixc, pop, rgba, type RGB } from '../../core/theme'
@@ -73,8 +74,10 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   // controls, prepended right to left: prompt, block, head, pass readout, then the player's speed toggle
   // go back to an earlier pass (or on) without waiting for the loop
   const passStep = stepper(player.meta, 'pass', 3, 0, (k) => { S.prevYs = null; setPass(Math.min(k, pr().passes.length - 1)) })
-  const headStep = stepper(player.meta, 'head', 12, S.head, (h) => { S.head = h })
-  const layerStep = stepper(player.meta, 'block', 12, S.layer, (l) => { S.layer = l })
+  const headStep = stepper(player.meta, 'head', 12, S.head, (h) => { S.head = h; linkHead() })
+  const layerStep = stepper(player.meta, 'block', 12, S.layer, (l) => { S.layer = l; linkHead() })
+  /** The address keeps the prompt, pass and head, so a copied link shows the same view. */
+  const linkHead = () => setParams({ head: `${S.layer + 1}.${S.head + 1}` })
   const presetToggle = toggle(player.meta, 'Prompt', PRESETS.map((p) => PROMPT_LABELS[p.key] ?? p.text), 0, (i) => { S.preset = i; startPreset() })
 
   function setPass(k: number) {
@@ -82,11 +85,12 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     V = makeView(pr(), k)
     player.t = 0
     if (k === 0) S.prevYs = null
+    setParams({ prompt: pr().key, pass: String(k + 1) })
   }
   function startPreset() {
     const [l, h] = START_HEAD[pr().key] ?? [0, 0]
     S.layer = l; S.head = h; S.lock = -1
-    layerStep.set(l); headStep.set(h)
+    layerStep.set(l); headStep.set(h); linkHead()
     setPass(0)
   }
   function advance() {
@@ -658,15 +662,25 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   frame.stageHost.append(links)
 
   const linked = player.t // a link like #/anatomy?phase=mlp already placed the player
-  startPreset()
-  if (linked) player.t = linked
-  else if (saved) {
+  if (saved) {
     // coming back from a detail view: the same prompt, pass, frame and head, paused
     S.preset = saved.preset; presetToggle.set(saved.preset)
+    startPreset()
     setPass(saved.passIdx); player.t = saved.t
-    S.layer = saved.layer; S.head = saved.head; S.lock = saved.lock; layerStep.set(S.layer); headStep.set(S.head)
+    S.layer = saved.layer; S.head = saved.head; S.lock = saved.lock; layerStep.set(S.layer); headStep.set(S.head); linkHead()
     player.setPlaying(false)
-  } else if (reduced) player.t = player.start('attn') + PHASES[2].dur * 0.7
+  } else {
+    // a shared link's prompt, pass and head
+    const q = getParams(), qk = PRESETS.findIndex((p) => p.key === q.get('prompt'))
+    if (qk >= 0) { S.preset = qk; presetToggle.set(qk) }
+    startPreset()
+    const [l, h] = (q.get('head') ?? '').split('.').map((v) => clamp(Math.round(+v) - 1, 0, 11))
+    if (q.has('head') && !isNaN(l) && !isNaN(h)) { S.layer = l; S.head = h; layerStep.set(l); headStep.set(h); linkHead() }
+    const k = clamp(Math.round(+(q.get('pass') ?? 1)) - 1, 0, pr().passes.length - 1)
+    if (k) setPass(k)
+    if (linked) player.t = linked
+    else if (reduced) player.t = player.start('attn') + PHASES[2].dur * 0.7
+  }
   player.describe = (i) => { const c = caption(i); return [c.t, c.s] }
   let shownPass = -1
   const stop = runLoop((dt, now) => {
