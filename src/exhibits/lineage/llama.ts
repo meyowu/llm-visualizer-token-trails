@@ -125,7 +125,7 @@ function scenes({ stage, ctx, mk, k, player, onFrame }: Env) {
         rr(X.pos - 26, y - 13, 52, 26, 6); ctx.fillStyle = rgba(C.bg, a); ctx.fill(); ctx.strokeStyle = rgba(C.ink, 0.7 * a); ctx.lineWidth = 1; ctx.stroke()
         ctx.font = F.small; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.ink, a); fillRich('+ W_P', X.pos, y + 0.5)
         caption('learned positions', X.pos, y + 44, a)
-      } else caption('no position vector', X.pos, y + 44, a, C.faint)
+      } else caption('no position vector', X.pos, y + 44, a, C.mute)
       const at = [X.n1, X.at, X.n2, X.ml]
       at.forEach((x, j) => { glass(x, y - 26, y + 26, r === 1 ? 0.55 : 0.2, { w: 8, d: 9 }, a); caption(labs[j], x, y + 44, a, r === 1 ? C.ink2 : C.mute) })
       addNode(X.a1, y, a); addNode(X.a2, y, a)

@@ -224,7 +224,13 @@ function scenes({ stage, ctx, mk, k }: Env) {
       const worst = Math.max(...steps)
       caption(`longest gap between two tokens for the running requests: ${worst.toFixed(0)} ms`, x0, y + 58, a, C.ink2, 'left')
     })
-    caption('blue: decode-only steps · orange: steps that also carry prompt tokens', x0, top + 70 + 2 * 130 + 10, 1, C.mute, 'left')
+    // a key with swatches rather than colour names, which would be wrong under the colour-blind palette
+    const ky = top + 70 + 2 * 130 + 6
+    ;[[C.tok[0], 'decode-only step'], [C.tok[3], 'step that also carries prompt tokens']].forEach(([col, lab], i) => {
+      const kx = x0 + i * 220
+      rr(kx, ky - 9, 14, 12, 3); ctx.fillStyle = rgba(col as RGB, 0.8); ctx.fill()
+      caption(lab as string, kx + 22, ky + 1, 1, C.mute, 'left')
+    })
     mk.formula = { segs: [['step = max(8.0 ms to read the weights, tokens × 51 µs)', C.ink]], note: 'A 128-token chunk plus three decodes needs 6.7 ms of arithmetic, less than the 8 ms the weight read takes anyway, so it rides along for free. The new request’s first token comes a little later (4 steps), but nobody else stalls. Estimates for LLaMA 3 8B on an A100, ignoring attention.' }
   }
 
