@@ -248,3 +248,9 @@ kbd { font: 500 11px var(--mono); border: 1px solid var(--line2); border-radius:
   .steps li { grid-template-columns: 1fr; }
   .chapnav { position: static; flex: 1 0 100%; flex-wrap: wrap; order: -1; }
 }
+
+/* ---------- glossary terms ---------- */
+abbr.term { text-decoration: underline dotted; text-decoration-color: var(--mute); text-underline-offset: 3px; cursor: help; }
+.glossary dl { margin: 0; display: grid; gap: 14px; grid-column: 1 / -1; max-width: 760px; }
+.glossary dt { font: 500 14px var(--sans); color: var(--ink); }
+.glossary dd { margin: 2px 0 0; color: var(--ink2); font-size: 13.5px; }

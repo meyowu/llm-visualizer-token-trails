@@ -1,3 +1,4 @@
+import { withTerms } from './glossary'
 import { legendList } from './legend'
 import { pref } from './prefs'
 import { C, type RGB } from './theme'
@@ -87,7 +88,7 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
       last = key
       title.innerHTML = rich(a)
       short.innerHTML = b === a ? '' : rich(b)
-      text.innerHTML = rich(c)
+      text.innerHTML = withTerms(rich(c))
       shape.innerHTML = rich(d)
     },
     setSubtitle(s) {

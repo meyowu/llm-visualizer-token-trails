@@ -1,4 +1,5 @@
 import { rich } from './frame'
+import { withTerms } from './glossary'
 import { pref } from './prefs'
 import { clamp } from './util'
 
@@ -264,7 +265,7 @@ export class Player {
       const [text, shape] = this.describe?.(i) ?? ['', '']
       const li = document.createElement('li')
       if (i === ci) li.setAttribute('aria-current', 'step')
-      li.innerHTML = `<button type="button"><b>${rich(p.name)}</b></button><p>${rich(text)}</p>${shape ? `<code>${rich(shape)}</code>` : ''}`
+      li.innerHTML = `<button type="button"><b>${rich(p.name)}</b></button><p>${withTerms(rich(text))}</p>${shape ? `<code>${rich(shape)}</code>` : ''}`
       li.querySelector('button')!.addEventListener('click', () => { this.setHeld(false); this.t = p.start + 0.001 })
       ol.appendChild(li)
     })

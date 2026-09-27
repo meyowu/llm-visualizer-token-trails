@@ -48,6 +48,10 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
         ${legendList()}
         <p class="st-keys"><kbd>Space</kbd> play or pause · <kbd>←</kbd> <kbd>→</kbd> previous or next step. Each step pauses at its end so there is time to read; switch to <b>Auto</b> in the controls to play straight through.</p>
       </section>
+      <section class="st-train">
+        <h2>Where do the numbers come from?</h2>
+        <p>Every weight (124M of them) was set by <b>training</b>: GPT-2 read about 40 GB of web text, predicted each next token, and after every batch nudged all its weights so the actual next token got a little more probability. Nothing in the model was written by hand. Even the tokenizer was learned, by counting which pairs of symbols appear together most often. The Training chapter will show this step by step.</p>
+      </section>
       <section class="st-real">
         <h2>Real or toy?</h2>
         <p>The Forward pass and Unembed pages show the numbers of a real GPT-2 small run, computed offline. The detail views that animate every matrix product use a toy model (8 numbers per token instead of 768) so each cell fits on screen; they say <code>shown: toy</code> and give GPT-2's real sizes alongside.</p>

@@ -1,4 +1,5 @@
 import { mountLlama } from './lineage/llama'
+import { mountGlossary } from './glossary'
 import { mountStart } from './start'
 import { mountAttention } from './transformer/attention'
 import { mountEmbedding } from './transformer/embedding'
@@ -114,9 +115,10 @@ export const exhibitsOf = (c: Category): Exhibit[] =>
 
 /** The landing page, linked above the categories. */
 export const START: Exhibit = { name: 'Start here', tag: 'what this model does', route: 'start', mount: mountStart }
+export const GLOSSARY: Exhibit = { name: 'Glossary', tag: 'terms in plain words', route: 'glossary', mount: mountGlossary }
 
 export const ROUTES: Record<string, Mount> = Object.fromEntries(
-  [START, ...CATEGORIES.flatMap(exhibitsOf)].filter((e) => e.route && e.mount).map((e) => [e.route!, e.mount!]),
+  [START, GLOSSARY, ...CATEGORIES.flatMap(exhibitsOf)].filter((e) => e.route && e.mount).map((e) => [e.route!, e.mount!]),
 )
 export const DEFAULT_ROUTE = 'start'
 /** Old route prefixes that still resolve (prefix → replacement). */

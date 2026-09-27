@@ -373,7 +373,7 @@ export function mountLlama(root: HTMLElement, _nav: Nav): () => void {
     rope: ['GPT-2 adds a learned position vector once at the input. LLaMA instead rotates each pair of query and key numbers by an angle that grows with position, inside every attention layer. Use the q, k and shift controls below to test it.', 'θⱼ = base^(−2j / d_head)'],
     rms: ['LayerNorm centres each token and scales it to unit spread. RMSNorm only rescales by the root mean square: simpler, slightly faster, and just as stable.', 'x / √(mean(x²) + ε)'],
     swiglu: ['GPT-2\'s MLP widens, applies GELU and narrows. LLaMA\'s runs two projections side by side and lets one gate the other, a pattern called SwiGLU.', 'W_down(SiLU(W_gate x) ⊙ W_up x)'],
-    gqa: ['In GPT-2 every attention head has its own keys and values. LLaMA 3 shares each key/value head between 4 query heads, cutting the KV cache that limits context length and batch size.', '32 q heads · 8 kv heads'],
+    gqa: ['While generating, the keys and values of past tokens are kept in a KV cache so they are not recomputed; it grows with every token and layer. In GPT-2 every head has its own keys and values; LLaMA 3 shares each key/value head between 4 query heads, so the cache that limits context length and batch size is 4× smaller.', '32 q heads · 8 kv heads'],
   }
 
   if (reduced && player.t === 0) player.t = player.start('rope') + 6

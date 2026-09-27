@@ -345,12 +345,12 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
 
   const CAPS: Record<string, [string, string]> = {
     qkv: ['X (after ln_1) is multiplied by W_Q, W_K and W_V. A query is what a token is looking for, a key is what it offers, and a value is what it hands over when chosen. For example, Ġthe might look for the noun it belongs to. GPT-2 does all three in one GEMM, X · W_qkv.', 'GPT-2 [N×768]·[768×2304] · 17.7 MFLOPs'],
-    scores: ["Q times K transposed. Row i, column j is the dot product of token i's query with token j's key: how much i should attend to j.", 'GPT-2 12 × [N×64]·[64×N]'],
+    scores: ["Q times K transposed. Row i, column j is the dot product of token i's query with token j's key: how much i should attend to j. Each head works in its own slice of d_model / heads numbers (64 in GPT-2, 4 here).", 'GPT-2 12 × [N×64]·[64×N]'],
     scale: ['Divide by √d_head. Dot products grow with dimension; scaling keeps softmax from saturating from the start.', 'toy ÷ 2 · GPT-2 ÷ 8'],
     mask: ['Position i predicts token i + 1, so it may only look at positions ≤ i: the upper triangle is set to −∞. In training every position is predicted at once, and without the mask each could just read the next word.', 'causal: j > i → −∞'],
-    softmax: ["Softmax each row, turning scores into weights that sum to 1; −∞ becomes 0 after exp. Each row is one token's attention distribution.", 'A = softmax(S / √d + mask)'],
+    softmax: ["Softmax each row, turning scores into weights that sum to 1; −∞ becomes 0 after exp. Each row is one token's attention distribution. These toy weights are random, so the pattern means nothing; the Forward pass shows GPT-2's real heads.", 'A = softmax(S / √d + mask)'],
     av: ['Weight the rows of V by attention and sum them. Output row i blends the values of every visible token, and its color blends with them. The panel on the right breaks down the current row.', 'GPT-2 12 × [N×N]·[N×64]'],
-    out: ["Concatenate the heads' outputs, multiply by W_O to mix them, and add the result back to the residual stream for the MLP.", 'GPT-2 [N×768]·[768×768] · 5.9 MFLOPs'],
+    out: ["Concatenate the heads' outputs, multiply by W_O to mix them, and add the result back to the residual stream. Several small heads can each follow a different relation for the cost of one big one. In code: (B, T, 768) is split into (B, 12, T, 64) for attention and merged back here.", 'GPT-2 [N×768]·[768×768] · 5.9 MFLOPs'],
   }
 
   if (reduced && player.t === 0) player.t = player.start('av') + 4
