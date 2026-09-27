@@ -1,12 +1,12 @@
 import { chipW, drawChip, F, fillRich, mathName, serifAt, spaced, useCtx } from '../../core/draw'
-import { createFrame } from '../../core/frame'
+import { createFrame, toggle } from '../../core/frame'
 import { MatrixKit, fmt, lr, type M, type Rect } from '../../core/matrix'
 import { Player } from '../../core/player'
 import { Stage, runLoop } from '../../core/stage'
 import { C, rgba } from '../../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../../core/util'
 import type { Nav } from '../registry'
-import { TOY, posEmb, promptTokens, tokEmb } from './model'
+import { TOY, TOY_PROMPTS, posEmb, tokEmb, toyTokens, type Tok } from './model'
 
 /*
  * Embedding as a GEMM: one-hot(ids) [N × V] · W_E [V × d] picks rows of W_E. The vocabulary
@@ -25,9 +25,16 @@ const logPos = (id: number) => Math.log10(Math.max(1, id)) / Math.log10(V)
 
 export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
   const reduced = reducedMotion()
-  const seq = promptTokens(), N = seq.length, D = TOY.d
-  const E: M = seq.map((t) => tokEmb(t)), P: M = seq.map((_, i) => posEmb(i))
-  const Hm: M = E.map((r, i) => r.map((v, k) => v + P[i][k]))
+  const D = TOY.d, N = 5 // every toy prompt has five tokens
+  const seq: Tok[] = []
+  let E: M = [], P: M = [], Hm: M = [], promptK = 0
+  function setPrompt(k: number) {
+    promptK = k
+    seq.length = 0; seq.push(...toyTokens(k))
+    E = seq.map((t) => tokEmb(t)); P = seq.map((_, i) => posEmb(i))
+    Hm = E.map((r, i) => r.map((v, q) => v + P[i][q]))
+  }
+  setPrompt(0)
 
   const frame = createFrame(root, {
     formula: true,
@@ -49,6 +56,14 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
   const prog = (id: string) => player.prog(id)
   const mk = new MatrixKit(stage, seq, frame.setFormula)
   const { tokRGB, tl } = mk
+  toggle(player.meta, 'Prompt', TOY_PROMPTS.map((p) => p.label), 0, setPrompt)
+  /** What this prompt shows about positions, for the notes. */
+  const orderNote = () => {
+    const dup = seq.findIndex((t, i) => seq.findIndex((u) => u.id === t.id) !== i)
+    if (dup >= 0) return `${tl(seq.findIndex((t) => t.id === seq[dup].id))} appears twice: both E rows are identical, and only their P rows tell the two apart.`
+    if (promptK >= 2) return `The same five E rows as “${TOY_PROMPTS[promptK === 2 ? 3 : 2].label}”, in another order: without P the model could not tell who bit whom.`
+    return 'The same token in another slot would get a different P row, so order is not lost.'
+  }
 
   /* ---------- layout ---------- */
   const pad = 36, tokW = 124, top = 60, bot = 46
@@ -100,8 +115,8 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
     }
     ctx.strokeStyle = rgba(C.ink, 0.22 * a); ctx.strokeRect(A.x + 0.5, A.y + 0.5, Lv * grow - 1, N * c - 1)
     // log axis under the one-hot rows
-    ctx.font = F.mono(9.5); ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = rgba(C.mute, a * grow)
-    for (const v of [1, 10, 100, 1000, 10000, 50257]) ctx.fillText(v >= 1000 ? (v === 50257 ? '50,257' : v / 1000 + 'k') : String(v), A.x + logPos(v) * Lv, A.y + N * c + 6)
+    ctx.font = F.mono(10.5); ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = rgba(C.mute, a * grow)
+    for (const v of [1, 10, 100, 1000, 50257]) ctx.fillText(v === 50257 ? '50,257' : v >= 1000 ? v / 1000 + 'k' : String(v), A.x + logPos(v) * Lv, A.y + N * c + 6)
     const w1 = mathName('onehot', A.x, A.y - 11, a, 18)
     ctx.font = F.mono(10.5); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.mute, a)
     ctx.fillText('5 × 50,257 · log-scaled ids', A.x + w1 + 8, A.y - 11)
@@ -116,12 +131,19 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
     for (let j = 1; j < D; j++) { const x = B.x + (j / D) * B.w; ctx.beginPath(); ctx.moveTo(x, B.y); ctx.lineTo(x, B.y + B.h); ctx.stroke() }
     ctx.strokeStyle = rgba(C.ink, 0.22 * a); ctx.strokeRect(B.x + 0.5, B.y + 0.5, B.w - 1, B.h - 1)
     ctx.fillStyle = rgba(C.ink, 0.12 * a); ctx.fillRect(B.x, B.y, B.w, logPos(256) * B.h)
+    // id labels beside their bands, pushed apart where ids sit close on the log axis
+    const labY: number[] = []
+    seq.map((t, i) => ({ i, y: B.y + logPos(t.id) * B.h })).sort((p, q) => p.y - q.y).forEach(({ i, y }, n, all) => {
+      labY[i] = n ? Math.max(y, labY[all[n - 1].i] + 13) : y
+    })
     bands.forEach((b, i) => {
       if (b <= 0) return
-      const y = B.y + logPos(seq[i].id) * B.h
+      const y = B.y + logPos(seq[i].id) * B.h, ly = labY[i]
       ctx.fillStyle = rgba(tokRGB(i), a * b); ctx.fillRect(B.x - 2, y - 1.5, B.w + 4, 3)
-      ctx.font = F.mono(10); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(tokRGB(i), a * b)
-      ctx.fillText(String(seq[i].id), B.x + B.w + 10, y)
+      ctx.strokeStyle = rgba(tokRGB(i), 0.6 * a * b); ctx.lineWidth = 1
+      ctx.beginPath(); ctx.moveTo(B.x + B.w + 3, y); ctx.lineTo(B.x + B.w + 9, ly); ctx.stroke()
+      ctx.font = F.mono(10.5); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(tokRGB(i), a * b)
+      ctx.fillText(`${seq[i].id} ${tl(i)}`, B.x + B.w + 12, ly)
     })
     const w1 = mathName('W_E', B.x, B.y - 11, a, 18)
     ctx.font = F.mono(10.5); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.mute, a)
@@ -147,7 +169,7 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
     drawOneHot(1, grow, lit)
     drawWE(eout(clamp((p - 0.4) / 0.3)), [])
     mk.drawMat({ r: L.C, vals: E, kind: 'row', alpha: eout(clamp((p - 0.5) / 0.3)), name: 'E', shape: '5 × 8', real: 'N × 768', label: 'bottom', reveal: () => 0 })
-    mk.formula = { segs: [['onehot(3797)', C.ink], ['  =  [0, 0, …, 0, ', C.mute], ['1', C.ink], [', 0, …, 0]', C.mute], ['   ·   1 at position 3797 of 50,257', C.ink2]], note: 'Each id becomes a row with a single 1. The axis is log-scaled so the small ids of common words are visible.' }
+    mk.formula = { segs: [[`onehot(${seq[1].id})`, C.ink], ['  =  [0, 0, …, 0, ', C.mute], ['1', C.ink], [', 0, …, 0]', C.mute], [`   ·   1 at position ${seq[1].id} of 50,257`, C.ink2]], note: 'Each id becomes a row with a single 1. The axis is log-scaled so the small ids of common words are visible.' }
   }
 
   function sceneLookup(p: number) {
@@ -188,6 +210,12 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
     if (wa > 0) {
       mk.slab(WP.x, WP.y, WP.w, WP.h, wa)
       ctx.fillStyle = rgba(C.ink, 0.035 * wa); ctx.fillRect(WP.x, WP.y, WP.w, WP.h)
+      // all 1,024 rows as a faint texture: each column is a wave with its own frequency
+      const cw = WP.w / D
+      for (let yy = 0; yy < WP.h; yy += 2) {
+        const row = posEmb(Math.floor((yy / WP.h) * CTX))
+        row.forEach((v, q) => { ctx.fillStyle = rgba(v >= 0 ? C.ink : C.neg, (0.04 + 0.3 * Math.abs(v)) * wa); ctx.fillRect(WP.x + q * cw + 1, WP.y + yy, cw - 2, 2) })
+      }
       ctx.strokeStyle = rgba(C.ink, 0.22 * wa); ctx.lineWidth = 1; ctx.strokeRect(WP.x + 0.5, WP.y + 0.5, WP.w - 1, WP.h - 1)
       const bh = Math.max(6, (N / CTX) * WP.h)
       ctx.fillStyle = rgba(C.ink, 0.5 * wa); ctx.fillRect(WP.x - 2, WP.y, WP.w + 4, bh)
@@ -214,8 +242,8 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
       const c = L.H2.c
       ctx.strokeStyle = rgba(C.ink); ctx.lineWidth = 2
       for (const r of [L.E2, L.P2, L.H2]) ctx.strokeRect(r.x + f.j * c, r.y + f.i * c, c, c)
-      mk.formula = { segs: [[`h[${f.i},${f.j}]`, C.ink], ['  =  E + P  =  ', C.mute], [`${fmt(E[f.i][f.j])} + ${fmt(P[f.i][f.j])}`, C.ink2], ['  =  ', C.mute], [fmt(Hm[f.i][f.j]), C.ink]], note: `${tl(f.i)} in slot ${f.i}: the same token in another slot would get a different P row, so order is not lost.` }
-    } else mk.formula = { segs: [['P  =  W_P[0 : 5]', C.ink]], note: 'Positions 0–4 take the first five rows of W_P. GPT-2 learns these rows; the toy values here follow a sinusoid.' }
+      mk.formula = { segs: [[`h[${f.i},${f.j}]`, C.ink], ['  =  E + P  =  ', C.mute], [`${fmt(E[f.i][f.j])} + ${fmt(P[f.i][f.j])}`, C.ink2], ['  =  ', C.mute], [fmt(Hm[f.i][f.j]), C.ink]], note: `${tl(f.i)} in slot ${f.i}. ${orderNote()}` }
+    } else mk.formula = { segs: [['P  =  W_P[0 : 5]', C.ink]], note: `Positions 0–4 take the first five rows of W_P (GPT-2 learns them; the toy rows follow waves). ${orderNote()}` }
   }
 
   function sceneStream(p: number) {
@@ -254,7 +282,7 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
   const CAPS: Record<string, [string, string]> = {
     onehot: ['Each token id becomes a one-hot row: 50,257 zeros with a single 1 at the id. Stacked, the prompt is a 5 × 50,257 matrix.', 'toy [5 × 50,257]'],
     lookup: ['Multiplying the one-hot rows by W_E selects one row of W_E per token. It is a GEMM on paper and a table lookup in practice.', 'GPT-2 W_E [50,257 × 768] · 38.6M params'],
-    pos: ['Attention on its own ignores order, so each slot adds its own row of the position matrix W_P. Slot i always gets row i.', 'GPT-2 W_P [1,024 × 768] · context 1,024'],
+    pos: ['Attention on its own ignores order, so each slot adds its own row of the position matrix W_P. Slot i always gets row i. Try the other prompts: a repeated word, and the same words in two orders.', 'GPT-2 W_P [1,024 × 768] · context 1,024'],
     stream: ['The sum is the residual stream that enters block 1: one 768-wide lane per token, still unmixed.', 'h₀ [N × 768]'],
   }
 

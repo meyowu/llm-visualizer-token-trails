@@ -145,7 +145,7 @@ export function mountMlp(root: HTMLElement, nav: Nav): () => void {
     // labels
     ctx.font = serifAt(17); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'
     ctx.fillStyle = rgba(C.ink, a); ctx.fillText('GELU(x) = x · Φ(x)', P.x0, P.y0 + 14)
-    ctx.font = F.mono(9.5); ctx.fillStyle = rgba(C.mute, a); ctx.textBaseline = 'top'
+    ctx.font = F.mono(10.5); ctx.fillStyle = rgba(C.mute, a); ctx.textBaseline = 'top'
     ctx.textAlign = 'center'
     for (const v of [-4, -2, 2, 4]) ctx.fillText(String(v).replace('-', '−'), X(v), Y(0) + 4)
     ctx.textAlign = 'right'; ctx.textBaseline = 'middle'

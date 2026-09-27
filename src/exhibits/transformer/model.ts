@@ -15,6 +15,15 @@ export const PROMPT = ['The', ' cat', ' sat', ' on', ' the']
 const IDS: Record<string, number> = { 'The': 464, ' cat': 3797, ' sat': 3332, ' on': 319, ' the': 262 }
 export const promptTokens = (): Tok[] => PROMPT.map((t, i) => ({ text: t, id: IDS[t], c: i % 7 }))
 
+/** More prompts for the toy views, with their real GPT-2 tokens: a repeated word, and one set of words in two orders. */
+export const TOY_PROMPTS: { label: string; toks: [string, number][] }[] = [
+  { label: 'The cat sat on the', toks: PROMPT.map((t) => [t, IDS[t]]) },
+  { label: 'the cat saw the cat', toks: [['the', 1169], [' cat', 3797], [' saw', 2497], [' the', 262], [' cat', 3797]] },
+  { label: 'The dog bit the man', toks: [['The', 464], [' dog', 3290], [' bit', 1643], [' the', 262], [' man', 582]] },
+  { label: 'The man bit the dog', toks: [['The', 464], [' man', 582], [' bit', 1643], [' the', 262], [' dog', 3290]] },
+]
+export const toyTokens = (k: number): Tok[] => TOY_PROMPTS[k].toks.map(([text, id], i) => ({ text, id, c: i % 7 }))
+
 /* ---------- toy attention block (real arithmetic at toy scale) ---------- */
 
 export type M = number[][]

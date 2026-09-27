@@ -150,7 +150,7 @@ export function mountLayerNorm(root: HTMLElement, nav: Nav): () => void {
   function numberLines(pos: (i: number, k: number) => number, band: ((i: number) => [number, number]) | null, a: number, marks: ((i: number) => number) | null) {
     const c = L.H.c, hv = mk.hovered('H', 'X')
     // axis ticks
-    ctx.font = F.mono(9.5); ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = rgba(C.mute, a)
+    ctx.font = F.mono(10.5); ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = rgba(C.mute, a)
     for (const v of [-4, -2, -1, 0, 1, 2, 4]) ctx.fillText(String(v).replace('-', '−'), nxPos(v), L.H.y + N * c + 6)
     ctx.strokeStyle = rgba(C.ink, 0.2 * a); ctx.setLineDash([2, 3]); ctx.lineWidth = 1
     ctx.beginPath(); ctx.moveTo(nxPos(0), L.H.y - 4); ctx.lineTo(nxPos(0), L.H.y + N * c + 2); ctx.stroke(); ctx.setLineDash([])

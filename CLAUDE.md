@@ -32,14 +32,15 @@ src/exhibits/registry.ts    categories (Anatomy, Lineage, Training, Serving, Age
                             an exhibit may have `children` (its steps); live when it has `route` and `mount`
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
+  merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
   data.ts                   decodes src/data/gpt2.json: presets, nextDist() at any T, headKind(), mixing() (lane colours)
 src/data/gpt2.json          real GPT-2 small activations for 3 prompts × 3 greedy passes (made by scripts/gpt2-export.ts)
 scripts/gpt2-export.ts      offline GPT-2 small forward pass in plain TS (Node 23+); weights in ~/.cache/token-trails/gpt2
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
   overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
-  tokenizer.ts              tokenizer detail view: pre-split, bytes, BPE merges by rank, ids (id = 256 + merge rank)
-  embedding.ts              embedding detail view: onehot · W_E as a lookup, + W_P, into the stream
+  tokenizer.ts              tokenizer: real GPT-2 BPE on any text (merges.txt lazy-loaded): pre-split, bytes, lowest-rank lookups, ids
+  embedding.ts              embedding detail view: onehot · W_E as a lookup, + W_P, into the stream; prompts in TOY_PROMPTS
   layernorm.ts              pre-LN stream schematic, then ln_1 as dots on number lines (μ, σ, γ, β)
   attention.ts              attention detail view, every GEMM animated cell by cell
   mlp.ts                    MLP detail view: up-projection, GELU curve, down-projection, residual
