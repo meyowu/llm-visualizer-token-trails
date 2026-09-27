@@ -48,6 +48,7 @@ src/lib/vit/data.ts         decodes src/data/vit.json (int8 base64): posSim(i, j
 src/lib/clip/data.ts        types for src/data/clip.json, preview(i) canvases of the drawn images, softmax
 src/lib/dit/data.ts         decodes src/data/dit.json (meanAbs, heatAt) and DDPM's ALPHA_BAR schedule
 src/lib/mamba/data.ts       types for src/data/mamba.json
+src/lib/spec/data.ts        types for src/data/spec.json, plain() for GPT-2 spellings
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
@@ -69,6 +70,8 @@ scripts/dit-export.ts       fetches DiT-XL/2 embedder and adaLN tensors of block
                             from refs/pr/1, cached in ~/.cache/token-trails/dit); writes src/data/dit.json
 scripts/mamba-export.ts     offline Mamba-130m (selective scan, GPT-NeoX BPE): next-token guesses and Δ per layer and
                             token; writes src/data/mamba.json; weights in ~/.cache/token-trails/mamba
+scripts/spec-export.ts      speculative decoding for real: distilgpt2 drafts, GPT-2 small verifies; writes src/data/spec.json;
+                            weights in ~/.cache/token-trails/gpt2 and ~/.cache/token-trails/distilgpt2
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
   overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
@@ -110,6 +113,8 @@ src/exhibits/serving/
                             block tables, the kernel gathering blocks, sharing with copy-on-write, batch size and steps for both
   batching.ts               why batch (throughput vs batch size on real sizes), static vs continuous Gantt charts from a toy
                             scheduler, wait/latency/throughput, chunked prefill step times
+  speculative.ts            a real run of distilgpt2 drafting for GPT-2 small (scripts/spec-export.ts): one round checked,
+                            all rounds, the min(1, p/q) rule with real p and q, tokens per pass and speed-up vs draft cost
 ```
 
 ## Adding an exhibit or detail view

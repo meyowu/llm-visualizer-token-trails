@@ -590,6 +590,33 @@ const LEARN: Record<string, Learn> = {
       'Long prompts are prefilled in chunks so they do not stall the tokens of requests already running.',
     ],
   },
+  speculative: {
+    refs: [["Leviathan et al. 2022, Fast Inference from Transformers via Speculative Decoding", "https://arxiv.org/abs/2211.17192"], ["Chen et al. 2023, Accelerating Large Language Model Decoding with Speculative Sampling", "https://arxiv.org/abs/2302.01318"], ["distilbert/distilgpt2, the draft model in the real run", "https://huggingface.co/distilbert/distilgpt2"]],
+    code: {
+      lines: [
+        '# one round of greedy speculative decoding',
+        'draft = []',
+        'for _ in range(k): draft.append(small(ctx + draft).argmax())    # k cheap passes',
+        'picks = large(ctx + draft).argmax(-1)[-k-1:]                     # one pass checks all k',
+        'n = 0',
+        'while n < k and draft[n] == picks[n]: n += 1',
+        'ctx += draft[:n] + [picks[n]]                                    # at least one new token',
+        '# sampling: accept x with probability min(1, p(x) / q(x))',
+        'if random() < min(1, p[x] / q[x]): keep(x)',
+        'else: x = sample(normalize(max(0, p - q))); stop',
+      ],
+      at: { idea: [2, 3], round: [1, 2, 3, 4, 5, 6], run: [6], sampling: [7, 8, 9], speedup: [3] },
+    },
+    checks: [
+      { phase: 'round', q: 'The draft guesses 4 tokens and GPT-2 agrees with the first 2. How many tokens does the round add?', options: ['3: the 2 agreed guesses plus GPT-2’s own token', '2', '4', '1'], answer: 0, why: 'At the first disagreement GPT-2’s own choice is used, so a round always adds the accepted prefix plus one token.' },
+      { phase: 'run', q: 'Is the text from speculative decoding different from the large model’s own greedy text?', options: ['No: every token is checked by the large model', 'Yes: it mixes in the small model’s choices', 'Only in the first round', 'Only for long outputs'], answer: 0, why: 'A guess is kept only if it is exactly what the large model would have picked, so the output is identical; only the number of large-model passes changes.' },
+    ],
+    recap: [
+      'A large model’s pass costs about the same for one token or several, because decoding is memory-bound.',
+      'A small draft model guesses k tokens; the large model checks them in one pass and keeps the agreeing prefix plus one.',
+      'The output is exactly the large model’s; the speed-up depends on the acceptance rate and on how cheap the draft is.',
+    ],
+  },
   llama: {
     refs: [["Touvron et al. 2023, LLaMA", "https://arxiv.org/abs/2302.13971"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"], ["Su et al. 2021, RoFormer (RoPE)", "https://arxiv.org/abs/2104.09864"], ["Zhang & Sennrich 2019, Root Mean Square Layer Normalization", "https://arxiv.org/abs/1910.07467"], ["Shazeer 2020, GLU Variants Improve Transformer (SwiGLU)", "https://arxiv.org/abs/2002.05202"], ["Ainslie et al. 2023, GQA", "https://arxiv.org/abs/2305.13245"]],
     code: {

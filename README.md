@@ -25,6 +25,7 @@ The atlas follows a model's life in six parts: **Anatomy** (GPT-2 taken apart), 
 - **Serving / FlashAttention**: the GPU memory hierarchy, standard attention's round trips through HBM, the online softmax (a running maximum and sum, rescaled when the maximum rises), the tiled loop computed for real at toy size and matching ordinary attention exactly, and the traffic and memory it saves.
 - **Serving / PagedAttention**: a toy serving simulation run twice on the same 16 requests: contiguous worst-case reservations (35% of held memory used) against vLLM-style blocks allocated on demand through block tables (94%), the attention kernel gathering scattered blocks, prompt blocks shared between samples with copy-on-write, and the bigger batches that finish the queue in 49 steps instead of 85.
 - **Serving / Continuous Batching**: why a batch is nearly free (throughput against batch size for LLaMA 3 8B on an A100), a toy scheduler drawn as Gantt charts for static and iteration-level batching, the waiting, latency and throughput it changes, and chunked prefill keeping every step under the memory-bound step time.
+- **Serving / Speculative Decoding**: a real run of distilgpt2 drafting 4 tokens at a time for GPT-2 small: one round checked position by position, the whole run (12 tokens from 5 GPT-2 passes, identical to GPT-2's own greedy text), the sampling rule min(1, p/q) with the two models' real probabilities, and the expected speed-up, which needs a much cheaper draft than distilgpt2.
 - **Lineage / Diffusion Transformer**: a Transformer that predicts noise: the exact DDPM noising of a toy image with DiT's schedule, latent 2 × 2 patches, adaLN-Zero with DiT-XL/2's real gates and scales across timesteps (block 28's MLP is nearly switched off), and a 250-step sampling run that uses the true noise, next to the compute it costs.
 - **Lineage / CLIP**: two encoders, an image ViT and a GPT-2-like text Transformer, meeting in one 512-dimensional space; everything real (CLIP ViT-B/32 on four drawn shapes and their captions): the embeddings and their principal directions (the modality gap), the image × caption matrix with both softmaxes and the loss, zero-shot classification by shape and by colour, and the learned temperature of 100.
 - **Lineage / Vision Transformer**: an image cut into 14 × 14 patches that become the tokens, the patch embedding as one shared matrix product next to the real ViT-B/16 filters' principal components, the real position embeddings, whose similarities rediscover the 2D grid, and a head that reads only [CLS].
@@ -49,6 +50,7 @@ node scripts/vit-export.ts   # regenerate src/data/vit.json from two ViT-B/16 te
 node scripts/clip-export.ts  # regenerate src/data/clip.json from CLIP ViT-B/32 weights (see the script header)
 node scripts/dit-export.ts   # regenerate src/data/dit.json from DiT-XL/2 tensors (fetched by range)
 node scripts/mamba-export.ts # regenerate src/data/mamba.json from Mamba-130m weights (see the script header)
+node scripts/spec-export.ts  # regenerate src/data/spec.json (distilgpt2 drafting for GPT-2 small)
 ```
 
 The browser never runs a model. `scripts/gpt2-export.ts` runs GPT-2 small once, offline, in plain TypeScript, and exports the slices the pages draw to `src/data/gpt2.json`; `scripts/bert-export.ts` and `scripts/t5-export.ts` do the same for BERT-base and T5-small (`src/data/bert.json`, `src/data/t5.json`). The detail views that animate every matrix product use a toy model at d_model 8 and say so.
@@ -98,6 +100,7 @@ src/
       flashattention.ts   exact attention in SRAM tiles
       paged.ts            the KV cache in blocks (vLLM)
       batching.ts         static vs continuous batching, chunked prefill
+      speculative.ts      real distilgpt2 → GPT-2 speculative decoding
 scripts/
   gpt2-export.ts          offline GPT-2 small forward pass that writes src/data/gpt2.json
   bert-export.ts          offline BERT-base forward pass that writes src/data/bert.json
@@ -106,6 +109,7 @@ scripts/
   clip-export.ts          offline CLIP ViT-B/32 on drawn shapes → src/data/clip.json
   dit-export.ts           DiT-XL/2 adaLN-Zero modulation → src/data/dit.json
   mamba-export.ts         offline Mamba-130m → src/data/mamba.json
+  spec-export.ts          speculative decoding, distilgpt2 → GPT-2 → src/data/spec.json
 ```
 
 To add an exhibit, write a `mount(root, nav) => destroy` function under `exhibits/` and give its entry in `registry.ts` a `route` and `mount`.
