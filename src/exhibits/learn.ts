@@ -177,6 +177,46 @@ const LEARN: Record<string, Learn> = {
       'A strategy picks one token; it is appended and the model runs again.',
     ],
   },
+  foundations: {
+    code: {
+      lines: [
+        'a @ b                        # dot product: (a * b).sum()',
+        'C = A @ B                    # (3, 4) @ (4, 3) → (3, 3); C[i, j] = A[i] @ B[:, j]',
+        'p = torch.softmax(s, dim=-1) # exp(s) / exp(s).sum(), rows sum to 1',
+        'F.one_hot(i, 4).float() @ M  # == M[i]',
+      ],
+      at: { dot: [0], matmul: [1], softmax: [2], onehot: [3] },
+    },
+    checks: [
+      { phase: 'softmax', q: 'Softmax of the scores [2, 1, 0.2, −1]: which is true?', options: ['All four get some weight, most goes to the 2', 'The 2 gets everything', 'The −1 gets a negative weight', 'They all get 1/4'], answer: 0, why: 'exp is never 0 and never negative, so every score keeps a share, and larger scores get exponentially more.' },
+    ],
+    recap: [
+      'A dot product multiplies and adds; it is large when two vectors point the same way.',
+      'A matrix product is a grid of dot products: row i of A (left) meets column j of B (above).',
+      'Softmax turns scores into weights that sum to 1, and a one-hot row times a matrix picks one row.',
+    ],
+  },
+  loss: {
+    code: {
+      lines: [
+        'x, y = idx[:, :-1], idx[:, 1:]             # inputs and targets, shifted by one',
+        'logits = model(x)                           # (B, T, 50257): every position at once',
+        'probs = F.softmax(logits, dim=-1)',
+        'loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))   # mean of −log p',
+        'loss.backward()                             # dloss/dlogits = (probs − onehot(y)) / N, then back through every layer',
+        'optimizer.step(); optimizer.zero_grad()     # nudge all 124M weights',
+      ],
+      at: { shift: [0], predict: [1, 2], loss: [3], grad: [4], step: [5] },
+    },
+    checks: [
+      { phase: 'loss', q: 'GPT-2 gives the right token 45% at one position and 0.07% at another. Which adds more to the loss?', options: ['The 0.07% one, by far', 'The 45% one', 'They add the same', 'Neither: only the last position counts'], answer: 0, why: '−ln 0.45 ≈ 0.8 but −ln 0.0007 ≈ 7.3: the loss punishes confident mistakes much more than mild ones.' },
+    ],
+    recap: [
+      'One sentence gives one training example per position: each predicts the token after it.',
+      'The loss is the average of −log p(right token), the cross-entropy.',
+      'Its gradient on the logits is p − onehot(target); backpropagation carries it to every weight.',
+    ],
+  },
   llama: {
     code: {
       lines: [

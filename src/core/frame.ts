@@ -61,7 +61,7 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
       </dl>
     </header>
     <section class="stage"></section>
-    ${o.formula ? `<section class="formula"><div class="f-line"></div><div class="f-note"></div><p class="f-hint">${esc(o.formulaHint ?? 'Hover a result cell to see how it is computed; click or tap it to pin it.')}</p></section>` : ''}
+    ${o.formula ? `<section class="formula"><div class="f-line"></div><div class="f-note"></div>${o.formulaHint === '' ? '' : `<p class="f-hint">${esc(o.formulaHint ?? 'Hover a result cell to see how it is computed; click or tap it to pin it.')}</p>`}</section>` : ''}
     <section class="caption" aria-live="polite" aria-atomic="true">
       <div class="cap-title"><b></b><em></em></div>
       <p class="cap-text"></p>

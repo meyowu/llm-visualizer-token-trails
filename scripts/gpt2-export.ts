@@ -83,6 +83,8 @@ interface Forward {
   logits: Float32Array
   /** Block 1's MLP hidden activations (after GELU), one 3,072-vector per position. */
   mlp0: Float32Array[]
+  /** The final residual stream at every position (before ln_f). */
+  last: Float32Array[]
 }
 function forward(ids: number[]): Forward {
   const N = ids.length
@@ -125,7 +127,7 @@ function forward(ids: number[]): Forward {
     resid.push(x[N - 1])
   }
   const xf = layerNorm(x[N - 1], w('ln_f.weight'), w('ln_f.bias'))
-  return { att, resid, xf, logits: logitsOf(xf), mlp0 }
+  return { att, resid, xf, logits: logitsOf(xf), mlp0, last: x }
 }
 
 /* ---------- export helpers ---------- */
@@ -211,6 +213,20 @@ for (const pr of PRESETS) {
     ids = [...ids, greedy]
   }
   out.presets.push({ key: pr.key, text: pr.text, note: pr.note, passes })
+}
+// training: every position of one sentence predicts the token after it, all at once
+{
+  const text = 'The cat sat on the floor', ids = bpe.encode(text), f = forward(ids)
+  const positions = ids.slice(0, -1).map((_, i) => {
+    const z = logitsOf(layerNorm(f.last[i], w('ln_f.weight'), w('ln_f.bias'))), top = softmaxTop(z, 3)
+    const m = Math.max(...z)
+    let Z = 0
+    for (let v = 0; v < V; v++) Z += Math.exp(z[v] - m)
+    const target = ids[i + 1]
+    return { target, p: Math.exp(z[target] - m) / Z, top: top.top.map((t) => ({ id: t.id, s: t.s, p: r3(t.p) })) }
+  })
+  out.training = { text, ids, syms: ids.map(sym), positions }
+  console.log('training:', positions.map((q) => `${sym(q.target)} ${(q.p * 100).toFixed(1)}%`).join(' · '))
 }
 writeFileSync(new URL('../src/data/gpt2.json', import.meta.url), JSON.stringify(out))
 console.log('wrote src/data/gpt2.json')

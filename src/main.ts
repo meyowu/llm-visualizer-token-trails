@@ -6,7 +6,7 @@ import { pref } from './core/prefs'
 import { poke } from './core/stage'
 import { watchTheme } from './core/theme'
 import { reducedMotion } from './core/util'
-import { ALIASES, CATEGORIES, DEFAULT_ROUTE, GLOSSARY, ROUTES, START, exhibitsOf, isHeading, type Exhibit } from './exhibits/registry'
+import { ALIASES, CATEGORIES, DEFAULT_ROUTE, FOUNDATIONS, GLOSSARY, ROUTES, START, exhibitsOf, isHeading, type Exhibit } from './exhibits/registry'
 
 registerFonts()
 if (pref.get('palette') === 'cvd') document.documentElement.dataset.palette = 'cvd'
@@ -70,7 +70,7 @@ function renderRail(active: string) {
   railNav.innerHTML = ''
   const start = document.createElement('ul')
   start.className = 'start-link'
-  start.append(exhibitLink(START, active), exhibitLink(GLOSSARY, active))
+  start.append(exhibitLink(START, active), exhibitLink(FOUNDATIONS, active), exhibitLink(GLOSSARY, active))
   railNav.appendChild(start)
   for (const cat of CATEGORIES) {
     const all = exhibitsOf(cat), live = all.filter((e) => e.route).length
@@ -105,9 +105,9 @@ function renderRail(active: string) {
 
 /* ---------- the tour: previous / next ---------- */
 /** Reading order across pages; the Anatomy steps are numbered. */
-const TOUR = ['start', 'anatomy', 'anatomy/tokenizer', 'anatomy/embedding', 'anatomy/layernorm', 'anatomy/attention', 'anatomy/mlp', 'anatomy/unembed', 'lineage/llama']
+const TOUR = ['start', 'foundations', 'anatomy', 'anatomy/tokenizer', 'anatomy/embedding', 'anatomy/layernorm', 'anatomy/attention', 'anatomy/mlp', 'anatomy/unembed', 'training/loss', 'lineage/llama']
 const STEPS = TOUR.filter((r) => r.startsWith('anatomy/'))
-const nameOf = (route: string) => [START, GLOSSARY, ...CATEGORIES.flatMap(exhibitsOf)].find((e) => e.route === route)?.name ?? route
+const nameOf = (route: string) => [START, FOUNDATIONS, GLOSSARY, ...CATEGORIES.flatMap(exhibitsOf)].find((e) => e.route === route)?.name ?? route
 const tourStep = (route: string, dir: number) => { const i = TOUR.indexOf(route); return i < 0 ? null : TOUR[i + dir] ?? null }
 
 /** Top right of the page header: the step number and the previous and next pages of the tour. */

@@ -13,7 +13,8 @@ interface RawPass {
   unembed?: { h: string; xf: string; rows: { id: number; v: string }[] }
 }
 interface RawPreset { key: string; text: string; note: string; passes: RawPass[] }
-interface Raw { model: string; tGrid: number[]; topK: number; presets: RawPreset[] }
+interface RawTraining { text: string; ids: number[]; syms: string[]; positions: { target: number; p: number; top: { id: number; s: string; p: number }[] }[] }
+interface Raw { model: string; tGrid: number[]; topK: number; presets: RawPreset[]; training: RawTraining }
 const R = raw as unknown as Raw
 
 export const VOCAB = 50257
@@ -170,4 +171,20 @@ export function mixing(att: number[][][][]): number[][][] {
     out.push(M)
   }
   return out
+}
+
+/** One sentence scored the way training scores it: every position predicts the token after it. */
+export interface TrainingRun {
+  text: string
+  ids: number[]
+  texts: string[]
+  /** For position i: the target (token i + 1), GPT-2's probability for it, and its top guesses. */
+  positions: { target: number; p: number; top: Guess[] }[]
+}
+export function trainingRun(): TrainingRun {
+  const t = R.training
+  return {
+    text: t.text, ids: t.ids, texts: t.syms.map(symbolText),
+    positions: t.positions.map((q) => ({ target: q.target, p: q.p, top: q.top.map((g) => ({ id: g.id, text: symbolText(g.s), p: g.p })) })),
+  }
 }

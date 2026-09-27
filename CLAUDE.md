@@ -33,6 +33,7 @@ src/core/glossary.ts        TERMS (term, spellings to mark, definition); withTer
 src/core/theme.ts           canvas palette C (read from CSS tokens), rgba/mixc/blend/pop
 src/exhibits/start.ts       landing page (#/start, the default): live next-token demo, what a Transformer is, the path, legend
 src/exhibits/glossary.ts    #/glossary: every term in TERMS
+src/exhibits/foundations.ts #/foundations: dot product, matrix product layout, softmax, one-hot (small made-up numbers)
 src/exhibits/learn.ts       per page: code lines (marked per phase), predict-then-reveal checks, recap; teach(player, page)
 src/exhibits/registry.ts    categories (Anatomy, Lineage, Training, Serving, Agents) → entries: exhibits or sub-headings;
                             an exhibit may have `children` (its steps); live when it has `route` and `mount`
@@ -40,7 +41,8 @@ src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
   data.ts                   decodes src/data/gpt2.json: presets, nextDist() at any T, headKind(), mixing() (lane colours)
-src/data/gpt2.json          real GPT-2 small activations for 3 prompts × 3 greedy passes (made by scripts/gpt2-export.ts)
+src/data/gpt2.json          real GPT-2 small activations for 3 prompts × 3 greedy passes, and one sentence scored per position
+                            for training (made by scripts/gpt2-export.ts)
 scripts/gpt2-export.ts      offline GPT-2 small forward pass in plain TS (Node 23+); weights in ~/.cache/token-trails/gpt2
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
@@ -51,6 +53,8 @@ src/exhibits/transformer/
   attention.ts              attention detail view, every GEMM animated cell by cell
   mlp.ts                    MLP detail view: up-projection, GELU curve, down-projection, residual
   unembed.ts                ln_f, logits = x · W_Eᵀ (tied), temperature, softmax, sampling strategies; real GPT-2 numbers
+src/exhibits/training/
+  loss.ts                   next-token loss on a real GPT-2 run (per-position p, −log p), gradient p − y, a toy step
 src/exhibits/lineage/
   llama.ts                  LLaMA 3 vs GPT-2: blocks, RoPE, RMSNorm, SwiGLU, GQA (real numbers are LLaMA 3 8B)
 ```

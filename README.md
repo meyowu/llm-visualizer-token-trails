@@ -15,9 +15,12 @@ The atlas follows a model's life in five parts: **Anatomy** (GPT-2 taken apart),
   - **MLP**: the feed-forward block at toy scale (d_model 8 → d_ff 32, the same 4× as GPT-2): X·W_fc + b → GELU (each activation plotted on the curve) → ·W_proj + b → residual add.
 
   - **Unembed & Sampling**: real GPT-2 numbers: ln_f on the last position, logits as x · W_Eᵀ (tied to the embedding; 8 of the 768 dimensions drawn, each logit the full sum), the whole 50,257-token distribution at any temperature (top 256 exact, the rest summarised), softmax, and sampling strategies (sample, greedy, top-k, top-p) drawn as an inverse CDF.
+- **Foundations**: a warm-up on the four pieces of math the rest uses: the dot product as a similarity score, the matrix product in the site's layout, softmax, and one-hot times a matrix.
+- **Training / Next-token loss**: "The cat sat on the floor" scored the way training scores it, with GPT-2's real probabilities: five examples at once, −log p per position, the gradient p − y on the logits, and a toy step downhill.
+- **Glossary**: every term of art in plain words; captions mark first mentions with their definition.
 - **Lineage / LLaMA**: LLaMA 3 as a diff against GPT-2: the two blocks side by side, then RoPE (rotating q/k pairs by position, and why only the offset matters), RMSNorm vs LayerNorm, the gated SwiGLU MLP, and MHA vs GQA vs MQA with real KV-cache sizes.
 
-Every page pauses at the end of each step so there is time to read (switch to Auto to play straight through); ← and → move between steps. On the overview, click a part marked ↗ (the tokens, the embedding strips, the attn, mlp, ln_f and W_U plates, the next-token bars) to zoom into its detail view.
+Every page has an All steps list, a Code drawer with the matching PyTorch, a question or two to answer before key steps, and a recap at the end. It pauses at the end of each step so there is time to read (switch to Auto to play straight through); ← and → move between steps. On the overview, click a part marked ↗ (the tokens, the embedding strips, the attn, mlp, ln_f and W_U plates, the next-token bars) to zoom into its detail view.
 
 ## Development
 

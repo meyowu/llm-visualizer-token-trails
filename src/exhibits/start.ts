@@ -5,6 +5,7 @@ import type { Nav } from './registry'
 
 /** The route of each step of the tour, in teaching order. */
 const PATH: [string, string, string][] = [
+  ['foundations', 'Foundations', 'Warm-up, if you need it: dot product, matrix product, softmax, one-hot.'],
   ['anatomy', 'Forward pass', 'The whole trip on one screen, with the numbers of a real GPT-2 run. Come back to it as the map.'],
   ['anatomy/tokenizer', 'Tokenizer', 'How text becomes a list of token ids.'],
   ['anatomy/embedding', 'Embedding', 'How each id becomes a vector of 768 numbers.'],
@@ -12,6 +13,7 @@ const PATH: [string, string, string][] = [
   ['anatomy/attention', 'Attention', 'How a token pulls in information from the tokens before it.'],
   ['anatomy/mlp', 'MLP', 'How each token is then transformed on its own.'],
   ['anatomy/unembed', 'Unembed & Sampling', 'How the last vector becomes probabilities, and one next token.'],
+  ['training/loss', 'Next-token loss', 'Where the numbers come from: the loss every weight is trained on.'],
 ]
 
 
@@ -50,7 +52,7 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
       </section>
       <section class="st-train">
         <h2>Where do the numbers come from?</h2>
-        <p>Every weight (124M of them) was set by <b>training</b>: GPT-2 read about 40 GB of web text, predicted each next token, and after every batch nudged all its weights so the actual next token got a little more probability. Nothing in the model was written by hand. Even the tokenizer was learned, by counting which pairs of symbols appear together most often. The Training chapter will show this step by step.</p>
+        <p>Every weight (124M of them) was set by <b>training</b>: GPT-2 read about 40 GB of web text, predicted each next token, and after every batch nudged all its weights so the actual next token got a little more probability. Nothing in the model was written by hand. Even the tokenizer was learned, by counting which pairs of symbols appear together most often. The Next-token loss page shows the signal it learns from.</p>
       </section>
       <section class="st-real">
         <h2>Real or toy?</h2>
@@ -74,7 +76,8 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
   const ol = q('.st-path ol')
   PATH.forEach(([route, name, what], i) => {
     const li = document.createElement('li')
-    li.innerHTML = `<a href="#/${route}"><span class="n">${i === 0 ? 'map' : String(i).padStart(2, '0')}</span><b></b><small></small></a>`
+    const n = route === 'foundations' ? 'prep' : route === 'anatomy' ? 'map' : route.startsWith('training') ? 'then' : String(i - 1).padStart(2, '0')
+    li.innerHTML = `<a href="#/${route}"><span class="n">${n}</span><b></b><small></small></a>`
     li.querySelector('b')!.textContent = name
     li.querySelector('small')!.textContent = what
     li.querySelector('a')!.addEventListener('click', (e) => { e.preventDefault(); nav(route) })
