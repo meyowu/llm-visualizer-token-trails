@@ -179,9 +179,15 @@ export class Player {
     this.card.hidden = true
     this.card.setAttribute('aria-live', 'polite')
     this.controls = controls
-    controls.append(this.card, transport, tl, this.meta, this.steps)
+    // the way on stays in sight: the question card, the transport and the timeline stick to the bottom of the view
+    // while the page above is read, and settle into place at its end; the rest of the controls stay in the flow
+    const dock = document.createElement('div')
+    dock.className = 'dock'
+    dock.append(this.card, transport, tl)
+    controls.before(dock)
+    controls.append(this.meta, this.steps)
     // a pointer click leaves focus on the button, where Space would click it again instead of play / pause
-    controls.addEventListener('click', (e) => { if (e.detail > 0) (e.target as HTMLElement).closest('button')?.blur() })
+    for (const el of [dock, controls]) el.addEventListener('click', (e) => { if (e.detail > 0) (e.target as HTMLElement).closest('button')?.blur() })
     if (pendingPhase) {
       const p = this.byId[pendingPhase]
       if (p) this.t = p.start + 0.001
