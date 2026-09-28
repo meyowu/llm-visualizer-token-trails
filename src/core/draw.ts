@@ -1,3 +1,4 @@
+import { raw, t as tr } from './i18n'
 import { C, rgba, type RGB } from './theme'
 
 /** Shared canvas primitives. Call useCtx() with the stage's context at the start of a frame. */
@@ -46,11 +47,14 @@ export function rr(x: number, y: number, w: number, h: number, r: number) {
 
 export function chipW(text: string, font = F.chip) {
   ctx.font = font
-  return Math.ceil(ctx.measureText(tokLabel(text)).width) + 14
+  return Math.ceil(raw(() => ctx.measureText(tokLabel(text)).width)) + 14
 }
 
 /** Token text with a dimmed Ġ prefix. */
 export function tokText(x: number, y: number, text: string, a: number, col?: RGB | null, font = F.chip) {
+  raw(() => tokTextRaw(x, y, text, a, col, font))
+}
+function tokTextRaw(x: number, y: number, text: string, a: number, col?: RGB | null, font = F.chip) {
   const lab = tokLabel(text)
   ctx.font = font
   ctx.textBaseline = 'middle'
@@ -136,18 +140,26 @@ export function richSegs(t: string): [string, boolean][] {
 }
 const subFont = (font: string) => font.replace(/(\d+(?:\.\d+)?)px/, (_, n) => `${Math.round(parseFloat(n) * 0.72 * 10) / 10}px`)
 const fontPx = (font: string) => parseFloat(/(\d+(?:\.\d+)?)px/.exec(font)?.[1] ?? '12')
-/** Width of text as fillRich would draw it with the current font. */
+/** Width of text as fillRich would draw it with the current font (translated first, like fillRich). */
 export function measureRich(t: string): number {
+  t = tr(t)
+  return raw(() => measureRichRaw(t))
+}
+function measureRichRaw(t: string): number {
   const main = ctx.font, sf = subFont(main)
   let w = 0
   for (const [s, sub] of richSegs(t)) { ctx.font = sub ? sf : main; w += ctx.measureText(s).width + (sub ? 0.5 : 0) }
   ctx.font = main
   return w
 }
-/** fillText with real subscripts; honours the current textAlign. Returns the width drawn. */
+/** fillText with real subscripts; honours the current textAlign. Returns the width drawn. The whole text is translated first. */
 export function fillRich(t: string, x: number, y: number): number {
+  t = tr(t)
+  return raw(() => fillRichRaw(t, x, y))
+}
+function fillRichRaw(t: string, x: number, y: number): number {
   if (!t.includes('_')) { ctx.fillText(t, x, y); return ctx.measureText(t).width }
-  const main = ctx.font, sf = subFont(main), align = ctx.textAlign, w = measureRich(t), dy = fontPx(main) * 0.28
+  const main = ctx.font, sf = subFont(main), align = ctx.textAlign, w = measureRichRaw(t), dy = fontPx(main) * 0.28
   let cx = align === 'center' ? x - w / 2 : align === 'right' || align === 'end' ? x - w : x
   ctx.textAlign = 'left'
   for (const [s, sub] of richSegs(t)) {
@@ -184,6 +196,9 @@ export function bracketLabel(t: string, a: number, b: number, y: number, on: boo
 
 /** A run of italic math text; parts marked `true` are drawn as subscripts. Returns the width drawn. */
 export function mathRun(parts: [string, boolean][], x: number, y: number, a: number, size = 19, col: RGB = C.ink) {
+  return raw(() => mathRunRaw(parts, x, y, a, size, col))
+}
+function mathRunRaw(parts: [string, boolean][], x: number, y: number, a: number, size: number, col: RGB) {
   ctx.textAlign = 'left'
   ctx.textBaseline = 'alphabetic'
   ctx.fillStyle = rgba(col, a)

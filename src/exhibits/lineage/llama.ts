@@ -1,4 +1,5 @@
 import { F, chipW, drawChip, fillRich, rr, serifAt } from '../../core/draw'
+import { t as tr } from '../../core/i18n'
 import { fmt } from '../../core/matrix'
 import { C, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, gauss, lerp, rng } from '../../core/util'
@@ -88,9 +89,9 @@ function scenes({ stage, ctx, mk, k, player, onFrame }: Env) {
   const ropeCtl = document.createElement('div')
   ropeCtl.className = 'ropectl'
   ropeCtl.setAttribute('role', 'group')
-  ropeCtl.setAttribute('aria-label', 'RoPE example')
+  ropeCtl.setAttribute('aria-label', tr('RoPE example'))
   const opts = seq.map((_, i) => `<option value="${i}">${mk.tl(i)} · ${i}</option>`).join('')
-  ropeCtl.innerHTML = `<label>q <select>${opts}</select></label><label>k <select>${opts}</select></label><label class="temp"><small>shift both</small><input type="range" min="0" max="10" step="1" value="0"><output>0</output></label>`
+  ropeCtl.innerHTML = `<label>q <select>${opts}</select></label><label>k <select>${opts}</select></label><label class="temp"><small>${tr('shift both')}</small><input type="range" min="0" max="10" step="1" value="0"><output>0</output></label>`
   const [qSel, kSel] = ropeCtl.querySelectorAll('select'), shiftIn = ropeCtl.querySelector('input')!, shiftOut = ropeCtl.querySelector('output')!
   qSel.value = String(R0.m); kSel.value = String(R0.n)
   const manual = () => { R0.manual = true; R0.m = +qSel.value; R0.n = +kSel.value; R0.shift = +shiftIn.value; shiftOut.textContent = shiftIn.value; if (player.cur().id === 'rope') player.setPlaying(false) }

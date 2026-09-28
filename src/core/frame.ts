@@ -1,4 +1,5 @@
 import { withTerms } from './glossary'
+import { t } from './i18n'
 import { legendList } from './legend'
 import { pref } from './prefs'
 import { C, type RGB } from './theme'
@@ -54,27 +55,27 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
   root.innerHTML = `
     <header class="head">
       <div>
-        ${o.back ? `<button class="back" type="button">← ${esc(o.back.label)}</button>` : ''}
-        <p class="eyebrow">${rich(o.eyebrow)}</p>
-        <div class="titlebar"><h1>${esc(o.title)}</h1><p class="sub">${rich(o.subtitle)}</p></div>
+        ${o.back ? `<button class="back" type="button">← ${esc(t(o.back.label))}</button>` : ''}
+        <p class="eyebrow">${rich(t(o.eyebrow))}</p>
+        <div class="titlebar"><h1>${esc(t(o.title))}</h1><p class="sub">${rich(t(o.subtitle))}</p></div>
       </div>
       <dl class="specs">
-        ${o.specs.map((s) => `<div><dt>${rich(s.label)}</dt><dd>${rich(s.value)}${s.real ? `<small>${rich([s.realLabel ?? 'GPT-2', s.real].filter(Boolean).join(' '))}</small>` : ''}</dd></div>`).join('')}
+        ${o.specs.map((s) => `<div><dt>${rich(t(s.label))}</dt><dd>${rich(t(s.value))}${s.real ? `<small>${rich([t(s.realLabel ?? 'GPT-2'), t(s.real)].filter(Boolean).join(' '))}</small>` : ''}</dd></div>`).join('')}
       </dl>
     </header>
     <section class="stage"></section>
-    ${o.formula ? `<section class="formula"><div class="f-line"></div><div class="f-note"></div><p class="f-hint"${o.formulaHint === '' ? ' hidden' : ''}>${esc(o.formulaHint ?? 'Hover a result cell to see how it is computed; click or tap it to pin it.')}</p></section>` : ''}
+    ${o.formula ? `<section class="formula"><div class="f-line"></div><div class="f-note"></div><p class="f-hint"${o.formulaHint === '' ? ' hidden' : ''}>${esc(t(o.formulaHint ?? 'Hover a result cell to see how it is computed; click or tap it to pin it.'))}</p></section>` : ''}
     <section class="caption" aria-live="polite" aria-atomic="true">
       <div class="cap-title"><b></b><em></em></div>
       <p class="cap-text"></p>
       <code class="cap-shape" aria-hidden="true"></code>
     </section>
-    <section class="controls" aria-label="Playback"></section>`
+    <section class="controls" aria-label="${t('Playback')}"></section>`
   if (o.back) root.querySelector('.back')!.addEventListener('click', o.back.onClick)
   // how to read the pictures, under the controls; open by itself on a first visit
   const legend = document.createElement('details')
   legend.className = 'legend-d'
-  legend.innerHTML = `<summary>How to read the pictures</summary>${legendList()}<label class="legend-opts"><input type="checkbox"> Colour-blind-safe token colours</label><p class="legend-note">In the header, a plain number is what the drawing uses and “GPT-2 768” is the real model’s size.</p>`
+  legend.innerHTML = `<summary>${t('How to read the pictures')}</summary>${legendList()}<label class="legend-opts"><input type="checkbox"> ${t('Colour-blind-safe token colours')}</label><p class="legend-note">${t('In the header, a plain number is what the drawing uses and “GPT-2 768” is the real model’s size.')}</p>`
   root.querySelector('.controls')!.appendChild(legend)
   const cvd = legend.querySelector('input')!
   cvd.checked = document.documentElement.dataset.palette === 'cvd'
@@ -98,6 +99,7 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
     stageHost: q('.stage'),
     controls: q('.controls'),
     setCaption(a, b, c, d) {
+      a = t(a); b = t(b); c = t(c); d = t(d)
       const key = a + b + c + d
       if (key === last) return
       last = key
@@ -107,15 +109,18 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
       shape.innerHTML = rich(d)
     },
     setHint(s) {
+      s = t(s)
       if (!fHint || (fHint.textContent === s && fHint.hidden === !s)) return
       fHint.textContent = s
       fHint.hidden = !s
     },
     setSubtitle(s) {
-      const html = rich(s)
+      const html = rich(t(s))
       if (sub.innerHTML !== html) sub.innerHTML = html
     },
     setFormula(segs, note = '', announce = false) {
+      segs = segs && segs.map(([x, c, a]) => [t(x), c, a] as FormulaSeg)
+      note = t(note)
       if (announce && segs) live.textContent = segs.map((g) => g[0]).join('') + '. ' + note
       if (!fLine || !fNote) return
       const line = (segs ?? []).map(([t, c, a]) => {
@@ -138,10 +143,10 @@ export function toggle(parent: HTMLElement, label: string, options: string[], va
   const el = document.createElement('div')
   el.className = 'toggle'
   el.setAttribute('role', 'group')
-  el.setAttribute('aria-label', label)
-  const buttons = options.map((t, i) => {
+  el.setAttribute('aria-label', t(label))
+  const buttons = options.map((o, i) => {
     const b = document.createElement('button')
-    b.textContent = t
+    b.textContent = t(o)
     b.setAttribute('aria-pressed', String(i === value))
     b.addEventListener('click', () => set(i, true))
     el.appendChild(b)
@@ -160,13 +165,13 @@ export function stepper(parent: HTMLElement, label: string, count: number, value
   const el = document.createElement('div')
   el.className = 'stepper'
   el.setAttribute('role', 'group')
-  el.setAttribute('aria-label', label)
-  el.innerHTML = `<button type="button" aria-label="Previous ${esc(label)}">‹</button><output></output><button type="button" aria-label="Next ${esc(label)}">›</button>`
+  el.setAttribute('aria-label', t(label))
+  el.innerHTML = `<button type="button" aria-label="${esc(t(`Previous ${label}`))}">‹</button><output></output><button type="button" aria-label="${esc(t(`Next ${label}`))}">›</button>`
   const [prev, next] = el.querySelectorAll('button'), out = el.querySelector('output')!
   let v = value
   function set(i: number, notify: boolean) {
     v = (i + count) % count
-    out.textContent = `${label} ${v + 1}`
+    out.textContent = t(`${label} ${v + 1}`)
     if (notify) onChange(v)
   }
   prev.addEventListener('click', () => set(v - 1, true))

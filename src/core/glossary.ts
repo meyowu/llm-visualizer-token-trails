@@ -2,6 +2,7 @@
  * Terms of art, defined once. Captions mark the first mention of each with a dotted underline
  * and its definition as a tooltip; the Glossary page lists them all.
  */
+import { lang, termText } from './i18n'
 
 export interface Term {
   term: string
@@ -111,11 +112,20 @@ export const TERMS: Term[] = [
   { term: 'Text to text', match: ['text in, text out', 'text-to-text'], def: 'T5’s framing: every task, from translation to classification, is a string in and a string out, named by a prefix such as “summarize:”.' },
   { term: 'Token', match: [], def: 'A piece of text the model reads as one unit (a word, part of a word, a byte or punctuation), each with an id in the vocabulary.' },
   { term: 'Top-k and top-p', match: ['top-k', 'top-p'], def: 'Sampling that first keeps only the k likeliest tokens, or the smallest set whose probabilities add up to p, then renormalises.' },
-  { term: 'Training', match: [], def: 'Adjusting every weight, over many steps, so the model gives a higher probability to the actual next token across a large body of text. The Training chapter is coming.' },
+  { term: 'Training', match: [], def: 'Adjusting every weight, over many steps, so the model gives a higher probability to the actual next token across a large body of text.' },
 ]
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
-const PATTERNS = TERMS.flatMap((t) => t.match.map((m) => ({ t, re: new RegExp(`(?<![\\w-])${m.replace(/[-]/g, '\\-')}(?![\\w-])`, 'gi') })))
+/** Each term with its spellings and definition in the current language; longest spellings first in Chinese, where one term's name can contain another's. */
+const patterns = new Map<string, { t: Term; def: string; re: RegExp; len: number }[]>()
+function termPatterns() {
+  let ps = patterns.get(lang)
+  if (ps) return ps
+  ps = TERMS.flatMap((t) => { const x = termText(t.term, t.def, t.match); return x.match.map((m) => ({ t, def: x.def, len: m.length, re: new RegExp(`(?<![\\w-])${m.replace(/[-]/g, '\\-')}(?![\\w-])`, 'gi') })) })
+  if (lang !== 'en') ps.sort((a, b) => b.len - a.len)
+  patterns.set(lang, ps)
+  return ps
+}
 /** Whether index i of s falls inside a placeholder already inserted for another term. */
 const inside = (s: string, i: number) => s.lastIndexOf('\u0000', i) > s.lastIndexOf('\u0002', i)
 
@@ -125,7 +135,7 @@ export function withTerms(html: string): string {
   return html.split(/(<[^>]+>)/).map((part) => {
     if (part.startsWith('<')) return part
     let out = part
-    for (const { t, re } of PATTERNS) {
+    for (const { t, re } of termPatterns()) {
       if (done.has(t)) continue
       re.lastIndex = 0
       let m: RegExpExecArray | null
@@ -135,6 +145,6 @@ export function withTerms(html: string): string {
       out = out.slice(0, m.index) + `\u0000${t.term}\u0001${m[0]}\u0002` + out.slice(m.index + m[0].length)
     }
     // placeholders keep one term from matching inside another's markup
-    return out.replace(/\u0000([^\u0001]*)\u0001([^\u0002]*)\u0002/g, (_, term: string, text: string) => `<abbr class="term" title="${esc(TERMS.find((t) => t.term === term)!.def)}">${text}</abbr>`)
+    return out.replace(/\u0000([^\u0001]*)\u0001([^\u0002]*)\u0002/g, (_, term: string, text: string) => `<abbr class="term" title="${esc(termPatterns().find((p) => p.t.term === term)!.def)}">${text}</abbr>`)
   }).join('')
 }

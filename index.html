@@ -8,7 +8,7 @@
     <meta name="description" content="Follow the tokens: animated, explorable walk-throughs of the Transformer, inference engines and agents." />
   </head>
   <body>
-    <button class="skip" type="button">Skip to the exhibit</button>
+    <button class="skip" type="button" data-t>Skip to the exhibit</button>
     <div class="app">
       <aside class="rail">
         <div>
@@ -21,15 +21,15 @@
             </svg>
             <b>Token Trails</b>
           </div>
-          <p class="tagline">Follow the tokens through AI systems</p>
+          <p class="tagline" data-t>Follow the tokens through AI systems</p>
+          <button class="lang-btn" type="button"></button>
           <button class="rail-btn" type="button" aria-controls="nav" aria-expanded="true"></button>
         </div>
-        <nav class="nav" id="nav" aria-label="Exhibits"></nav>
+        <nav class="nav" id="nav" aria-label="Exhibits" data-t-aria></nav>
         <div class="rail-foot">
-          <div class="legend"><span><i class="on"></i>Live</span><span><i></i>In progress</span></div>
-          <div><kbd>Space</kbd> play / pause · <kbd>←</kbd> <kbd>→</kbd> step through phases</div>
-          <div>Click a part marked ↗ on the canvas to open its details.</div>
-          <div class="foot-btns"><button class="theme-btn" type="button"></button><button class="theme-btn present-btn" type="button" aria-pressed="false" title="Hide the sidebar and enlarge captions; Escape to leave">▭ Present</button></div>
+          <div data-t-html><kbd>Space</kbd> play / pause · <kbd>←</kbd> <kbd>→</kbd> step through phases</div>
+          <div data-t>Click a part marked ↗ on the canvas to open its details.</div>
+          <div class="foot-btns"><button class="theme-btn" type="button"></button><button class="theme-btn present-btn" type="button" aria-pressed="false" title="Hide the sidebar and enlarge captions; Escape to leave" data-t data-t-title>▭ Present</button></div>
         </div>
       </aside>
       <main class="main"></main>

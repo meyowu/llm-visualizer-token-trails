@@ -1,6 +1,7 @@
 import './styles.css'
 import { registerFonts } from './core/fonts'
 import { rich } from './core/frame'
+import { harvest, lang, onLang, setLang, t } from './core/i18n'
 import { openAtPhase } from './core/player'
 import { pref } from './core/prefs'
 import { progress } from './core/progress'
@@ -8,6 +9,7 @@ import { getParams } from './core/link'
 import { poke } from './core/stage'
 import { watchTheme } from './core/theme'
 import { reducedMotion } from './core/util'
+import { learnTexts } from './exhibits/learn'
 import { ALIASES, CATEGORIES, DEFAULT_ROUTE, FOUNDATIONS, GLOSSARY, ROUTES, START, exhibitsOf, isHeading, type Exhibit } from './exhibits/registry'
 
 registerFonts()
@@ -17,9 +19,10 @@ const THEMES = ['system', 'light', 'dark'] as const
 function applyTheme(t: string) {
   if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
   else delete document.documentElement.dataset.theme
-  themeBtn.textContent = t === 'light' ? '☀ Light' : t === 'dark' ? '☾ Dark' : '◐ System theme'
-  themeBtn.setAttribute('aria-label', `Theme: ${t}. Click to change.`)
+  themeBtn.textContent = tr(t === 'light' ? '☀ Light' : t === 'dark' ? '☾ Dark' : '◐ System theme')
+  themeBtn.setAttribute('aria-label', tr(`Theme: ${t}. Click to change.`))
 }
+function tr(s: string) { return t(s) }
 applyTheme(pref.get('theme') ?? 'system')
 themeBtn.addEventListener('click', () => {
   const next = THEMES[(THEMES.indexOf((pref.get('theme') ?? 'system') as (typeof THEMES)[number]) + 1) % THEMES.length]
@@ -37,6 +40,32 @@ window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.q
   const h1 = current?.root.querySelector('h1') as HTMLElement | null
   if (h1) { h1.tabIndex = -1; h1.focus() }
 })
+/* ---------- language: the fixed text of the page, and the switch ---------- */
+const langBtn = document.querySelector('.lang-btn') as HTMLButtonElement
+/** Elements marked data-t (text), data-t-html (markup), data-t-title and data-t-aria keep their English in data-en*. */
+function applyStatic() {
+  document.querySelectorAll<HTMLElement>('[data-t], [data-t-html]').forEach((el) => {
+    const html = el.hasAttribute('data-t-html')
+    el.dataset.en ??= html ? el.innerHTML : el.textContent ?? ''
+    if (html) el.innerHTML = t(el.dataset.en); else el.textContent = t(el.dataset.en)
+  })
+  document.querySelectorAll<HTMLElement>('[data-t-title]').forEach((el) => { el.dataset.enTitle ??= el.title; el.title = t(el.dataset.enTitle) })
+  document.querySelectorAll<HTMLElement>('[data-t-aria]').forEach((el) => { el.dataset.enAria ??= el.getAttribute('aria-label') ?? ''; el.setAttribute('aria-label', t(el.dataset.enAria)) })
+  // the switch names the other language, in that language
+  langBtn.textContent = lang === 'en' ? '中文' : 'English'
+  langBtn.lang = lang === 'en' ? 'zh-CN' : 'en'
+  langBtn.setAttribute('aria-label', lang === 'en' ? '切换到中文' : 'Switch to English')
+}
+applyStatic()
+langBtn.addEventListener('click', () => setLang(lang === 'en' ? 'zh' : 'en'))
+onLang(() => {
+  applyStatic()
+  applyTheme(pref.get('theme') ?? 'system')
+  syncRailBtn()
+  remount()
+})
+// dev only: the harvest used to list every string a page shows (see scripts/i18n-harvest.mjs)
+if (import.meta.env.DEV) Object.assign(window, { __tt: { harvest, t, setLang, learnTexts } })
 if (pref.get('palette') === 'cvd') document.documentElement.dataset.palette = 'cvd'
 watchTheme(poke)
 // canvases drawn before a font arrived redraw with it
@@ -52,8 +81,8 @@ const phone = matchMedia('(max-width: 860px)')
 function syncRailBtn() {
   const openNow = phone.matches ? app.classList.contains('menu-open') : !app.classList.contains('collapsed')
   railBtn.setAttribute('aria-expanded', String(openNow))
-  railBtn.textContent = phone.matches ? (openNow ? 'Close' : 'Menu') : openNow ? '‹' : '›'
-  railBtn.setAttribute('aria-label', phone.matches ? (openNow ? 'Close the menu' : 'Open the menu') : openNow ? 'Collapse the sidebar' : 'Expand the sidebar')
+  railBtn.textContent = phone.matches ? t(openNow ? 'Close' : 'Menu') : openNow ? '‹' : '›'
+  railBtn.setAttribute('aria-label', t(phone.matches ? (openNow ? 'Close the menu' : 'Open the menu') : openNow ? 'Collapse the sidebar' : 'Expand the sidebar'))
 }
 if (pref.get('rail') === 'collapsed') app.classList.add('collapsed')
 railBtn.addEventListener('click', () => {
@@ -73,16 +102,16 @@ function exhibitLink(ex: Exhibit, active: string): HTMLElement {
   const el = document.createElement(ex.route ? 'a' : 'div')
   el.className = 'ex' + (ex.route ? '' : ' soon')
   el.innerHTML = '<span></span><small></small>'
-  el.querySelector('span')!.textContent = ex.name
-  el.querySelector('small')!.innerHTML = rich(ex.tag)
+  el.querySelector('span')!.textContent = t(ex.name)
+  el.querySelector('small')!.innerHTML = rich(t(ex.tag))
   if (!ex.route) {
-    el.insertAdjacentHTML('beforeend', '<em class="soon-pill">soon<span class="sr-only"> (coming soon)</span></em>')
-    el.title = 'In progress'
+    el.insertAdjacentHTML('beforeend', `<em class="soon-pill">${t('soon')}<span class="sr-only"> ${t('(coming soon)')}</span></em>`)
+    el.title = t('In progress')
   } else {
     // how far this reader got: a check when every step was seen, else a fraction
     const pg = progress(ex.route)
-    if (pg.of && pg.seen >= pg.of) el.insertAdjacentHTML('beforeend', '<em class="done" title="Every step seen">✓<span class="sr-only"> seen</span></em>')
-    else if (pg.seen) el.insertAdjacentHTML('beforeend', `<em class="part" title="Steps seen">${pg.seen}/${pg.of}<span class="sr-only"> steps seen</span></em>`)
+    if (pg.of && pg.seen >= pg.of) el.insertAdjacentHTML('beforeend', `<em class="done" title="${t('Every step seen')}">✓<span class="sr-only"> ${t('seen')}</span></em>`)
+    else if (pg.seen) el.insertAdjacentHTML('beforeend', `<em class="part" title="${t('Steps seen')}">${pg.seen}/${pg.of}<span class="sr-only"> ${t('steps seen')}</span></em>`)
   }
   if (ex.route) {
     const a = el as HTMLAnchorElement
@@ -120,9 +149,9 @@ function renderRail(active: string) {
     h.type = 'button'
     h.setAttribute('aria-expanded', String(isOpen))
     h.innerHTML = '<span class="chev" aria-hidden="true"></span><span class="t"></span><span class="n"></span>'
-    h.querySelector('.t')!.textContent = cat.title
+    h.querySelector('.t')!.textContent = t(cat.title)
     h.querySelector('.n')!.textContent = `${live} / ${all.length}`
-    h.querySelector('.n')!.setAttribute('aria-label', `${live} of ${all.length} live`)
+    h.querySelector('.n')!.setAttribute('aria-label', t(`${live} of ${all.length} live`))
     h.dataset.cat = cat.id
     h.addEventListener('click', () => { if (open.has(cat.id)) open.delete(cat.id); else open.add(cat.id); renderRail(active) })
     const ul = document.createElement('ul')
@@ -131,7 +160,7 @@ function renderRail(active: string) {
       if (isHeading(e)) {
         const li = document.createElement('li')
         li.className = 'subh'
-        li.textContent = e.heading
+        li.textContent = t(e.heading)
         ul.appendChild(li)
       } else ul.appendChild(exhibitLink(e, active))
     }
@@ -154,17 +183,17 @@ function chapterNav(route: string, root: HTMLElement) {
   if (!head || !TOUR.includes(route)) return
   const row = document.createElement('nav')
   row.className = 'chapnav'
-  row.setAttribute('aria-label', 'Tour')
+  row.setAttribute('aria-label', t('Tour'))
   const n = STEPS.indexOf(route)
-  if (n >= 0) { const c = document.createElement('span'); c.className = 'count'; c.textContent = `step ${n + 1} of ${STEPS.length}`; row.appendChild(c) }
+  if (n >= 0) { const c = document.createElement('span'); c.className = 'count'; c.textContent = t(`step ${n + 1} of ${STEPS.length}`); row.appendChild(c) }
   for (const [dir, label] of [[-1, (t: string) => `‹ ${t}`], [1, (t: string) => `${t} ›`]] as const) {
     const to = tourStep(route, dir)
     if (!to) continue
     const b = document.createElement('button')
     b.type = 'button'
     b.className = dir < 0 ? 'chap prev' : 'chap next'
-    b.textContent = label(nameOf(to))
-    b.title = `${dir < 0 ? 'Previous' : 'Next'} page (Shift + ${dir < 0 ? '←' : '→'})`
+    b.textContent = label(t(nameOf(to)))
+    b.title = t(dir < 0 ? 'Previous page (Shift + ←)' : 'Next page (Shift + →)')
     b.addEventListener('click', () => go(to))
     row.appendChild(b)
   }
@@ -177,12 +206,12 @@ const PIPE: [string, string][] = [['tokenize', 'anatomy/tokenizer'], ['embed', '
 function pipeline(route: string, head: Element) {
   const strip = document.createElement('nav')
   strip.className = 'pipeline'
-  strip.setAttribute('aria-label', 'Where this step sits in the forward pass')
+  strip.setAttribute('aria-label', t('Where this step sits in the forward pass'))
   PIPE.forEach(([label, to], i) => {
     if (i) strip.insertAdjacentHTML('beforeend', '<span class="sep" aria-hidden="true">→</span>')
     const b = document.createElement('button')
     b.type = 'button'
-    b.innerHTML = rich(label)
+    b.innerHTML = rich(t(label))
     if (to === route && !(label === 'ln' && i === 4)) b.setAttribute('aria-current', 'step')
     b.addEventListener('click', () => go(to))
     strip.appendChild(b)
@@ -203,7 +232,7 @@ function saveButton(route: string, root: HTMLElement) {
   // the single-file preview runs where pages may not download files, so it has no Save button
   if (!cv || !meta || import.meta.env.MODE === 'artifact') return
   const b = document.createElement('button')
-  b.type = 'button'; b.className = 'cycle'; b.textContent = 'Save frame'; b.title = 'Download the drawing as a PNG'
+  b.type = 'button'; b.className = 'cycle'; b.textContent = t('Save frame'); b.title = t('Download the drawing as a PNG')
   b.addEventListener('click', () => cv.toBlob((blob) => {
     if (!blob) return
     const a = document.createElement('a')
@@ -242,6 +271,7 @@ function go(target: string, origin?: { x: number; y: number }, push = true) {
     try { history.pushState({ prev: current?.route ?? null }, '', '#/' + target) } catch { /* sandboxed frames may refuse */ }
   }
   openAtPhase(new URLSearchParams(qs ?? '').get('phase'))
+  harvest.route = route
   const old = current
   const root = document.createElement('div')
   root.className = 'view'
@@ -250,14 +280,15 @@ function go(target: string, origin?: { x: number; y: number }, push = true) {
   try { destroy = ROUTES[route](root, go) } catch (err) {
     // a page that fails to start says so instead of leaving a blank screen
     console.error(err)
-    root.innerHTML = `<header class="head"><div><p class="eyebrow">Something went wrong</p><div class="titlebar"><h1>This page did not load</h1></div><p class="start-body">Try reloading the page; the error is in the browser console.</p></div></header>`
+    root.innerHTML = `<header class="head"><div><p class="eyebrow">${t('Something went wrong')}</p><div class="titlebar"><h1>${t('This page did not load')}</h1></div><p class="start-body">${t('Try reloading the page; the error is in the browser console.')}</p></div></header>`
     destroy = () => {}
   }
   openAtPhase(null)
   chapterNav(route, root)
   saveButton(route, root)
   current = { route, root, destroy }
-  document.title = route === 'start' ? 'Token Trails' : [nameOf(route), CATEGORIES.find((c) => exhibitsOf(c).some((e) => e.route === route))?.title, 'Token Trails'].filter(Boolean).join(' · ')
+  const cat = CATEGORIES.find((c) => exhibitsOf(c).some((e) => e.route === route))?.title
+  document.title = route === 'start' ? 'Token Trails' : [t(nameOf(route)), cat && t(cat), 'Token Trails'].filter(Boolean).join(' · ')
   app.classList.remove('menu-open'); syncRailBtn()
   renderRail(route)
   if (old) {
@@ -287,6 +318,16 @@ function transition(old: { root: HTMLElement; destroy: () => void }, next: HTMLE
   next.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 460, delay: 160, easing: ease, fill: 'backwards' })
   newStage?.animate([{ transform: dir === 'in' ? 'scale(0.94)' : 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 620, delay: 120, easing: ease, fill: 'backwards' })
   setTimeout(done, 540)
+}
+
+/** Rebuild the current page where it is (after a language switch): same route, same step. */
+function remount() {
+  if (!current) return
+  const target = location.hash.replace(/^#\/?/, '') || current.route
+  const old = current
+  current = null
+  old.destroy(); old.root.remove()
+  go(target, undefined, false)
 }
 
 window.addEventListener('popstate', () => go(parse(), undefined, false))

@@ -1,5 +1,6 @@
 import { rich } from './frame'
 import { withTerms } from './glossary'
+import { t as tr } from './i18n'
 import { setParams } from './link'
 import { markSeen } from './progress'
 import { pref } from './prefs'
@@ -101,8 +102,8 @@ export class Player {
       const b = document.createElement('button')
       b.className = 'step'
       b.type = 'button'
-      b.setAttribute('aria-label', label)
-      b.title = label
+      b.setAttribute('aria-label', tr(label))
+      b.title = tr(label)
       b.innerHTML = `<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="${path}"/></svg>`
       b.addEventListener('click', () => this.step(dir))
       return b
@@ -113,15 +114,15 @@ export class Player {
     const tl = document.createElement('div')
     tl.className = 'tl'
     tl.setAttribute('role', 'group')
-    tl.setAttribute('aria-label', 'Phases')
+    tl.setAttribute('aria-label', tr('Phases'))
     this.phases.forEach((p) => {
       const b = document.createElement('button')
       b.className = 'seg'
       b.style.flex = `${p.dur} 1 0`
       b.innerHTML = `<span class="track"><span class="fill"></span><span class="knob"></span></span><span class="lbl"></span>`
-      b.querySelector('.lbl')!.innerHTML = rich(p.short ?? p.name)
+      b.querySelector('.lbl')!.innerHTML = rich(tr(p.short ?? p.name))
       // the accessible name starts with the visible label
-      const short = (p.short ?? p.name).replace(/_/g, ' '), full = p.name.replace(/_/g, ' ')
+      const short = tr(p.short ?? p.name).replace(/_/g, ' '), full = tr(p.name).replace(/_/g, ' ')
       b.setAttribute('aria-label', short === full ? full : `${short}: ${full}`)
       b.title = full
       b.addEventListener('click', (e) => { if (e.detail === 0) this.t = p.start + 0.001 })
@@ -149,7 +150,7 @@ export class Player {
       const b = document.createElement('button')
       b.type = 'button'
       b.className = 'cycle'
-      const sync = () => { const [t, title] = show(); b.textContent = t; b.title = title; b.setAttribute('aria-label', `${label}: ${title}`) }
+      const sync = () => { const [t, title] = show().map(tr); b.textContent = t; b.title = title; b.setAttribute('aria-label', `${tr(label)}: ${title}`) }
       b.addEventListener('click', () => { next(); sync() })
       sync()
       return b
@@ -170,7 +171,7 @@ export class Player {
     // every step with its explanation, to read at leisure or jump to
     this.steps = document.createElement('details')
     this.steps.className = 'steps'
-    this.steps.innerHTML = '<summary>All steps</summary><ol></ol>'
+    this.steps.innerHTML = `<summary>${tr('All steps')}</summary><ol></ol>`
     this.steps.addEventListener('toggle', () => this.renderSteps())
     // a card above the controls for questions and the end-of-page recap
     this.card = document.createElement('section')
@@ -201,6 +202,8 @@ export class Player {
     document.addEventListener('keydown', onKey)
     this.offKeys = () => document.removeEventListener('keydown', onKey)
     this.setPlaying(opts.playing ?? true)
+    // dev only: the translation harvest (scripts/i18n-harvest.mjs) steps the newest player directly
+    if (import.meta.env.DEV) Object.assign(window, { __ttPlayer: this })
   }
 
   prog(id: string) {
@@ -230,7 +233,7 @@ export class Player {
     this.playing = v
     this.syncLive()
     this.icon.setAttribute('d', v ? PAUSE_ICON : PLAY_ICON)
-    this.btn.setAttribute('aria-label', v ? 'Pause' : 'Play')
+    this.btn.setAttribute('aria-label', tr(v ? 'Pause' : 'Play'))
   }
 
   /** Captions are announced when the reader is in charge (paused, or stepping), not during Auto playback. */
@@ -332,18 +335,18 @@ export class Player {
     this.asked.add(c.phase)
     this.card.dataset.kind = 'check'
     this.card.hidden = false
-    this.card.innerHTML = `<p class="coach-k">Predict first</p><p class="coach-q">${rich(c.q)}</p><div class="coach-opts"></div><p class="coach-why" hidden></p><div class="coach-go"><button type="button" class="chap">Skip</button></div>`
+    this.card.innerHTML = `<p class="coach-k">${tr('Predict first')}</p><p class="coach-q">${withTerms(rich(tr(c.q)))}</p><div class="coach-opts"></div><p class="coach-why" hidden></p><div class="coach-go"><button type="button" class="chap">${tr('Skip')}</button></div>`
     const opts = this.card.querySelector('.coach-opts')!, why = this.card.querySelector('.coach-why') as HTMLElement, go = this.card.querySelector('.coach-go button') as HTMLButtonElement
     c.options.forEach((o, i) => {
       const b = document.createElement('button')
       b.type = 'button'
-      b.innerHTML = rich(o)
+      b.innerHTML = rich(tr(o))
       b.addEventListener('click', () => {
         const ok = i === c.answer
         opts.querySelectorAll('button').forEach((x, k) => { (x as HTMLButtonElement).disabled = true; if (k === c.answer) x.classList.add('right'); else if (x === b) x.classList.add('wrong') })
         why.hidden = false
-        why.innerHTML = `${ok ? 'Right.' : 'Not quite.'} ${withTerms(rich(c.why))}`
-        go.textContent = 'Watch it ›'
+        why.innerHTML = `${tr(ok ? 'Right.' : 'Not quite.')} ${withTerms(rich(tr(c.why)))}`
+        go.textContent = tr('Watch it ›')
         go.focus()
         if (ok) try { const m = JSON.parse(pref.get('checks') ?? '{}'); m[c.q] = 1; pref.set('checks', JSON.stringify(m)) } catch { /* ignore */ }
       })
@@ -356,7 +359,7 @@ export class Player {
   private showRecap() {
     this.card.dataset.kind = 'recap'
     this.card.hidden = false
-    this.card.innerHTML = `<p class="coach-k">Recap</p><ul>${this.recap.map((r) => `<li>${withTerms(rich(r))}</li>`).join('')}</ul><div class="coach-go"><button type="button" class="chap replay">↺ Replay</button></div>`
+    this.card.innerHTML = `<p class="coach-k">${tr('Recap')}</p><ul>${this.recap.map((r) => `<li>${withTerms(rich(tr(r)))}</li>`).join('')}</ul><div class="coach-go"><button type="button" class="chap replay">${tr('↺ Replay')}</button></div>`
     const go = this.card.querySelector('.coach-go')!
     this.card.querySelector('.replay')!.addEventListener('click', () => { this.card.hidden = true; this.t = 0; this.setPlaying(true) })
     const next = this.btn.closest('.view')?.querySelector('.chapnav .chap.next') as HTMLButtonElement | null
@@ -373,7 +376,7 @@ export class Player {
     if (!refs.length) return
     const d = document.createElement('details')
     d.className = 'steps refs-d'
-    d.innerHTML = `<summary>Go deeper</summary><ul>${refs.map(([t, u]) => `<li><a href="${u}" target="_blank" rel="noopener">${t.replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[ch]!)}</a></li>`).join('')}</ul>`
+    d.innerHTML = `<summary>${tr('Go deeper')}</summary><ul>${refs.map(([t, u]) => `<li><a href="${u}" target="_blank" rel="noopener">${t.replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[ch]!)}</a></li>`).join('')}</ul>`
     this.controls.appendChild(d)
   }
 
@@ -382,7 +385,7 @@ export class Player {
     this.code = code
     this.codeEl = document.createElement('details')
     this.codeEl.className = 'steps code-d'
-    this.codeEl.innerHTML = `<summary>Code</summary><pre><code>${code.lines.map((l) => `<span>${l.replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[ch]!)}</span>`).join('\n')}</code></pre>`
+    this.codeEl.innerHTML = `<summary>${tr('Code')}</summary><pre><code>${code.lines.map((l) => `<span>${l.replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[ch]!)}</span>`).join('\n')}</code></pre>`
     this.controls.appendChild(this.codeEl)
     this.markCode()
   }
@@ -400,7 +403,7 @@ export class Player {
       const [text, shape] = this.describe?.(i) ?? ['', '']
       const li = document.createElement('li')
       if (i === ci) li.setAttribute('aria-current', 'step')
-      li.innerHTML = `<button type="button"><b>${rich(p.name)}</b></button><p>${withTerms(rich(text))}</p>${shape ? `<code>${rich(shape)}</code>` : ''}`
+      li.innerHTML = `<button type="button"><b>${rich(tr(p.name))}</b></button><p>${withTerms(rich(tr(text)))}</p>${shape ? `<code>${rich(tr(shape))}</code>` : ''}`
       li.querySelector('button')!.addEventListener('click', () => { this.setHeld(false); this.t = p.start + 0.001 })
       ol.appendChild(li)
     })

@@ -1,4 +1,5 @@
 import { createFrame, stepper, toggle } from '../../core/frame'
+import { t as tr } from '../../core/i18n'
 import { getParams, setParams } from '../../core/link'
 import { Player } from '../../core/player'
 import { Stage, runLoop } from '../../core/stage'
@@ -680,10 +681,10 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   // the same detail views for keyboard and screen-reader users
   const links = document.createElement('nav')
   links.className = 'sr-only'
-  links.setAttribute('aria-label', 'Open a step')
+  links.setAttribute('aria-label', tr('Open a step'))
   ;([['Tokenizer', 'tok'], ['Embedding', 'emb'], ['Attention', 'attn'], ['MLP', 'mlp'], ['LayerNorm', 'ln1'], ['Unembed and sampling', 'wu']] as const).forEach(([t, k]) => {
     const b = document.createElement('button')
-    b.type = 'button'; b.textContent = `Open ${t}`
+    b.type = 'button'; b.textContent = tr(`Open ${t}`)
     b.addEventListener('click', () => nav(PLATE_ROUTES[k]))
     links.append(b)
   })

@@ -1,3 +1,4 @@
+import { localizeCanvas, t } from './i18n'
 import { C, rgba } from './theme'
 
 /**
@@ -23,7 +24,7 @@ export class Stage {
     this.scroll.className = 'stage-scroll'
     this.canvas = document.createElement('canvas')
     this.canvas.setAttribute('role', 'img')
-    this.canvas.setAttribute('aria-label', label)
+    this.canvas.setAttribute('aria-label', t(label))
     this.scroll.appendChild(this.canvas)
     this.zoomBtn = document.createElement('button')
     this.zoomBtn.type = 'button'
@@ -33,6 +34,7 @@ export class Stage {
     host.append(this.scroll, this.zoomBtn)
     this.scroll.addEventListener('scroll', () => this.edges(), { passive: true })
     this.ctx = this.canvas.getContext('2d')!
+    localizeCanvas(this.ctx)
     this.ro = new ResizeObserver(() => this.resize())
     this.ro.observe(host)
     this.watchDpr()
@@ -56,7 +58,7 @@ export class Stage {
     this.canvas.style.width = this.W * s + 'px'
     this.canvas.style.height = this.H * s + 'px'
     this.zoomBtn.hidden = !small
-    this.zoomBtn.textContent = this.full ? 'Fit to screen' : 'Full size ⤢'
+    this.zoomBtn.textContent = t(this.full ? 'Fit to screen' : 'Full size ⤢')
     this.edges()
     poke()
     this.onResize?.()

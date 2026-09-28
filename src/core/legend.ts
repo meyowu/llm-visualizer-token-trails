@@ -2,6 +2,7 @@
  * The legend of the site's visual language, shared by the start page and the "How to read the
  * pictures" panel under every exhibit.
  */
+import { t } from './i18n'
 
 /** The site's visual language: [small SVG drawn with the site's tokens, what it means]. */
 export const LEGEND: [string, string][] = [
@@ -15,4 +16,4 @@ export const LEGEND: [string, string][] = [
 ]
 
 export const legendList = () =>
-  `<ul class="legend-list">${LEGEND.map(([svg, t]) => `<li><span class="sw" aria-hidden="true">${svg}</span><span>${t}</span></li>`).join('')}</ul>`
+  `<ul class="legend-list">${LEGEND.map(([svg, s]) => `<li><span class="sw" aria-hidden="true">${svg}</span><span>${t(s)}</span></li>`).join('')}</ul>`

@@ -27,7 +27,10 @@ src/core/player.ts          Player: phases, t, play/pause, step buttons, Step/Au
 src/core/fonts.ts           registerFonts(): the three families as self-hosted woff2 (@fontsource files), Latin, Latin Ext, Greek
 src/core/link.ts            getParams()/setParams(): page state in the address (#/route?phase=…&head=6.6), replaceState only
 src/core/progress.ts        steps seen per page and the last place (rail ✓ / n of m, Resume on the start page)
-src/core/prefs.ts           pref.get/set: reader preferences in localStorage (speed, pacing, temperature, strategy)
+src/core/prefs.ts           pref.get/set: reader preferences in localStorage (speed, pacing, temperature, strategy, lang)
+src/core/i18n.ts            EN / 中文: lang, setLang/onLang, t() (English is the key; numbers and quoted spans are {} placeholders),
+                            localizeCanvas() (fillText/measureText translate), raw() for text that must stay as is, harvest mode
+src/locales/zh/             Chinese: ZH (key → text with {0}, {1}…) and ZH_TERMS (glossary names, definitions, spellings), one file per part
 src/core/frame.ts           createFrame(): header/specs, stage host, formula strip, caption line, controls; toggle(), stepper(), rich()
 src/core/draw.ts            primitives: chips, plate(), bracketLabel(), mathName()/mathRun(), fonts F
 src/core/matrix.ts          MatrixKit: drawMat (slabs), gemm() schedules, gemmOverlay, hover and pinned cells (mk.focus); formula → frame.setFormula
@@ -67,6 +70,7 @@ src/lib/gpt2/
                             kvSlice() (one head's real q, k, v) for the KV cache page
 src/data/gpt2.json          real GPT-2 small activations for 3 prompts × 3 greedy passes, and one sentence scored per position
                             for training (made by scripts/gpt2-export.ts)
+scripts/i18n-harvest.mjs    opens every page and step on the dev server in harvest mode and prints the strings with no Chinese yet
 scripts/gpt2-export.ts      offline GPT-2 small forward pass in plain TS (Node 23+); weights in ~/.cache/token-trails/gpt2
 scripts/bert-export.ts      offline BERT-base (uncased) forward pass, WordPiece included; writes src/data/bert.json;
                             weights in ~/.cache/token-trails/bert (model.safetensors, vocab.txt)
@@ -209,8 +213,9 @@ src/exhibits/agents/
   - Each token keeps its hue (`--t0…--t6`, token i → `i % 7`) everywhere. Information mixing between tokens is shown by blending hues: the overview uses real attention (`mixing()` in `data.ts`, first-token sinks count as no-ops), the toy detail views use `laneMix()` in `model.ts`, averaged over heads.
   - Layers are tilted glass plates. Matrices are slabs with a 5px depth face. A filled cell is positive, an outlined cell is negative.
   - Fonts (self-hosted, see `core/fonts.ts`; no Google Fonts): EB Garamond italic for names and math (`serifAt()`, scaled up 10%), Geist for UI text, JetBrains Mono for labels and numbers (`MONO`, never under 10.5px on canvas). Group labels are uppercase mono over thin brackets. Use the constants in `core/draw.ts`, never a hard-coded font string.
-  - New terms of art go in `TERMS` (`core/glossary.ts`) with a one- or two-sentence definition; captions then mark them.
+  - New terms of art go in `TERMS` (`core/glossary.ts`) with a one- or two-sentence definition; captions then mark them. Give each a Chinese entry in `ZH_TERMS`.
 - Keep canvas text minimal, using real units and terms of art (GPT-2 ids, Ġ, 768 → 3072, FLOPs). Explanations go in the caption line: one or two plain sentences per phase. The formula strip under the stage (HTML, via `mk.formula` / `frame.setFormula`) carries the focused cell's arithmetic and a short note.
+- **Two languages.** Write every string in English; Chinese goes only in `src/locales/zh`, keyed by the English with numbers and quoted spans (“…”, ‘…’) as `{}`. Text set through the frame, player, kit and rail is translated for you, and so is all canvas text (the stage's context translates in fillText and measureText); HTML a page builds itself needs `t()`. Token text, math and model output must never be translated: draw tokens with `drawChip`/`tokText`, math with `mathRun`, and anything else verbatim inside `raw()`. Keep model outputs and real prompts in English. After adding strings, run `node scripts/i18n-harvest.mjs` with the dev server up and add the missing Chinese. Check pages in both languages: Chinese text is often wider per character.
 - Seeds are chosen for readable patterns (`WEIGHT_SEED` in `model.ts`). Changing a seed changes every number shown, so re-check the attention patterns if you touch it.
 
 ## Gotchas

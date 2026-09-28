@@ -1,4 +1,5 @@
 import { chipW, drawChip, F, plate, rr, serifAt, spaced, subLabel, tokDisp, tokLabel, tokText, useCtx } from '../../core/draw'
+import { t as tr } from '../../core/i18n'
 import { createFrame, toggle } from '../../core/frame'
 import { getParams, setParams } from '../../core/link'
 import { pref } from '../../core/prefs'
@@ -113,14 +114,14 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
   // controls: prompt, strategy, resample, temperature
   const temp = document.createElement('label')
   temp.className = 'temp'; temp.htmlFor = 'un-temp'
-  temp.innerHTML = '<small>temperature</small><span>T</span><input id="un-temp" type="range" min="0.2" max="2" step="0.05"><output></output>'
+  temp.innerHTML = `<small>${tr('temperature')}</small><span>T</span>` + '<input id="un-temp" type="range" min="0.2" max="2" step="0.05"><output></output>'
   player.meta.append(temp)
   const tIn = temp.querySelector('input')!, tOut = temp.querySelector('output')!
-  const tText = () => { tOut.textContent = S.T.toFixed(2); tIn.setAttribute('aria-valuetext', `${S.T.toFixed(2)}: ${S.T < 1 ? 'more decisive' : S.T > 1 ? 'more random' : 'the model as trained'}`) }
+  const tText = () => { tOut.textContent = S.T.toFixed(2); tIn.setAttribute('aria-valuetext', `${S.T.toFixed(2)}: ${tr(S.T < 1 ? 'more decisive' : S.T > 1 ? 'more random' : 'the model as trained')}`) }
   tIn.value = String(S.T); tText()
   tIn.addEventListener('input', () => { S.T = +tIn.value; tText(); pref.set('temperature', tIn.value); redraw() })
   const resample = document.createElement('button')
-  resample.className = 'resample'; resample.textContent = 'Resample'
+  resample.className = 'resample'; resample.textContent = tr('Resample')
   resample.addEventListener('click', () => { S.u = Math.random(); if (player.t < player.start('sample')) player.t = player.start('sample') + 0.001; else redraw() })
   player.meta.prepend(resample)
   // k or p for the strategies that cut the tail
@@ -131,8 +132,8 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
   function syncParam() {
     const st = STRATS[S.strat]
     param.hidden = st !== 'top-k' && st !== 'top-p'
-    if (st === 'top-k') { pSpan.textContent = 'k'; pIn.min = '1'; pIn.max = '20'; pIn.step = '1'; pIn.value = String(S.k); pOut.textContent = String(S.k); pIn.setAttribute('aria-label', 'k, tokens kept') }
-    if (st === 'top-p') { pSpan.textContent = 'p'; pIn.min = '0.5'; pIn.max = '0.99'; pIn.step = '0.01'; pIn.value = String(S.pp); pOut.textContent = S.pp.toFixed(2); pIn.setAttribute('aria-label', 'p, probability kept') }
+    if (st === 'top-k') { pSpan.textContent = 'k'; pIn.min = '1'; pIn.max = '20'; pIn.step = '1'; pIn.value = String(S.k); pOut.textContent = String(S.k); pIn.setAttribute('aria-label', tr('k, tokens kept')) }
+    if (st === 'top-p') { pSpan.textContent = 'p'; pIn.min = '0.5'; pIn.max = '0.99'; pIn.step = '0.01'; pIn.value = String(S.pp); pOut.textContent = S.pp.toFixed(2); pIn.setAttribute('aria-label', tr('p, probability kept')) }
   }
   pIn.addEventListener('input', () => {
     if (STRATS[S.strat] === 'top-k') { S.k = +pIn.value; pref.set('top-k', pIn.value) } else { S.pp = +pIn.value; pref.set('top-p', pIn.value) }
@@ -140,7 +141,7 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
   })
   player.meta.prepend(param)
   const many = document.createElement('button')
-  many.className = 'resample'; many.textContent = 'Sample 100×'
+  many.className = 'resample'; many.textContent = tr('Sample 100×')
   many.addEventListener('click', () => {
     const sm = sampling(S.T), cdfs: number[] = []
     let c = 0

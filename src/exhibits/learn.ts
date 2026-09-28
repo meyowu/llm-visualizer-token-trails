@@ -965,6 +965,10 @@ const LEARN: Record<string, Learn> = {
   },
 }
 
+/** Every question, option, explanation and recap line, by page (for the translation harvest). */
+export const learnTexts = (): Record<string, string[]> =>
+  Object.fromEntries(Object.entries(LEARN).map(([k, l]) => [k, [...l.checks.flatMap((c) => [c.q, ...c.options, c.why]), ...l.recap]]))
+
 /** Give a page's player its code drawer, questions and recap. */
 export function teach(player: Player, page: keyof typeof LEARN) {
   const l = LEARN[page]

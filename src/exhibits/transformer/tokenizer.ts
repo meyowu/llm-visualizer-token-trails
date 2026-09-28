@@ -1,4 +1,5 @@
 import { F, rr, serifAt, spaced, tokLabel, useCtx } from '../../core/draw'
+import { t as tr } from '../../core/i18n'
 import { createFrame, toggle } from '../../core/frame'
 import { Player } from '../../core/player'
 import { pref } from '../../core/prefs'
@@ -76,7 +77,7 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
     nTok = t
     ids = pieces.flatMap((p) => p.tokens.map((x) => x.id))
     const nBytes = pieces.reduce((s, p) => s + p.bytes.length, 0)
-    specText.textContent = `${nBytes} bytes → ${nTok} tokens${cut ? ' (cut)' : ''}`
+    specText.textContent = tr(`${nBytes} bytes → ${nTok} tokens${cut ? ' (cut)' : ''}`)
     poke()
   }
   loadBpe().then((b) => { bpe = b; retrace() })
@@ -84,7 +85,7 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
   // controls: examples and a text field
   const field = document.createElement('label')
   field.className = 'textin'
-  field.innerHTML = `<span>text</span><input type="text" maxlength="${MAXLEN}" spellcheck="false" autocomplete="off">`
+  field.innerHTML = `<span>${tr('text')}</span><input type="text" maxlength="${MAXLEN}" spellcheck="false" autocomplete="off">`
   const input = field.querySelector('input')!
   input.value = text
   input.addEventListener('input', () => { text = input.value; pref.set('tokenizer-text', text); ex.set(EXAMPLES.indexOf(text)); retrace() })

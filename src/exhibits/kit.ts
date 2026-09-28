@@ -2,6 +2,7 @@ import { F, fillRich, plate, rr, serifAt, spaced, upper, useCtx, type TokLike } 
 import { createFrame, type Frame, type FrameOptions } from '../core/frame'
 import { MatrixKit } from '../core/matrix'
 import { Player, type Phase } from '../core/player'
+import { t as tr } from '../core/i18n'
 import { Stage, runLoop } from '../core/stage'
 import { C, rgba, type RGB } from '../core/theme'
 import { reducedMotion } from '../core/util'
@@ -175,7 +176,7 @@ export function mountExhibit(root: HTMLElement, nav: Nav, o: ExhibitOptions): ()
     draw()
     player.updateUI()
     for (const fn of hooks) fn()
-    const cur = player.cur(), cmp = `${o.compareLabel ?? 'Compare'}: ${o.compare[cur.id][0]} ↗`
+    const cur = player.cur(), cmp = `${tr(o.compareLabel ?? 'Compare')}: ${tr(o.compare[cur.id][0])} ↗`
     if (compare.textContent !== cmp) compare.textContent = cmp
     const [t, s] = o.caps[cur.id]
     frame.setCaption(cur.name, cur.short ?? cur.name, t, s)
