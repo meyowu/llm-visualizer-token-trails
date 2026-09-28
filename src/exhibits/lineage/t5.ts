@@ -1,4 +1,5 @@
 import { F, chipW, drawChip, fillRich, rr } from '../../core/draw'
+import { raw } from '../../core/i18n'
 import { fmtF } from '../../core/matrix'
 import { C, rgba, type RGB } from '../../core/theme'
 import { clamp, eout, lerp } from '../../core/util'
@@ -107,11 +108,11 @@ function scenes({ stage, ctx, mk, k }: Env) {
       // input: the prefix, then the rest, cut to fit
       const cut = t.input.indexOf(':') + 1, pre = t.input.slice(0, cut), rest = t.input.slice(cut)
       ctx.font = F.mono(12, 500); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.ink, a)
-      ctx.fillText(pre, pad, y)
-      const pw = ctx.measureText(pre).width
+      // the model's input and output are data: never translated
+      const pw = raw(() => { ctx.fillText(pre, pad, y); return ctx.measureText(pre).width })
       ctx.font = F.mono(12); ctx.fillStyle = rgba(C.ink2, a)
       const room = Math.floor((xo - 60 - pad - pw) / ctx.measureText('m').width)
-      ctx.fillText(rest.length > room ? rest.slice(0, room - 1) + '…' : rest, pad + pw, y)
+      raw(() => ctx.fillText(rest.length > room ? rest.slice(0, room - 1) + '…' : rest, pad + pw, y))
       arrow([[xo - 46, y - 4], [xo - 14, y - 4]], a)
       // output: the pieces as the decoder writes them
       const n = t.out.length, shown = Math.round(clamp((p - 0.05 - r * 0.14) / 0.12) * n)
@@ -121,7 +122,7 @@ function scenes({ stage, ctx, mk, k }: Env) {
       for (const w of text.split(' ')) { if ((cur + ' ' + w).trim().length > maxC) { lines.push(cur); cur = w } else cur = (cur + ' ' + w).trim() }
       if (cur) lines.push(cur)
       ctx.font = F.mono(12, 500); ctx.fillStyle = rgba(C.ink, a)
-      lines.slice(0, 3).forEach((l, i) => ctx.fillText(l, xo, y + i * 16))
+      raw(() => lines.slice(0, 3).forEach((l, i) => ctx.fillText(l, xo, y + i * 16)))
     })
     mk.formula = { segs: [['“translate English to German: I have seen the cat.”', C.ink2], ['  →  ', C.mute], [`“${t5.tasks[0].text}”`, C.ink]], note: 'The same weights and the same loss for every task; only the prefix changes. Compare GPT-2, which can only continue text, and BERT, which needs a new output layer per task. Greedy decoding.' }
   }
