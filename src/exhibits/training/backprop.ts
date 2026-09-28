@@ -57,7 +57,7 @@ export function mountBackprop(root: HTMLElement, nav: Nav): () => void {
       specs: [
         { label: 'model', value: 'GPT-2 small', real: '124M gradients', realLabel: '' },
         { label: 'sentence', value: `${N} predictions`, real: `loss ${bp.loss}`, realLabel: '' },
-        { label: 'drawn', value: 'dims 1–8', real: '3,072 × 768', realLabel: 'of' },
+        { label: 'drawn', value: 'dims 1–8', real: 'of 3,072 × 768', realLabel: '' },
       ],
     },
     size: [1040, 480],

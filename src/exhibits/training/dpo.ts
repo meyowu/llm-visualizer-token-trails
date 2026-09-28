@@ -1,4 +1,5 @@
 import { F, ctx, drawChip, mathName, rr } from '../../core/draw'
+import { raw } from '../../core/i18n'
 import { C, rgba } from '../../core/theme'
 import { clamp, eout, lerp } from '../../core/util'
 import { ft } from '../../lib/finetune/data'
@@ -71,7 +72,7 @@ function scenes({ stage, mk, k }: Env) {
     title('prompt · chosen · rejected · log p under GPT-2 small', pad, y0 - 22, 1)
     P.forEach((q, i) => {
       const a = eout(clamp((p - 0.05 - i * 0.15) / 0.15)), y = y0 + 34 + i * 100
-      ctx.font = F.mono(12); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.ink2, a); ctx.fillText(q.prompt, pad, y)
+      ctx.font = F.mono(12); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.ink2, a); raw(() => ctx.fillText(q.prompt, pad, y))
       const x = pad + 300
       drawChip(x, y - 14, { text: q.chosen, c: 3 }, a, 22, true)
       ctx.font = F.mono(11); ctx.fillStyle = rgba(C.ink, a); ctx.fillText(`chosen  ${q.ref.chosen.toFixed(2)}`, x + 110, y - 14)
@@ -114,7 +115,8 @@ function scenes({ stage, mk, k }: Env) {
     P.forEach((q, i) => {
       const m = St[0].pairs[i].margin
       ctx.font = F.mono(11); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.ink2, a3)
-      ctx.fillText(`${q.prompt}${q.chosen} ≻ …${q.rejected}   margin ${m.toFixed(2)}   loss ${Math.log1p(Math.exp(-m)).toFixed(3)}`, x0, y1 + 12 + i * 22)
+      const pair = `${q.prompt}${q.chosen} ≻ …${q.rejected}   `, pw = raw(() => { ctx.fillText(pair, x0, y1 + 12 + i * 22); return ctx.measureText(pair).width })
+      ctx.fillText(`margin ${m.toFixed(2)}   loss ${Math.log1p(Math.exp(-m)).toFixed(3)}`, x0 + pw, y1 + 12 + i * 22)
     })
     mk.formula = { segs: [['∂L/∂θ', C.ink], [' = ', C.mute], ['−β σ(−m) [∇ log π(y_w) − ∇ log π(y_l)]', C.ink2]], note: 'The gradient is two backward passes (one per answer) weighted by σ(−m): pairs the model already gets right (large margin m) stop contributing. Rafailov et al. (2023).' }
   }
@@ -136,7 +138,7 @@ function scenes({ stage, mk, k }: Env) {
     title('margin per pair · P(chosen ≻ rejected)', xm, y0 - 16, 1)
     P.forEach((q, i) => {
       const m = St[g].pairs[i].margin, y = y0 + 20 + i * 62
-      ctx.font = F.mono(11); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.tok[i], 1); ctx.fillText(`${q.prompt} …`, xm, y)
+      ctx.font = F.mono(11); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.tok[i], 1); raw(() => ctx.fillText(`${q.prompt} …`, xm, y))
       ctx.fillStyle = rgba(C.ink, 0.07); ctx.fillRect(xm, y + 12, 260, 8)
       ctx.fillStyle = rgba(C.tok[i], 0.9); ctx.fillRect(xm, y + 12, (m / 7) * 260, 8)
       ctx.fillStyle = rgba(C.ink, 1); ctx.fillText(`${m.toFixed(2)} · ${pct(sig(m))}`, xm + 270, y + 16)

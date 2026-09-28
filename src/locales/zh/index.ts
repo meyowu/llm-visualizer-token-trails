@@ -5,9 +5,10 @@
  */
 import { anatomy } from './anatomy'
 import { terms } from './terms'
+import { training } from './training'
 import { ui } from './ui'
 
-export const ZH: Record<string, string> = { ...ui, ...anatomy }
+export const ZH: Record<string, string> = { ...ui, ...anatomy, ...training }
 
 /** Glossary terms by their English name: [Chinese name, Chinese definition, Chinese spellings to mark in captions…]. */
 export const ZH_TERMS: Record<string, string[]> = terms

@@ -218,10 +218,12 @@ export function mathName(name: string, x: number, y: number, a: number, size = 1
   ctx.textBaseline = 'alphabetic'
   ctx.fillStyle = rgba(col, a)
   let w = 0
-  for (const [s, sub] of richSegs(name)) {
-    ctx.font = serifAt(sub ? size * 0.62 : size)
-    ctx.fillText(s, x + w + (sub ? 1 : 0), sub ? y + size * 0.22 : y)
-    w += ctx.measureText(s).width + (sub ? 1 : 0)
-  }
+  raw(() => {
+    for (const [s, sub] of richSegs(name)) {
+      ctx.font = serifAt(sub ? size * 0.62 : size)
+      ctx.fillText(s, x + w + (sub ? 1 : 0), sub ? y + size * 0.22 : y)
+      w += ctx.measureText(s).width + (sub ? 1 : 0)
+    }
+  })
   return w
 }

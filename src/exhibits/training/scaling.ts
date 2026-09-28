@@ -1,4 +1,5 @@
 import { F, ctx } from '../../core/draw'
+import { raw } from '../../core/i18n'
 import { C, rgba } from '../../core/theme'
 import { clamp, eout, lerp } from '../../core/util'
 import { Gpt2Bpe } from '../../lib/gpt2/bpe'
@@ -138,7 +139,7 @@ function scenes({ stage, mk, k }: Env) {
       const g = gain[i] / mx
       ctx.fillStyle = rgba(g >= 0 ? C.tok[0] : C.ink, (g >= 0 ? 0.08 + 0.8 * g : 0.08) * a); ctx.fillRect(x, y - 11, w - 3, 22)
       if (g < 0) { ctx.strokeStyle = rgba(C.ink, 0.5 * a); ctx.strokeRect(x + 0.5, y - 10.5, w - 4, 21) }
-      ctx.font = F.mono(11); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.ink, a); ctx.fillText(syms[i].replace(/^Ġ/, ' ').replace('Ċ', '↵'), x + 3, y)
+      ctx.font = F.mono(11); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.ink, a); raw(() => ctx.fillText(syms[i].replace(/^Ġ/, ' ').replace('Ċ', '↵'), x + 3, y))
       x += w
     }
     const order = [...gain.keys()].sort((q, r) => gain[r] - gain[q]).slice(0, 3), ta = eout(clamp((p - 0.5) / 0.12))

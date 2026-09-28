@@ -33,7 +33,6 @@ export const anatomy: Record<string, string> = {
   'Cell ({}, {}) is the dot product of row {} of A and column {} of B. On every page A sits on the left, B above, and C where they meet.': '({0}, {1}) 格是 A 的第 {2} 行与 B 的第 {3} 列的点积。每一页都是 A 在左、B 在上，C 在两者相交处。',
   'SCORES': '分数',
   'score {}': '分数 {0}',
-  'score .200': '分数 .200',
   'exp makes every score positive and widens the gaps; dividing by the sum makes the results add up to {}. The largest score gets most of the weight, but never all of it.': 'exp 让每个分数都变成正数，并拉大差距；再除以总和，结果之和为 {0}。最大的分数拿走大部分权重，但永远不会是全部。',
   'Softmax turns any list of scores into positive weights that sum to {}, keeping their order. Attention and next-token prediction both use it.': 'softmax 把任意一列分数变成和为 {0} 的正权重，并保持原有顺序。注意力和下一词元预测都用到它。',
   'EXP(SCORE)': 'exp(分数)',

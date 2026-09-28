@@ -1,4 +1,5 @@
 import { F, ctx, drawChip, tokText } from '../../core/draw'
+import { raw } from '../../core/i18n'
 import { C, rgba, type RGB } from '../../core/theme'
 import type { Kit } from '../kit'
 
@@ -62,11 +63,11 @@ export function noLigatures(on: boolean) {
   if ('letterSpacing' in ctx) (ctx as unknown as { letterSpacing: string }).letterSpacing = on ? '0.01px' : '0px'
 }
 
-/** Runs of text in one line, each in its own colour; returns the x after the last run. */
+/** Runs of text in one line, each in its own colour; returns the x after the last run. Prompts and model output: never translated. */
 export function runs(parts: [string, RGB][], x: number, y: number, a: number, font = F.mono(12)) {
   ctx.font = font; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
   noLigatures(true)
-  for (const [t, col] of parts) { ctx.fillStyle = rgba(col, a); ctx.fillText(t, x, y); x += ctx.measureText(t).width }
+  raw(() => { for (const [t, col] of parts) { ctx.fillStyle = rgba(col, a); ctx.fillText(t, x, y); x += ctx.measureText(t).width } })
   noLigatures(false)
   return x
 }
@@ -75,14 +76,16 @@ export function runs(parts: [string, RGB][], x: number, y: number, a: number, fo
 export function wrap(text: string, w: number, font = F.mono(11)): string[] {
   ctx.font = font
   const out: string[] = []
-  for (const para of text.split('\n')) {
-    let line = ''
-    for (const word of para.split(' ')) {
-      const next = line ? line + ' ' + word : word
-      if (line && ctx.measureText(next).width > w) { out.push(line); line = word } else line = next
+  raw(() => {
+    for (const para of text.split('\n')) {
+      let line = ''
+      for (const word of para.split(' ')) {
+        const next = line ? line + ' ' + word : word
+        if (line && ctx.measureText(next).width > w) { out.push(line); line = word } else line = next
+      }
+      out.push(line)
     }
-    out.push(line)
-  }
+  })
   return out
 }
 

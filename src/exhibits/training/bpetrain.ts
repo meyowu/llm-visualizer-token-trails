@@ -1,4 +1,5 @@
 import { F, ctx, drawChip } from '../../core/draw'
+import { raw } from '../../core/i18n'
 import { TERMS } from '../../core/glossary'
 import { C, rgba } from '../../core/theme'
 import { clamp, eout, lerp } from '../../core/util'
@@ -121,7 +122,7 @@ function scenes({ stage, mk, k }: Env) {
     title('the corpus: this site’s glossary, first lines', pad, y0 - 16, 1)
     const lines = CORPUS.slice(0, 300).match(/.{1,110}(\s|$)/g) ?? []
     ctx.font = F.mono(11); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.ink2, 1)
-    lines.slice(0, 3).forEach((l, i) => ctx.fillText(l.trim() + (i === 2 ? ' …' : ''), pad, y0 + 8 + i * 18))
+    raw(() => lines.slice(0, 3).forEach((l, i) => ctx.fillText(l.trim() + (i === 2 ? ' …' : ''), pad, y0 + 8 + i * 18)))
     const a = eout(clamp((p - 0.2) / 0.15)), y1 = y0 + 110
     title('each word as bytes (Ġ is the byte for a space)', pad, y1 - 16, a)
     SAMPLES.forEach((w, i) => { const x = chips(segment(w, 0), pad, y1 + 14 + i * 36, a); caption(`${segment(w, 0).length} symbols`, x + 10, y1 + 18 + i * 36, a, C.mute, 'left') })
@@ -186,7 +187,7 @@ function scenes({ stage, mk, k }: Env) {
       ctx.font = F.mono(12, 600); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.ink, ra); ctx.fillText(nm, xr, y0 + 18 + i * 60)
       ctx.font = F.mono(11); ctx.fillStyle = rgba(C.ink2, ra); ctx.fillText(sh, xr, y0 + 36 + i * 60); ctx.fillStyle = rgba(C.mute, ra); ctx.fillText(cost, xr, y0 + 52 + i * 60)
     })
-    mk.formula = { segs: [['tokens per word', C.ink2], [` ${TR.perWord[0].toFixed(1)} → ${TR.perWord[TR.merges.length].toFixed(2)}`, C.ink], ['   with ', C.mute], [`${TR.merges.length} merges`, C.ink2]], note: 'On its own training text a tokenizer does best; on other languages or code it falls back to smaller pieces, so the same sentence can cost several times more tokens.' }
+    mk.formula = { segs: [['tokens per word', C.ink2], [` ${TR.perWord[0].toFixed(1)} → ${TR.perWord[TR.merges.length].toFixed(2)}`, C.ink], ['   ', C.mute], [`after ${TR.merges.length} merges`, C.ink2]], note: 'On its own training text a tokenizer does best; on other languages or code it falls back to smaller pieces, so the same sentence can cost several times more tokens.' }
   }
 
   /* ---------- 5: GPT-2 ---------- */

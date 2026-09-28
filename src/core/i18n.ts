@@ -14,8 +14,8 @@ import { pref } from './prefs'
 export type Lang = 'en' | 'zh'
 export const LANGS: Lang[] = ['en', 'zh']
 
-/** Numbers (not inside names like GPT-2 or W_Q) and quoted spans. */
-const PH = /“[^”]*”|‘[^’]*’|(?<![\w.\-−_])[−-]?\d+(?:[.,]\d+)*%?(?![\w]|[.,]\d)/g
+/** Numbers (not inside names like GPT-2 or W_Q; .072 counts) and quoted spans. */
+const PH = /“[^”]*”|‘[^’]*’|(?<![\w.\-−_])[−-]?(?:\d+(?:[.,]\d+)*|\.\d+)%?(?![\w]|[.,]\d)/g
 /** A string as its key: placeholders for the numbers and quotes, which are returned as args. */
 export function norm(s: string): { key: string; args: string[] } {
   const args: string[] = []
