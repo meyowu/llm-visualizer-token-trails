@@ -55,6 +55,7 @@ src/lib/react/data.ts       types for src/data/react.json
 src/lib/tools/data.ts       types for src/data/tools.json
 src/lib/rag/data.ts         types for src/data/rag.json, plainText() for model output
 src/lib/multi/data.ts       types for src/data/multi.json
+src/lib/backprop/data.ts    types for src/data/backprop.json
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
@@ -94,6 +95,8 @@ scripts/rag-export.ts       RAG for real: this site's glossary and legend embedd
                             four questions ranked by cosine, Qwen3-1.7B answers with and without the top 3; writes src/data/rag.json
 scripts/multi-export.ts     a multi-agent run with Qwen3-1.7B: an orchestrator with ask_worker hands pieces to workers that start empty and
                             must call lookup first; also one agent alone; every call's token counts; writes src/data/multi.json
+scripts/backprop-export.ts  GPT-2 small's forward and backward pass in float64 on the Training sentence: every weight's gradient, a dW
+                            slice, per-position reach, finite-difference checks; writes src/data/backprop.json
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
   overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
@@ -105,6 +108,8 @@ src/exhibits/transformer/
   unembed.ts                ln_f, logits = x · W_Eᵀ (tied), temperature, softmax, sampling strategies; real GPT-2 numbers
 src/exhibits/training/
   loss.ts                   next-token loss on a real GPT-2 run (per-position p, −log p), gradient p − y, a toy step
+  backprop.ts               backprop through GPT-2 small on the Training sentence (scripts/backprop-export.ts): the chain, dW = Xᵀ·dY as a GEMM
+                            on real slices, the MLP backwards, the causal mask backwards, ‖dW‖ per block, finite-difference checks
 src/exhibits/lineage/
   transformer2017.ts        the 2017 Transformer vs GPT-2: RNN → attention, encoder + decoder, a toy EN → DE
                             translation, the three attentions, cross-attention GEMM, post-LN (real GPT-2 stream

@@ -788,6 +788,33 @@ const LEARN: Record<string, Learn> = {
       'The split costs more tokens overall but keeps contexts small and lets independent work run in parallel.',
     ],
   },
+  backprop: {
+    refs: [["Rumelhart, Hinton & Williams 1986, Learning representations by back-propagating errors", "https://www.nature.com/articles/323533a0"], ["Karpathy, micrograd (backprop in 100 lines)", "https://github.com/karpathy/micrograd"], ["PyTorch, A Gentle Introduction to torch.autograd", "https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html"]],
+    code: {
+      lines: [
+        'logits = model(ids[:, :-1])',
+        'loss = F.cross_entropy(logits.flatten(0, 1), ids[:, 1:].flatten())',
+        'loss.backward()                  # fills .grad of every parameter, last layer first',
+        '# what it does for each linear layer y = x @ W + b, given dy = ∂L/∂y:',
+        'W.grad += x.T @ dy               # summed over positions (and the batch)',
+        'b.grad += dy.sum(0)',
+        'dx = dy @ W.T                    # passed down to the layer below',
+        '# check one weight numerically',
+        'w[i] += eps; up = loss_fn(); w[i] -= 2 * eps; down = loss_fn(); w[i] += eps',
+        'assert abs((up - down) / (2 * eps) - w.grad[i]) < 1e-6',
+      ],
+      at: { chain: [0, 1, 2], linear: [3, 4], down: [5, 6], blame: [2], depth: [2, 6], check: [7, 8, 9] },
+    },
+    checks: [
+      { phase: 'linear', q: 'In dW = Xᵀ · dY, what is summed over?', options: ['The positions (and, in a batch, every example)', 'The output dimensions', 'The layers', 'Nothing: each weight sees one position'], answer: 0, why: 'A weight is used at every position, so its gradient adds up its blame from each of them; a batch simply adds more rows to X and dY.' },
+      { phase: 'depth', q: 'Why does the gradient not fade away through 12 blocks?', options: ['Each block adds to the residual stream, and the add passes the gradient back unchanged', 'LayerNorm amplifies it', 'The learning rate compensates', 'The attention weights sum to 1'], answer: 0, why: 'x + f(x) has slope 1 + f′, so the gradient always has a direct path around every block.' },
+    ],
+    recap: [
+      'Backpropagation applies the chain rule from the loss backwards and gets every weight’s gradient in one pass.',
+      'For a linear layer, dW = Xᵀ · dY (summed over positions) and dX = dY · Wᵀ is passed down.',
+      'Residual adds keep the gradient alive through depth; finite differences confirm the numbers.',
+    ],
+  },
 }
 
 /** Give a page's player its code drawer, questions and recap. */
