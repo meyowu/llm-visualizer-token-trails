@@ -49,7 +49,7 @@ export function mountClip(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
       formulaHint: '',
-      eyebrow: 'Lineage · Vision & diffusion',
+      eyebrow: 'Architectures · Vision & diffusion',
       title: 'CLIP',
       subtitle: 'CLIP ViT-B/32 · images and text in one space',
       specs: [

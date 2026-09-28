@@ -64,7 +64,7 @@ export function mountMixtral(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
       formulaHint: '',
-      eyebrow: 'Lineage · Decoder-only',
+      eyebrow: 'Architectures · Decoder-only',
       title: 'Mixtral',
       subtitle: 'Mixtral 8x7B · a mixture of experts in place of the MLP',
       specs: [

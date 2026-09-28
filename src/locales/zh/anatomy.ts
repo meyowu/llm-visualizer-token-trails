@@ -108,7 +108,7 @@ export const anatomy: Record<string, string> = {
   'Only the last position is unembedded. The other positions were still needed: attention read their keys and values.': '只有最后一个位置会被反嵌入。其他位置仍然必不可少：注意力读取了它们的键和值。',
 
   /* ---------- Tokenizer ---------- */
-  'Anatomy · Tokenizer': '解剖 · 分词器',
+  'Inside the model · Tokenizer': '模型内部 · 分词器',
   'byte-level BPE · GPT-2 · real merges': '字节级 BPE · GPT-2 · 真实合并规则',
   'base symbols': '基础符号',
   '{} bytes': '{0} 个字节',
@@ -158,7 +158,7 @@ export const anatomy: Record<string, string> = {
   'A token’s id is {} plus its merge rank, so common tokens have small ids.': '词元的 id 是 {0} 加上它的合并序号，所以常见词元的 id 小。',
 
   /* ---------- Embedding ---------- */
-  'Anatomy · Embedding': '解剖 · 嵌入',
+  'Inside the model · Embedding': '模型内部 · 嵌入',
   'token + position · GPT-2': '词元 + 位置 · GPT-2',
   'W_E params': 'W_E 参数',
   'W_P params': 'W_P 参数',
@@ -212,7 +212,7 @@ export const anatomy: Record<string, string> = {
   'The sum is the residual stream that every block reads and adds to.': '这个和就是残差流，每一个块都从中读取并向其中累加。',
 
   /* ---------- LayerNorm & Residual ---------- */
-  'Anatomy · LayerNorm & Residual': '解剖 · LayerNorm 与残差',
+  'Inside the model · LayerNorm & Residual': '模型内部 · LayerNorm 与残差',
   'pre-LN · ln_1 of block {}': '前置 LN · 第 {0} 块的 ln_1',
   'features': '特征',
   '{} per block + ln_f': '每块 {0} 个 + ln_f',
@@ -241,7 +241,7 @@ export const anatomy: Record<string, string> = {
   'Learned γ and β then set each feature’s scale and offset.': '随后由学到的 γ 和 β 设定每个特征的缩放和偏移。',
 
   /* ---------- Attention ---------- */
-  'Anatomy · Attention': '解剖 · 注意力',
+  'Inside the model · Attention': '模型内部 · 注意力',
   'causal self-attention · block {} · head {}': '因果自注意力 · 第 {0} 块 · 头 {1}',
   'Step-by-step attention: X times W_Q, W_K and W_V gives Q, K and V; Q times K transposed gives scores, which are scaled, masked and softmaxed into attention weights A; A times V is projected by W_O and added back to the residual stream.': '逐步演示注意力：X 分别乘以 W_Q、W_K 和 W_V 得到 Q、K 和 V；Q 乘以 K 的转置得到分数，经过缩放、掩码和 softmax 变成注意力权重 A；A 乘以 V 再经 W_O 投影，加回残差流。',
   'Projections': '投影',
@@ -297,7 +297,7 @@ export const anatomy: Record<string, string> = {
   'Each token takes the weighted mix of values; the heads are joined and projected by W_O.': '每个词元取值的加权混合；各个头拼接后经 W_O 投影。',
 
   /* ---------- MLP ---------- */
-  'Anatomy · MLP': '解剖 · MLP',
+  'Inside the model · MLP': '模型内部 · MLP',
   'feed-forward · block {}': '前馈网络 · 第 {0} 块',
   'Step-by-step MLP: X is multiplied by W_fc and widened four times, GELU is applied to every cell, the result is projected back down by W_proj, and the output is added to the residual stream.': '逐步演示 MLP：X 乘以 W_fc，宽度扩大四倍；对每一格施加 GELU；结果经 W_proj 投影回原宽度，再把输出加到残差流上。',
   'Up-projection': '升维投影',
@@ -324,7 +324,7 @@ export const anatomy: Record<string, string> = {
   'The MLP works on each token alone; its output is added to the residual stream.': 'MLP 单独处理每个词元；它的输出被加到残差流上。',
 
   /* ---------- Unembed & Sampling ---------- */
-  'Anatomy · Unembed & Sampling': '解剖 · 反嵌入与采样',
+  'Inside the model · Unembed & Sampling': '模型内部 · 反嵌入与采样',
   'LM head · tied to W_E · real run': 'LM head · 与 W_E 共享 · 真实运行',
   '{} drawn': '画出 {0} 个',
   'W_Eᵀ, tied': 'W_Eᵀ，共享权重',

@@ -43,7 +43,7 @@ export function mountLlama(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
       formulaHint: '',
-      eyebrow: 'Lineage · Decoder-only',
+      eyebrow: 'Architectures · Decoder-only',
       title: 'LLaMA',
       subtitle: 'LLaMA 3 8B · what changed since GPT-2',
       specs: [

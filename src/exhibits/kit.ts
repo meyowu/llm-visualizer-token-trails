@@ -10,7 +10,7 @@ import { teach } from './learn'
 import type { Nav } from './registry'
 
 /*
- * The shared frame of a scene-per-phase exhibit (the Lineage and Serving pages): one scene per phase,
+ * The shared frame of a scene-per-phase exhibit (the Architectures, Training, Serving and Agents pages): one scene per phase,
  * a Compare button that opens the related GPT-2 part for each phase, and pill labels on the canvas
  * that jump to a phase.
  */

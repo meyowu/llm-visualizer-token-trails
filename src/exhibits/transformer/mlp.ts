@@ -30,7 +30,7 @@ export function mountMlp(root: HTMLElement, nav: Nav): () => void {
 
   const frame = createFrame(root, {
     formula: true,
-    eyebrow: 'Anatomy · MLP',
+    eyebrow: 'Inside the model · MLP',
     title: 'MLP',
     subtitle: 'feed-forward · block 1',
     back: { label: 'Forward pass', onClick: () => nav('anatomy') },

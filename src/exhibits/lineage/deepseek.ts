@@ -94,7 +94,7 @@ export function mountDeepseek(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
       formulaHint: '',
-      eyebrow: 'Lineage · Decoder-only',
+      eyebrow: 'Architectures · Decoder-only',
       title: 'DeepSeek',
       subtitle: 'DeepSeek-V3 · latent attention and fine-grained experts',
       specs: [

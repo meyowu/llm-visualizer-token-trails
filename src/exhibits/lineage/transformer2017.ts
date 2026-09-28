@@ -87,7 +87,7 @@ export function mountTransformer2017(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
       formulaHint: '',
-      eyebrow: 'Lineage · Origin',
+      eyebrow: 'Architectures · Origin',
       title: 'Transformer (2017)',
       subtitle: 'Vaswani et al., “Attention Is All You Need” · what GPT-2 changed',
       specs: [

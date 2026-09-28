@@ -72,7 +72,7 @@ export function mountVit(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
       formulaHint: '',
-      eyebrow: 'Lineage · Vision & diffusion',
+      eyebrow: 'Architectures · Vision & diffusion',
       title: 'Vision Transformer',
       subtitle: 'ViT-B/16 · image patches as tokens',
       specs: [

@@ -16,7 +16,7 @@ const PATH: [string, string, string][] = [
   ['anatomy/mlp', 'MLP', 'How each token is then transformed on its own.'],
   ['anatomy/unembed', 'Unembed & Sampling', 'How the last vector becomes probabilities, and one next token.'],
   ['training/loss', 'Training', 'Where the numbers come from: the loss every weight is trained on, backpropagation, optimizers, scaling laws, then SFT, preference tuning and LoRA.'],
-  ['lineage/transformer-2017', 'Lineage', 'Where GPT-2 came from and what followed: ten architectures drawn as changes to it, from the 2017 Transformer to Mamba.'],
+  ['lineage/transformer-2017', 'Architectures', 'Where GPT-2 came from and what followed: ten architectures drawn as changes to it, from the 2017 Transformer to Mamba.'],
   ['serving/kv-cache', 'Serving', 'How a trained model is run fast and cheaply: the KV cache, FlashAttention, batching, speculative decoding, quantization.'],
   ['agents/in-context', 'Agents', 'How a model becomes an agent: examples and instructions in the prompt, a ReAct loop, tool calls, retrieval, and agents handing work to agents.'],
 ]
@@ -43,7 +43,7 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
       <section class="st-what">
         <h2>${t(`What is a Transformer?`)}</h2>
         <p>${t(`The model on this site is <b>GPT-2 small</b> (OpenAI, 2019, 124M parameters), a Transformer. It cuts text into tokens, turns each token into a vector of 768 numbers, and passes the vectors through 12 blocks. In each block, <b>attention</b> lets every token read from the tokens before it, and an <b>MLP</b> then works on each token alone. The last token's vector is finally turned into a probability for every possible next token.`)}</p>
-        <p>${t(`<b>Decoder-only</b> means it reads left to right: a token never sees the ones after it. Generating text is just this, repeated: pick a token, append it, run again. LLaMA and most chat models keep the same design with a few changes (see Lineage).`)}</p>
+        <p>${t(`<b>Decoder-only</b> means it reads left to right: a token never sees the ones after it. Generating text is just this, repeated: pick a token, append it, run again. LLaMA and most chat models keep the same design with a few changes (see Architectures).`)}</p>
       </section>
       <section class="st-scale">
         <h2>${t(`Where the 124M numbers live`)}</h2>

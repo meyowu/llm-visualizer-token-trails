@@ -70,7 +70,7 @@ export interface Category {
 export const CATEGORIES: Category[] = [
   {
     id: 'anatomy',
-    title: 'Anatomy',
+    title: 'Inside the model',
     entries: [
       {
         name: 'Forward pass', tag: 'the Transformer · GPT-2 small', route: 'anatomy', mount: mountOverview,
@@ -88,7 +88,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     id: 'lineage',
-    title: 'Lineage',
+    title: 'Architectures',
     entries: [
       { heading: 'Compare' },
       { name: 'Architecture diff', tag: 'any two of 29 models, 2019–2025', route: 'lineage/compare', mount: mountCompare },

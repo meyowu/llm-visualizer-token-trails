@@ -67,7 +67,7 @@ export function mountBert(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
       formulaHint: '',
-      eyebrow: 'Lineage · Encoder',
+      eyebrow: 'Architectures · Encoder',
       title: 'BERT',
       subtitle: 'BERT-base · the same shape as GPT-2, reading both ways',
       specs: [

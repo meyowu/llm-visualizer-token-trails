@@ -43,9 +43,9 @@ src/exhibits/start.ts       landing page (#/start, the default): live next-token
 src/exhibits/glossary.ts    #/glossary: every term in TERMS
 src/exhibits/foundations.ts #/foundations: dot product, matrix product layout, softmax, one-hot (small made-up numbers)
 src/exhibits/learn.ts       per page: code lines (marked per phase), predict-then-reveal checks, recap; teach(player, page)
-src/exhibits/kit.ts         mountExhibit(): the shared frame of a scene-per-phase page, Lineage, Serving, Training and Agents (Compare button,
+src/exhibits/kit.ts         mountExhibit(): the shared frame of a scene-per-phase page, Architectures, Serving, Training and Agents (Compare button,
                             pills that jump to a phase, onFrame hooks) and canvas helpers (Kit: pill, lane, glass, arrow…)
-src/exhibits/registry.ts    categories (Anatomy, Lineage, Training, Serving, Agents) → entries: exhibits or sub-headings;
+src/exhibits/registry.ts    categories (Inside the model, Architectures, Training, Serving, Agents; routes anatomy/*, lineage/*, …) → entries: exhibits or sub-headings;
                             an exhibit may have `children` (its steps); live when it has `route` and `mount`
 src/lib/bert/data.ts        types for src/data/bert.json (masked-word examples, a look-ahead head, a sentence pair)
 src/lib/t5/data.ts          types for src/data/t5.json, and T5's relative-position bucket()
@@ -204,7 +204,7 @@ src/exhibits/agents/
 
 1. Write `mountX(root, nav): () => void`: `createFrame` (with `formula: true` for a detail view) → `new Stage` → `new Player(PHASES, frame.controls)` → `new MatrixKit(stage, tokens, frame.setFormula)` → set `player.describe` (caption per phase, for All steps) → `teach(player, page)` with an entry in `learn.ts` → `runLoop(step, () => !player.playing)` that ticks, draws, updates the timeline UI and sets the caption. Only set an initial `player.t` when it is still 0 (a `?phase=` link may have placed it). Return a destroy that stops the loop and calls `player.destroy()` and `stage.destroy()`.
 2. Register it in `registry.ts` (`route` + `mount`), and add it to `TOUR` in `main.ts` if it belongs to the reading order. Steps of an exhibit go in its `children` with a deeper route (`anatomy/mlp`), which opens with a zoom-in. Routes are hash-based (`#/anatomy/attention`, `#/lineage/llama`); old ones keep working through `ALIASES`.
-   A Lineage, Serving, Training or Agents page (scenes per phase rather than one matrix walk-through) uses `mountExhibit()` from `exhibits/kit.ts` instead: pass the frame options, phases, captions, a Compare route per phase and a `scenes(env)` factory. Serving, Training and Agents pages pass `compareLabel: 'Related'`, since their links go to related pages rather than to the GPT-2 part they change. Give it `hints` per phase: the hint under the formula strip should offer only what that phase has (hover targets, labels to click, controls).
+   An Architectures (lineage/*), Serving, Training or Agents page (scenes per phase rather than one matrix walk-through) uses `mountExhibit()` from `exhibits/kit.ts` instead: pass the frame options, phases, captions, a Compare route per phase and a `scenes(env)` factory. Serving, Training and Agents pages pass `compareLabel: 'Related'`, since their links go to related pages rather than to the GPT-2 part they change. Give it `hints` per phase: the hint under the formula strip should offer only what that phase has (hover targets, labels to click, controls).
 3. To open a detail view from the overview, add its plate to `plateAt` / `PLATE_ROUTES` in `overview.ts` (hover highlight and `drawOpenHint` follow). Mention the click in that phase's caption.
 
 ## Conventions

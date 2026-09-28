@@ -54,7 +54,7 @@ function makeView(pr: Preset, k: number): View {
 export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   const reduced = reducedMotion()
   const frame = createFrame(root, {
-    eyebrow: 'Anatomy',
+    eyebrow: 'Inside the model',
     title: 'Forward pass',
     subtitle: 'decoder-only Transformer · GPT-2 small, real run',
     specs: [

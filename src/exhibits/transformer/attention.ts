@@ -34,7 +34,7 @@ export function mountAttention(root: HTMLElement, nav: Nav): () => void {
 
   const frame = createFrame(root, {
     formula: true,
-    eyebrow: 'Anatomy · Attention',
+    eyebrow: 'Inside the model · Attention',
     title: 'Attention',
     subtitle: 'causal self-attention · block 1 · head 1',
     back: { label: 'Forward pass', onClick: () => nav('anatomy') },

@@ -90,7 +90,7 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
 
   const frame = createFrame(root, {
     formula: true,
-    eyebrow: 'Anatomy · Unembed & Sampling',
+    eyebrow: 'Inside the model · Unembed & Sampling',
     title: 'Unembed & Sampling',
     subtitle: 'LM head · tied to W_E · real run',
     back: { label: 'Forward pass', onClick: () => nav('anatomy') },

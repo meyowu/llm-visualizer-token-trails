@@ -63,7 +63,7 @@ export function mountMamba(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
       formulaHint: '',
-      eyebrow: 'Lineage · Beyond attention',
+      eyebrow: 'Architectures · Beyond attention',
       title: 'Mamba',
       subtitle: 'Mamba-130m · a selective state-space model',
       specs: [

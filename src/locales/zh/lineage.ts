@@ -1,4 +1,4 @@
-/** Lineage: the 2017 Transformer, LLaMA, Mixtral, DeepSeek-V3, BERT, T5, ViT, CLIP, DiT, Mamba. */
+/** Architectures (lineage/*): the 2017 Transformer, LLaMA, Mixtral, DeepSeek-V3, BERT, T5, ViT, CLIP, DiT, Mamba. */
 export const lineage: Record<string, string> = {
   /* ---------- Transformer (2017) ---------- */
   'Vaswani et al., {} · what GPT-2 changed': 'Vaswani 等，{0} · GPT-2 改了什么',
@@ -795,7 +795,7 @@ export const lineage: Record<string, string> = {
   /* ---------- Architecture diff ---------- */
   'Architecture diff': '架构对比',
   'any two of {} models, {}–{}': '{0} 个模型任选两个，{1}–{2}',
-  'Lineage · Compare': '谱系 · 对比',
+  'Architectures · Compare': '架构演进 · 对比',
   'any two models, read from their own checkpoints': '任意两个模型，读自它们自己的检查点',
   'Two language models compared from their own configs and checkpoints: what differs, the attention and MLP of every layer, the attention heads and what they cache, the experts, where the parameters are, and the KV cache as the context grows.': '根据各自的配置和检查点比较两个语言模型：哪里不同、每一层的注意力和 MLP、注意力头及其缓存的内容、专家、参数分布在哪里，以及 KV 缓存随上下文的增长。',
   'What differs': '哪里不同',

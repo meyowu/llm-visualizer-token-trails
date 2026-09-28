@@ -41,7 +41,7 @@ export function mountEmbedding(root: HTMLElement, nav: Nav): () => void {
 
   const frame = createFrame(root, {
     formula: true,
-    eyebrow: 'Anatomy · Embedding',
+    eyebrow: 'Inside the model · Embedding',
     title: 'Embedding',
     subtitle: 'token + position · GPT-2',
     back: { label: 'Forward pass', onClick: () => nav('anatomy') },

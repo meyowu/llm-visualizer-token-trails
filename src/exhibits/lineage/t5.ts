@@ -46,7 +46,7 @@ export function mountT5(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
       formulaHint: '',
-      eyebrow: 'Lineage · Encoder–decoder',
+      eyebrow: 'Architectures · Encoder–decoder',
       title: 'T5',
       subtitle: 'T5-small · every task as text in, text out',
       specs: [

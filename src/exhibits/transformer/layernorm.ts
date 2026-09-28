@@ -31,7 +31,7 @@ export function mountLayerNorm(root: HTMLElement, nav: Nav): () => void {
 
   const frame = createFrame(root, {
     formula: true,
-    eyebrow: 'Anatomy · LayerNorm & Residual',
+    eyebrow: 'Inside the model · LayerNorm & Residual',
     title: 'LayerNorm & Residual',
     subtitle: 'pre-LN · ln_1 of block 1',
     back: { label: 'Forward pass', onClick: () => nav('anatomy') },

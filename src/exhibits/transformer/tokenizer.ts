@@ -41,7 +41,7 @@ export function mountTokenizer(root: HTMLElement, nav: Nav): () => void {
   const reduced = reducedMotion()
   const frame = createFrame(root, {
     formula: true,
-    eyebrow: 'Anatomy · Tokenizer',
+    eyebrow: 'Inside the model · Tokenizer',
     title: 'Tokenizer',
     subtitle: 'byte-level BPE · GPT-2 · real merges',
     back: { label: 'Forward pass', onClick: () => nav('anatomy') },

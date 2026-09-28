@@ -146,7 +146,7 @@ export function mountCompare(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
       formulaHint: '',
-      eyebrow: 'Lineage · Compare',
+      eyebrow: 'Architectures · Compare',
       title: 'Architecture diff',
       subtitle: 'any two models, read from their own checkpoints',
       specs: specs(),
