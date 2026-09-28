@@ -316,6 +316,13 @@ abbr.term { text-decoration: underline dotted; text-decoration-color: var(--mute
   .rail, .collapsed .rail { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
   .head, .caption, .controls, .formula { padding-right: max(16px, env(safe-area-inset-right)); padding-left: max(16px, env(safe-area-inset-left)); }
 }
+/* phones: nothing in the frame may be wider than the screen, so controls and caption lines wrap */
+@media (max-width: 520px) {
+  .toggle { flex-wrap: wrap; max-width: 100%; }
+  .stepper, .temp { flex-wrap: wrap; max-width: 100%; }
+  .cap-title { flex-wrap: wrap; white-space: normal; }
+  .cap-shape { white-space: normal; }
+}
 
 /* ---------- embed and presentation modes ---------- */
 .foot-btns { display: flex; gap: 8px; flex-wrap: wrap; }
