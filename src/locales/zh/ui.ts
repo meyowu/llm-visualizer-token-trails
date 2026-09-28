@@ -303,6 +303,9 @@ export const ui: Record<string, string> = {
     '一句提示词被切成词元；它们的通道穿过 GPT-2 的 {0} 个块，并按这次运行的真实注意力混合颜色；最后一条通道变成真实的下一词元概率，最可能的词元被接到句尾。',
   'Replay the opening animation': '重播开场动画',
   'Made by': '作者',
+  'Made by Zhehao Wu': '作者：Zhehao Wu',
+  'Zhehao Wu on GitHub': 'Zhehao Wu 的 GitHub',
+  'Email Zhehao Wu': '给 Zhehao Wu 发邮件',
 
   // the glossary page
   'Reference': '参考',

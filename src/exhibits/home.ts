@@ -41,12 +41,15 @@ export function mountHome(root: HTMLElement, nav: Nav): () => void {
         ${resume ? `<button class="st-go st-resume home-resume" type="button">${t('Resume')}: ${t(pageName(resume.route) ?? resume.route.split('/').pop() ?? '')} ›</button>` : ''}
         <button class="home-replay" type="button">${t('↺ Replay')}</button>
       </div>
-      <p class="credit home-credit">${t('Made by')} Zhehao Wu · <a href="mailto:zhehao075@gmail.com">zhehao075@gmail.com</a> · <a href="https://github.com/meyowu/token-trails" target="_blank" rel="noopener">GitHub</a></p>
+      <p class="home-credit">${t('Made by')}</p>
     </section>`
   const q = <E extends HTMLElement>(s: string) => root.querySelector(s) as E
   // the rail's logo, reused
   const mark = document.querySelector('.brand svg')
   if (mark) q('.home-mark').appendChild(mark.cloneNode(true))
+  // and its credit: the name, GitHub and email
+  const by = document.querySelector('.byline')
+  if (by) q('.home-credit').appendChild(by.cloneNode(true))
 
   const stage = new Stage(q('.home-stage'), 320, 420, 'A prompt splits into tokens; their lanes run through GPT-2’s 12 blocks and mix their colours by the real attention of the run; the last lane becomes the real next-token probabilities, and the most likely token is appended.')
   const ctx = stage.ctx
