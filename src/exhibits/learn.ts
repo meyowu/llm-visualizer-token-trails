@@ -741,6 +741,30 @@ const LEARN: Record<string, Learn> = {
       'Calling or answering directly is a next-token choice; constrained decoding can guarantee the call is well formed.',
     ],
   },
+  rag: {
+    refs: [["Lewis et al. 2020, Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks", "https://arxiv.org/abs/2005.11401"], ["Reimers & Gurevych 2019, Sentence-BERT", "https://arxiv.org/abs/1908.10084"], ["sentence-transformers/all-MiniLM-L6-v2, the embedding model used here", "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2"], ["Malkov & Yashunin 2016, HNSW approximate nearest neighbours", "https://arxiv.org/abs/1603.09320"]],
+    code: {
+      lines: [
+        'embedder = SentenceTransformer("all-MiniLM-L6-v2")',
+        'P = embedder.encode(passages, normalize_embeddings=True)       # once, ahead of time: (84, 384)',
+        'q = embedder.encode(question, normalize_embeddings=True)       # (384,)',
+        'scores = P @ q                                                  # cosine similarity, since both have length 1',
+        'top = scores.argsort()[::-1][:3]',
+        "context = '\\n'.join(f'[{i + 1}] {passages[j]}' for i, j in enumerate(top))",
+        "answer = llm(f'Answer using only the context below.\\n\\nContext:\\n{context}\\n\\nQuestion: {question}')",
+      ],
+      at: { corpus: [1], embed: [0, 1, 2], map: [1], rank: [3, 4], prompt: [5, 6], answer: [6], miss: [3, 4, 6] },
+    },
+    checks: [
+      { phase: 'rank', q: 'Why is the dot product enough to rank passages here?', options: ['Every vector was scaled to length 1, so the dot product is the cosine similarity', 'MiniLM outputs probabilities', 'The passages are sorted alphabetically first', 'Longer passages always score higher'], answer: 0, why: 'Cosine similarity divides the dot product by both lengths; when both lengths are 1, that division does nothing.' },
+      { phase: 'miss', q: 'The question shares no words with the passage that answers it, and retrieval misses it. What changed in the model?', options: ['Nothing: the model only sees what retrieval put in its prompt', 'Its weights were updated by the wrong passages', 'Its vocabulary shrank', 'Its temperature rose'], answer: 0, why: 'Retrieval only chooses the text in the prompt. A miss leaves the model with the wrong context, and the best it can do is say so.' },
+    ],
+    recap: [
+      'Passages are embedded once; a question is embedded the same way and compared with every passage by cosine similarity.',
+      'The closest passages are pasted into the prompt, and the model answers from them; nothing in the model changes.',
+      'Retrieval can miss, by wording or because no passage holds the answer, and the answer is only as good as what was retrieved.',
+    ],
+  },
 }
 
 /** Give a page's player its code drawer, questions and recap. */

@@ -143,7 +143,7 @@ function renderRail(active: string) {
 
 /* ---------- the tour: previous / next ---------- */
 /** Reading order across pages; the Anatomy steps are numbered. */
-const TOUR = ['start', 'foundations', 'anatomy', 'anatomy/tokenizer', 'anatomy/embedding', 'anatomy/layernorm', 'anatomy/attention', 'anatomy/mlp', 'anatomy/unembed', 'training/loss', 'lineage/transformer-2017', 'lineage/llama', 'lineage/mixtral', 'lineage/deepseek', 'lineage/bert', 'lineage/t5', 'lineage/vit', 'lineage/clip', 'lineage/dit', 'lineage/mamba', 'serving/kv-cache', 'serving/flashattention', 'serving/pagedattention', 'serving/continuous-batching', 'serving/speculative-decoding', 'serving/quantization', 'agents/in-context', 'agents/react', 'agents/tool-calling']
+const TOUR = ['start', 'foundations', 'anatomy', 'anatomy/tokenizer', 'anatomy/embedding', 'anatomy/layernorm', 'anatomy/attention', 'anatomy/mlp', 'anatomy/unembed', 'training/loss', 'lineage/transformer-2017', 'lineage/llama', 'lineage/mixtral', 'lineage/deepseek', 'lineage/bert', 'lineage/t5', 'lineage/vit', 'lineage/clip', 'lineage/dit', 'lineage/mamba', 'serving/kv-cache', 'serving/flashattention', 'serving/pagedattention', 'serving/continuous-batching', 'serving/speculative-decoding', 'serving/quantization', 'agents/in-context', 'agents/react', 'agents/tool-calling', 'agents/rag']
 const STEPS = TOUR.filter((r) => r.startsWith('anatomy/'))
 const nameOf = (route: string) => [START, FOUNDATIONS, GLOSSARY, ...CATEGORIES.flatMap(exhibitsOf)].find((e) => e.route === route)?.name ?? route
 const tourStep = (route: string, dir: number) => { const i = TOUR.indexOf(route); return i < 0 ? null : TOUR[i + dir] ?? null }
