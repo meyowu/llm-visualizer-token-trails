@@ -1,4 +1,5 @@
 import { F, ctx, rr } from '../../core/draw'
+import { t } from '../../core/i18n'
 import { C, rgba } from '../../core/theme'
 import { clamp, eout } from '../../core/util'
 import { react, type ReactStep } from '../../lib/react/data'
@@ -190,7 +191,8 @@ function scenes({ stage, mk, k }: Env) {
     const items = S.slice(0, n).flatMap(stepItems)
     const ey = lines(items, x, y0 + 4, w, 1)
     const fa = eout(clamp((p - 0.85) / 0.08))
-    if (n === S.length) runs([['answer  ', C.mute], [ANSWER, C.ink]], x + 14, ey + 18, fa, F.mono(13, 600))
+    // runs() draws untranslated; the label is ours, the answer the model's
+    if (n === S.length) runs([[t('answer') + '  ', C.mute], [ANSWER, C.ink]], x + 14, ey + 18, fa, F.mono(13, 600))
     const tools = S.filter((s) => s.action && s.action.name !== 'finish').map((s) => `${s.action!.name}[${s.action!.arg}]`)
     mk.formula = { segs: tools.flatMap((t, i) => (i ? [['  →  ', C.mute], [t, C.ink]] : [[t, C.ink]])) as [string, typeof C.ink][], note: `${S.length} calls to the model, ${tools.length} to tools. The facts and the arithmetic came from the program; the model chose the steps and read the results.` }
   }

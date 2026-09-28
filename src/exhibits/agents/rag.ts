@@ -1,4 +1,5 @@
 import { F, ctx } from '../../core/draw'
+import { raw } from '../../core/i18n'
 import { C, rgba } from '../../core/theme'
 import { clamp, eout, lerp } from '../../core/util'
 import { plainText, rag, type Query } from '../../lib/rag/data'
@@ -115,7 +116,8 @@ function scenes({ stage, mk, k }: Env) {
       const on = d === HIT_DOC
       ctx.fillStyle = rgba(C.ink, d.kind === 'legend' ? 0.7 : 0.3); ctx.fillRect(x, y + 4, Math.min(40, d.tokens * 0.5), 9)
       ctx.font = F.mono(10.5, on ? 600 : 400); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(on ? C.ink : C.ink2, 1)
-      ctx.fillText(d.title.length > 13 ? d.title.slice(0, 12) + '…' : d.title, x + 46, y + 9)
+      // passage titles are the retrieved data: never translated
+      raw(() => ctx.fillText(d.title.length > 13 ? d.title.slice(0, 12) + '…' : d.title, x + 46, y + 9))
     })
     const ka = eout(clamp((p - 0.5) / 0.1)), ky = y0 + rows * 21 + 14
     ctx.fillStyle = rgba(C.ink, 0.3 * ka); ctx.fillRect(x0, ky, 14, 9); caption('glossary definition', x0 + 20, ky + 8, ka, C.mute, 'left')
@@ -171,7 +173,7 @@ function scenes({ stage, mk, k }: Env) {
       ctx.fillStyle = rgba(C.tok[0], qa); ctx.beginPath(); ctx.arc(qx, qy, 6, 0, 7); ctx.fill()
       ctx.strokeStyle = rgba(C.bg, qa); ctx.lineWidth = 2; ctx.stroke()
       caption('question', qx + 10, qy - 8, qa, C.ink, 'left')
-      top3.forEach((i, r) => caption(`${r + 1}. ${D[i].title}`, X(D[i].xy[0]) + 8, Y(D[i].xy[1]) + 14, qa, C.ink2, 'left'))
+      raw(() => top3.forEach((i, r) => caption(`${r + 1}. ${D[i].title}`, X(D[i].xy[0]) + 8, Y(D[i].xy[1]) + 14, qa, C.ink2, 'left')))
     }
     // the hovered passage, or a legend of the dots
     const xr = x1 + 50, wr = W - pad - xr
@@ -200,7 +202,7 @@ function scenes({ stage, mk, k }: Env) {
       q.top.slice(0, 8).forEach((t, i) => {
         const g = eout(clamp((p - 0.1 - i * 0.03) / 0.15)), y = y0 + i * 26 + (i >= K ? 20 : 0), d = D[t.doc], on = d.title === mark
         ctx.font = F.mono(11, on ? 600 : 400); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(on ? C.ink : C.ink2, a)
-        ctx.fillText(`${i + 1}. ${d.title.length > 24 ? d.title.slice(0, 23) + '…' : d.title}`, x, y)
+        raw(() => ctx.fillText(`${i + 1}. ${d.title.length > 24 ? d.title.slice(0, 23) + '…' : d.title}`, x, y))
         ctx.fillStyle = rgba(C.ink, 0.07 * a); ctx.fillRect(x + 200, y - 3, bw, 6)
         ctx.fillStyle = rgba(C.ink, (on ? 0.9 : 0.45) * a); ctx.fillRect(x + 200, y - 3, (t.score / max) * bw * g, 6)
         ctx.font = F.small; ctx.textAlign = 'right'; ctx.fillStyle = rgba(on ? C.ink : C.mute, a); ctx.fillText(fmt3(t.score), x + colW, y)
