@@ -17,6 +17,7 @@ const PATH: [string, string, string][] = [
   ['training/loss', 'Next-token loss', 'Where the numbers come from: the loss every weight is trained on.'],
   ['lineage/transformer-2017', 'Lineage', 'Where GPT-2 came from and what followed: ten architectures drawn as changes to it, from the 2017 Transformer to Mamba.'],
   ['serving/kv-cache', 'Serving', 'How a trained model is run fast and cheaply: the KV cache, FlashAttention, batching, speculative decoding, quantization.'],
+  ['agents/in-context', 'Agents', 'How a model becomes an agent: examples and instructions in the prompt, a ReAct loop, tool calls, retrieval, and agents handing work to agents.'],
 ]
 
 
@@ -85,7 +86,7 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
   const ol = q('.st-path ol')
   PATH.forEach(([route, name, what], i) => {
     const li = document.createElement('li')
-    const n = route === 'foundations' ? 'prep' : route === 'anatomy' ? 'map' : route.startsWith('training') ? 'then' : route.startsWith('lineage') || route.startsWith('serving') ? 'more' : String(i - 1).padStart(2, '0')
+    const n = route === 'foundations' ? 'prep' : route === 'anatomy' ? 'map' : route.startsWith('training') ? 'then' : route.startsWith('lineage') || route.startsWith('serving') || route.startsWith('agents') ? 'more' : String(i - 1).padStart(2, '0')
     li.innerHTML = `<a href="#/${route}"><span class="n">${n}</span><b></b><small></small></a>`
     li.querySelector('b')!.textContent = name
     li.querySelector('small')!.textContent = what
