@@ -46,7 +46,7 @@ const CAPS: Record<string, [string, string]> = {
   observe: [`The model never runs anything. The program around it watches the text, stops it where “Observation” would start, reads the action with a regular expression, runs the tool and appends the real result. Then it hands the context back.`, 'stop → parse → run → append → continue'],
   trace: [`The real run: two lookups, one calculation, then finish[${ANSWER}]. Each observation came from the program, not the model. The model only decided what to look up and what to do with it.`, `${S.length} model calls · ${S.filter((s) => s.obs).length} tool results · answer ${ANSWER}`],
   context: [`Every step adds the model’s text and the tool’s result to the context, which is read again at the next call. Kept in a KV cache between calls, each token is processed once (${kept}). Sent afresh each time, the calls process ${resent}.`, `${kept} tokens with a cache kept · ${resent} re-sent`],
-  unstopped: [`Without the stop, the model goes on and writes an Observation itself, a guess in the right format. That is why the loop must cut the text at “Observation” and insert the real result.`, 'the stop string keeps the model from inventing results'],
+  unstopped: [`Without the stop, the model goes on and writes an Observation itself, a guess in the right format. That is why the loop must cut the text at “Observation” and insert the real result.`, 'the stop string keeps results real'],
 }
 
 export function mountReact(root: HTMLElement, nav: Nav): () => void {

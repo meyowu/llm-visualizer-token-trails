@@ -19,7 +19,7 @@ const PHASES = [
   { id: 'program', name: 'The prompt is the program', short: 'Programs', dur: 10 },
   { id: 'copy', name: 'A head that copies', short: 'Induction', dur: 10 },
   { id: 'bias', name: 'Examples also mislead', short: 'Bias', dur: 10 },
-  { id: 'instruct', name: 'Instructions instead of examples', short: 'Instructions', dur: 11 },
+  { id: 'instruct', name: 'Instructions, not examples', short: 'Instructions', dur: 11 },
 ]
 
 const T = icl.tasks, Q = icl.query, CAP = T.capital, HEAD = icl.head
@@ -37,11 +37,11 @@ const COMPARE: Record<string, [string, string]> = {
 
 const CAPS: Record<string, [string, string]> = {
   zero: [`GPT-2 small is given “${Q}:” and nothing else. Nothing says what should follow, so its guesses are generic: a newline, “The”. “ Cairo” gets ${pct(CAP.rows[0].p)}.`, `p( Cairo | “${Q}:” ) = ${pct(CAP.rows[0].p)}`],
-  shots: [`The same model, with examples of country: capital lines before the question. One example is enough: “ Cairo” jumps to ${pct(CAP.rows[1].p)}. No weight changes; the examples only sit in the context. Over ${icl.countries} countries, one example takes the right answer to first place ${icl.curve[1].top1} times out of ${icl.countries}.`, 'few-shot prompting: examples in the context, weights fixed'],
+  shots: [`The same model, with examples of country: capital lines before the question. One example is enough: “ Cairo” jumps to ${pct(CAP.rows[1].p)}. No weight changes; the examples only sit in the context. Over ${icl.countries} countries, one example takes the right answer to first place ${icl.curve[1].top1} times out of ${icl.countries}.`, 'examples in the context, weights fixed'],
   program: [`Keep the question, change the examples, and the model computes a different function: capital, language or continent. Each is GPT-2’s real top guess after two examples. This is in-context learning: the prompt acts as the program.`, 'same weights · same question · three tasks'],
   copy: [`Part of how: in ${layerHead}, the last “:” puts ${pct(HEAD.share)} of its attention on the words that followed the earlier colons, the answers. It looks for what came after this token before and copies from there. Heads that do this are called induction heads.`, `${layerHead}: attention from the last “:”`],
   bias: [`Copying also brings bias. With two “Europe” labels among three examples, GPT-2 says “ Europe” for ${Q}; “ Africa” drops to ${pct(T.continent.rows[3].p)}. With capitals, the last example (Rome) pulls in “ Rome” and “ Milan”. More examples do not help here: ${icl.curve[1].top1}, ${icl.curve[2].top1}, ${icl.curve[3].top1}, ${icl.curve[4].top1} of ${icl.countries} right with 1 to 4.`, 'majority and recency bias'],
-  instruct: [`Given only the instruction, GPT-2 keeps writing text like its training data. ${icl.tuned.model} was instruction-tuned: trained further on instructions and answers in a chat template. It answers “${icl.tuned.answer}” with no examples. Examples still help to pin down a format, at ${extra} tokens for three here, paid on every call.`, 'instruction tuning: the instruction is the program'],
+  instruct: [`Given only the instruction, GPT-2 keeps writing text like its training data. ${icl.tuned.model} was instruction-tuned: trained further on instructions and answers in a chat template. It answers “${icl.tuned.answer}” with no examples. Examples still help to pin down a format, at ${extra} tokens for three here, paid on every call.`, 'the instruction is the program'],
 }
 
 export function mountInContext(root: HTMLElement, nav: Nav): () => void {
