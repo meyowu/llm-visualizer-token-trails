@@ -37,6 +37,15 @@ const PAUSE_ICON = 'M4 3h3v10H4zM9 3h3v10H9z'
 const PLAY_ICON = 'M4.5 2.5v11l9-5.5z'
 const SPEEDS = [0.25, 0.5, 1, 2]
 /** Questions already answered right in this browser are not asked again. */
+/** 0 … n−1 in an order fixed by the seed text (FNV-1a hash, then a Fisher–Yates shuffle driven by it). */
+function shuffled(n: number, seed: string): number[] {
+  let h = 2166136261
+  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619)
+  const next = () => { h = Math.imul(h ^ (h >>> 15), 2246822519); h ^= h >>> 13; return (h >>> 0) / 4294967296 }
+  const a = Array.from({ length: n }, (_, i) => i)
+  for (let i = n - 1; i > 0; i--) { const j = Math.floor(next() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] }
+  return a
+}
 const answered = (c: Check) => { try { return !!JSON.parse(pref.get('checks') ?? '{}')[c.q] } catch { return false } }
 
 /** The phase the next Player should open on, set by the router from a link like #/anatomy/unembed?phase=sample. */
@@ -57,6 +66,8 @@ export class Player {
   playing = true
   /** Step pacing: hold at the end of each phase. */
   guided = pref.get('pace') !== 'auto'
+  /** Stop for a question before key steps; off unless the reader turns it on. */
+  quiz = pref.get('quiz') === 'on'
   /** Holding at the end of a phase; playing again moves on to the next one. */
   held = false
   /** Called when t reaches the end. Without it the player stops at the last frame. */
@@ -164,7 +175,13 @@ export class Player {
       this.speed = SPEEDS[(SPEEDS.indexOf(this.speed) + 1) % SPEEDS.length]
       pref.set('speed', String(this.speed))
     })
-    this.meta.append(pace, speed)
+    const quiz = cycle('Questions', () => (this.quiz ? ['Questions on', 'Stop for a question before key steps (click to turn off)'] : ['Questions off', 'Questions before key steps are off (click to turn on)']), () => {
+      this.quiz = !this.quiz
+      pref.set('quiz', this.quiz ? 'on' : 'off')
+      // turned off while one is showing: put it away
+      if (!this.quiz && !this.card.hidden && this.card.dataset.kind === 'check') this.card.hidden = true
+    })
+    this.meta.append(pace, speed, quiz)
     const transport = document.createElement('div')
     transport.className = 'transport'
     transport.append(prevBtn, this.btn, this.nextBtn)
@@ -263,6 +280,7 @@ export class Player {
   }
   /** The question waiting at a phase, if it has not been asked here or answered before. */
   private pending(phase: string) {
+    if (!this.quiz) return null
     return this.checks.find((c) => c.phase === phase && !this.asked.has(phase) && !answered(c)) ?? null
   }
 
@@ -291,7 +309,7 @@ export class Player {
     if (this.playing) {
       const end = this.phases[this.curIndex()].end, nt = this.t + dt * this.speed
       // a question waits at the start of its phase
-      const crossing = this.checks.find((c) => { const p = this.byId[c.phase]; return p && this.t < p.start && nt >= p.start })
+      const crossing = this.quiz && this.checks.find((c) => { const p = this.byId[c.phase]; return p && this.t < p.start && nt >= p.start })
       const q = crossing && this.pending(crossing.phase)
       if (q) { this.t = this.byId[q.phase].start + 0.001; this.setPlaying(false); this.ask(q); return }
       if (this.guided && this.t < end && nt >= end) {
@@ -343,13 +361,17 @@ export class Player {
     this.card.hidden = false
     this.card.innerHTML = `<p class="coach-k">${tr('Predict first')}</p><p class="coach-q">${withTerms(rich(tr(c.q)))}</p><div class="coach-opts"></div><p class="coach-why" hidden></p><div class="coach-go"><button type="button" class="chap">${tr('Skip')}</button></div>`
     const opts = this.card.querySelector('.coach-opts')!, why = this.card.querySelector('.coach-why') as HTMLElement, go = this.card.querySelector('.coach-go button') as HTMLButtonElement
-    c.options.forEach((o, i) => {
+    // the options in a shuffled order that is the same every time for this question, so the answer is not always first
+    const order = shuffled(c.options.length, c.q)
+    order.forEach((i) => {
+      const o = c.options[i]
       const b = document.createElement('button')
       b.type = 'button'
+      b.dataset.i = String(i)
       b.innerHTML = rich(tr(o))
       b.addEventListener('click', () => {
         const ok = i === c.answer
-        opts.querySelectorAll('button').forEach((x, k) => { (x as HTMLButtonElement).disabled = true; if (k === c.answer) x.classList.add('right'); else if (x === b) x.classList.add('wrong') })
+        opts.querySelectorAll<HTMLButtonElement>('button').forEach((x) => { x.disabled = true; if (Number(x.dataset.i) === c.answer) x.classList.add('right'); else if (x === b) x.classList.add('wrong') })
         why.hidden = false
         why.innerHTML = `${tr(ok ? 'Right.' : 'Not quite.')} ${withTerms(rich(tr(c.why)))}`
         go.textContent = tr('Watch it ›')

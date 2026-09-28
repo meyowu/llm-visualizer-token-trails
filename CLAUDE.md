@@ -27,7 +27,7 @@ src/core/player.ts          Player: phases, t, play/pause, step buttons, Step/Au
 src/core/fonts.ts           registerFonts(): the three families as self-hosted woff2 (@fontsource files), Latin, Latin Ext, Greek
 src/core/link.ts            getParams()/setParams(): page state in the address (#/route?phase=…&head=6.6), replaceState only
 src/core/progress.ts        steps seen per page and the last place (rail ✓ / n of m, Resume on the start page)
-src/core/prefs.ts           pref.get/set: reader preferences in localStorage (speed, pacing, temperature, strategy, lang)
+src/core/prefs.ts           pref.get/set: reader preferences in localStorage (speed, pacing, questions, temperature, strategy, lang)
 src/core/i18n.ts            EN / 中文: lang, setLang/onLang, t() (English is the key; numbers and quoted spans are {} placeholders),
                             tf(template, …args) for text built around names (the template is the key),
                             localizeCanvas() (fillText/measureText translate), raw() for text that must stay as is, harvest mode
@@ -42,7 +42,8 @@ src/core/theme.ts           canvas palette C (read from CSS tokens), rgba/mixc/b
 src/exhibits/start.ts       landing page (#/start, the default): live next-token demo, what a Transformer is, the path, legend
 src/exhibits/glossary.ts    #/glossary: every term in TERMS
 src/exhibits/foundations.ts #/foundations: dot product, matrix product layout, softmax, one-hot (small made-up numbers)
-src/exhibits/learn.ts       per page: code lines (marked per phase), predict-then-reveal checks, recap; teach(player, page)
+src/exhibits/learn.ts       per page: code lines (marked per phase), predict-then-reveal checks (asked only when the reader turns
+                            Questions on; options shown in a fixed shuffled order per question), recap; teach(player, page)
 src/exhibits/kit.ts         mountExhibit(): the shared frame of a scene-per-phase page, Architectures, Serving, Training and Agents (Compare button,
                             pills that jump to a phase, onFrame hooks) and canvas helpers (Kit: pill, lane, glass, arrow…)
 src/exhibits/registry.ts    categories (Inside the model, Architectures, Training, Serving, Agents; routes anatomy/*, lineage/*, …) → entries: exhibits or sub-headings;
