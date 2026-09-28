@@ -92,7 +92,7 @@ export function mountBpeTrain(root: HTMLElement, nav: Nav): () => void {
       title: 'Learning the tokenizer',
       subtitle: 'byte-pair encoding: count pairs, merge, repeat',
       specs: [
-        { label: 'corpus', value: 'this site’s glossary', real: `${TR.bytes.toLocaleString('en-US')} bytes`, realLabel: '·' },
+        { label: 'corpus', value: 'this site’s glossary', real: `${TR.bytes.toLocaleString('en-US')} bytes`, realLabel: '' },
         { label: 'merges', value: String(TR.merges.length), real: '50,000', realLabel: 'GPT-2' },
         { label: 'start', value: '256 byte symbols' },
       ],

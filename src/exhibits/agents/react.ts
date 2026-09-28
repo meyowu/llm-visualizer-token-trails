@@ -60,7 +60,7 @@ export function mountReact(root: HTMLElement, nav: Nav): () => void {
         { label: 'model', value: react.model, real: 'thinking off', realLabel: '' },
         { label: 'tools', value: react.tools.map((t) => t.name).join(', ') },
         { label: 'stop string', value: '“\\nObservation”' },
-        { label: 'this run', value: `${S.length} calls`, real: `${kept} tokens`, realLabel: '·' },
+        { label: 'this run', value: `${S.length} calls`, real: `${kept} tokens`, realLabel: '' },
       ],
     },
     size: [1040, 480],

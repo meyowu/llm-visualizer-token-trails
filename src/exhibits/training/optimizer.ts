@@ -79,8 +79,8 @@ export function mountOptimizer(root: HTMLElement, nav: Nav): () => void {
       title: 'Optimizer',
       subtitle: 'SGD, momentum, Adam, AdamW, and the schedule',
       specs: [
-        { label: 'shown', value: 'toy surface', real: '2 weights', realLabel: '·' },
-        { label: 'AdamW', value: 'β₁ 0.9, β₂ 0.95', real: 'λ 0.1 · LLaMA 2', realLabel: '·' },
+        { label: 'shown', value: 'toy surface', real: '2 weights', realLabel: '' },
+        { label: 'AdamW', value: 'β₁ 0.9, β₂ 0.95', real: 'λ 0.1 · LLaMA 2', realLabel: '' },
         { label: 'schedule', value: 'warmup + cosine' },
       ],
     },

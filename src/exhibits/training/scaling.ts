@@ -71,8 +71,8 @@ export function mountScaling(root: HTMLElement, nav: Nav): () => void {
       title: 'Scaling laws',
       subtitle: 'loss against parameters, data and compute',
       specs: [
-        { label: 'measured', value: 'GPT-2 small, medium, large', real: `${S.tokens} tokens`, realLabel: '·' },
-        { label: 'fit', value: 'Chinchilla', real: 'Hoffmann et al. 2022', realLabel: '·' },
+        { label: 'measured', value: 'GPT-2 small, medium, large', real: `${S.tokens} tokens`, realLabel: '' },
+        { label: 'fit', value: 'Chinchilla', real: 'Hoffmann et al. 2022', realLabel: '' },
         { label: 'compute', value: 'C ≈ 6 N D' },
       ],
     },

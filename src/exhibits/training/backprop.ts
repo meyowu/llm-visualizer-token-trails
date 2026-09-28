@@ -55,8 +55,8 @@ export function mountBackprop(root: HTMLElement, nav: Nav): () => void {
       title: 'Backprop',
       subtitle: 'the chain rule, from the loss back to every weight',
       specs: [
-        { label: 'model', value: 'GPT-2 small', real: '124M gradients', realLabel: '·' },
-        { label: 'sentence', value: `${N} predictions`, real: `loss ${bp.loss}`, realLabel: '·' },
+        { label: 'model', value: 'GPT-2 small', real: '124M gradients', realLabel: '' },
+        { label: 'sentence', value: `${N} predictions`, real: `loss ${bp.loss}`, realLabel: '' },
         { label: 'drawn', value: 'dims 1–8', real: '3,072 × 768', realLabel: 'of' },
       ],
     },

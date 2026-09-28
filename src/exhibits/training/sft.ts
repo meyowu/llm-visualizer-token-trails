@@ -52,8 +52,8 @@ export function mountSft(root: HTMLElement, nav: Nav): () => void {
       subtitle: 'instruction tuning: the loss, on answers only',
       specs: [
         { label: 'before', value: S.base },
-        { label: 'after', value: S.model, real: 'Qwen’s post-training', realLabel: '·' },
-        { label: 'example', value: `${T.length} tokens`, real: `${answer.length} trained`, realLabel: '·' },
+        { label: 'after', value: S.model, real: 'Qwen’s post-training', realLabel: '' },
+        { label: 'example', value: `${T.length} tokens`, real: `${answer.length} trained`, realLabel: '' },
       ],
     },
     size: [1040, 480],

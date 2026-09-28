@@ -48,9 +48,9 @@ export function mountDpo(root: HTMLElement, nav: Nav): () => void {
       title: 'RLHF & DPO',
       subtitle: 'learning which of two answers is better',
       specs: [
-        { label: 'policy', value: 'GPT-2 small + LoRA', real: 'rank 4', realLabel: '·' },
+        { label: 'policy', value: 'GPT-2 small + LoRA', real: 'rank 4', realLabel: '' },
         { label: 'reference', value: 'GPT-2 small, frozen' },
-        { label: 'β', value: String(BETA), real: `${N} steps`, realLabel: '·' },
+        { label: 'β', value: String(BETA), real: `${N} steps`, realLabel: '' },
       ],
     },
     size: [1040, 480],

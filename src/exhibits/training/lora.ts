@@ -55,8 +55,8 @@ export function mountLora(root: HTMLElement, nav: Nav): () => void {
       title: 'LoRA',
       subtitle: 'low-rank adapters beside frozen weights',
       specs: [
-        { label: 'here', value: `rank ${R}`, real: 'W_qkv × 12 blocks', realLabel: '·' },
-        { label: 'trainable', value: Lo.run.trainable.toLocaleString('en-US'), real: pct(Lo.run.trainable / Lo.full.trainable), realLabel: '·' },
+        { label: 'here', value: `rank ${R}`, real: 'W_qkv × 12 blocks', realLabel: '' },
+        { label: 'trainable', value: Lo.run.trainable.toLocaleString('en-US'), real: pct(Lo.run.trainable / Lo.full.trainable), realLabel: '' },
         { label: 'model', value: ft.model },
       ],
     },

@@ -57,8 +57,8 @@ export function mountRag(root: HTMLElement, nav: Nav): () => void {
       title: 'RAG Pipeline',
       subtitle: 'embed → retrieve → read',
       specs: [
-        { label: 'passages', value: String(D.length), real: 'this site’s glossary and legend', realLabel: '·' },
-        { label: 'embedder', value: rag.embedder, real: `${rag.dims} dims`, realLabel: '·' },
+        { label: 'passages', value: String(D.length), real: 'this site’s glossary and legend', realLabel: '' },
+        { label: 'embedder', value: rag.embedder, real: `${rag.dims} dims`, realLabel: '' },
         { label: 'retrieve', value: `top ${K} by cosine` },
         { label: 'model', value: rag.model },
       ],

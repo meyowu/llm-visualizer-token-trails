@@ -53,7 +53,7 @@ export function mountSpeculative(root: HTMLElement, nav: Nav): () => void {
         { label: 'target', value: 'GPT-2 small', real: '12 layers', realLabel: '' },
         { label: 'draft', value: 'distilgpt2', real: '6 layers', realLabel: '' },
         { label: 'guesses per round', value: String(K) },
-        { label: 'this run', value: `${spec.output.length} tokens`, real: `${spec.targetPasses} target passes`, realLabel: '·' },
+        { label: 'this run', value: `${spec.output.length} tokens`, real: `${spec.targetPasses} target passes`, realLabel: '' },
         { label: 'output', value: spec.identical ? 'identical to GPT-2' : 'differs' },
       ],
     },

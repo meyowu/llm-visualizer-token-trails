@@ -60,7 +60,7 @@ export function mountMultiAgent(root: HTMLElement, nav: Nav): () => void {
       title: 'Multi-agent Handoff',
       subtitle: 'an orchestrator, workers with their own contexts',
       specs: [
-        { label: 'model', value: M.model, real: 'every agent', realLabel: '·' },
+        { label: 'model', value: M.model, real: 'every agent', realLabel: '' },
         { label: 'workers', value: String(N) },
         { label: 'tokens processed', value: multiTotal.toLocaleString('en-US'), real: `${singleTotal.toLocaleString('en-US')} for one agent`, realLabel: 'vs' },
       ],
