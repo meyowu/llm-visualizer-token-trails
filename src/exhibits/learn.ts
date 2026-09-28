@@ -890,6 +890,79 @@ const LEARN: Record<string, Learn> = {
       'Real models trade that off: GPT-3 was under-trained, LLaMA 3 is over-trained on purpose to be cheap to serve.',
     ],
   },
+  lora: {
+    refs: [["Hu et al. 2021, LoRA: Low-Rank Adaptation of Large Language Models", "https://arxiv.org/abs/2106.09685"], ["Dettmers et al. 2023, QLoRA", "https://arxiv.org/abs/2305.14314"], ["Sheng et al. 2023, S-LoRA: Serving Thousands of Concurrent LoRA Adapters", "https://arxiv.org/abs/2311.03285"]],
+    code: {
+      lines: [
+        'class LoRALinear(nn.Module):',
+        '    def __init__(self, base, r=4):',
+        '        self.base = base.requires_grad_(False)                          # W stays frozen',
+        '        self.A = nn.Parameter(torch.randn(base.in_features, r) * 0.02)',
+        '        self.B = nn.Parameter(torch.zeros(r, base.out_features))       # ΔW = A·B starts at 0',
+        '    def forward(self, x):',
+        '        return self.base(x) + (x @ self.A) @ self.B',
+        '# after training: merge once, no extra cost',
+        'base.weight.data += (A @ B).T',
+      ],
+      at: { idea: [0, 3, 4, 5, 6], count: [2, 3, 4], train: [6], rank: [4], merge: [7, 8] },
+    },
+    checks: [
+      { phase: 'idea', q: 'Why does B start at zero?', options: ['So A·B = 0 and training starts from the unchanged pretrained model', 'To save memory', 'Because A is random and B must match it', 'So the rank starts at zero and grows'], answer: 0, why: 'With B = 0 the adapted layer computes exactly what the frozen layer does; the change grows only as training needs it.' },
+      { phase: 'rank', q: 'When is LoRA’s low-rank bet a good one?', options: ['For narrow fine-tunes, whose weight changes are close to low-rank', 'For any amount of training', 'Only for attention matrices', 'Only when r is larger than the matrix'], answer: 0, why: 'A narrow task needs a small change in a few directions; broad post-training like Qwen’s changes weights in every direction, which a low rank cannot capture.' },
+    ],
+    recap: [
+      'LoRA freezes W and learns ΔW = A·B with a small rank r, a fraction of a percent of the weights.',
+      'Only the adapters need gradients and optimizer state; after training they can be merged into W for free.',
+      'Narrow fine-tunes change weights in few directions, so a low rank suffices; broad post-training does not.',
+    ],
+  },
+  dpo: {
+    refs: [["Ouyang et al. 2022, Training language models to follow instructions with human feedback (InstructGPT)", "https://arxiv.org/abs/2203.02155"], ["Rafailov et al. 2023, Direct Preference Optimization", "https://arxiv.org/abs/2305.18290"], ["Schulman et al. 2017, Proximal Policy Optimization", "https://arxiv.org/abs/1707.06347"]],
+    code: {
+      lines: [
+        'def logp(model, prompt, answer):              # Σ log p of the answer tokens',
+        '    logits = model(prompt + answer).logits[len(prompt) - 1:-1]',
+        '    return logits.log_softmax(-1).gather(-1, answer[:, None]).sum()',
+        'r_w = beta * (logp(policy, x, y_w) - logp(ref, x, y_w))    # implicit rewards',
+        'r_l = beta * (logp(policy, x, y_l) - logp(ref, x, y_l))',
+        'loss = -F.logsigmoid(r_w - r_l)',
+        'loss.backward(); opt.step()                   # ref is frozen; only the policy moves',
+      ],
+      at: { pairs: [0, 1, 2], rlhf: [], dpo: [3, 4, 5], run: [5, 6], where: [3, 4] },
+    },
+    checks: [
+      { phase: 'dpo', q: 'At the first step, when the policy equals the reference, what is the DPO loss?', options: ['ln 2 ≈ 0.693, since both implicit rewards are 0', '0', '1', 'It depends on the answers'], answer: 0, why: 'Both log-ratios are 0, so the margin is 0 and −log σ(0) = ln 2.' },
+      { phase: 'where', q: 'In this run, how did the margins mostly grow?', options: ['The rejected answers’ probabilities fell far', 'The chosen answers became near-certain', 'The reference model changed', 'β grew'], answer: 0, why: 'The chosen log-probabilities moved a little; the rejected ones dropped by tens of nats. Lowering the rejected answer is the cheapest way to widen the gap.' },
+    ],
+    recap: [
+      'Preference tuning learns from pairs of answers where one was preferred, which is easier to collect than written answers.',
+      'RLHF trains a reward model and then optimizes the policy with PPO and a KL penalty; DPO gets the same objective from one loss.',
+      'DPO’s loss compares log-probability ratios to a frozen reference; it can widen the gap by pushing rejected answers down.',
+    ],
+  },
+  sft: {
+    refs: [["Ouyang et al. 2022, Training language models to follow instructions with human feedback (InstructGPT)", "https://arxiv.org/abs/2203.02155"], ["Wei et al. 2021, Finetuned Language Models Are Zero-Shot Learners (FLAN)", "https://arxiv.org/abs/2109.01652"], ["Qwen Team 2025, Qwen3 Technical Report", "https://arxiv.org/abs/2505.09388"]],
+    code: {
+      lines: [
+        "ids = tokenizer.apply_chat_template([{'role': 'user', 'content': q}, {'role': 'assistant', 'content': a}])",
+        'labels = ids.clone()',
+        'labels[:n_prompt] = -100                     # prompt and template: masked',
+        'logits = model(ids[:-1]).logits',
+        'loss = F.cross_entropy(logits, labels[1:], ignore_index=-100)   # the answer only',
+        'loss.backward(); opt.step()',
+      ],
+      at: { format: [0], mask: [1, 2, 3, 4], before: [5], sharp: [4], untrained: [2] },
+    },
+    checks: [
+      { phase: 'mask', q: 'Which tokens does SFT’s loss count?', options: ['Only the answer’s tokens (and its end marker)', 'Every token of the conversation', 'Only the user’s question', 'Only special tokens'], answer: 0, why: 'The prompt and template tokens get the ignore label, so the model is trained to write answers, not to predict the user.' },
+      { phase: 'sharp', q: 'Why does the tuned model give a human-written answer a higher loss than the base model does?', options: ['It has become very sure of its own phrasing, so other wordings get less probability', 'The answer is wrong', 'It forgot English', 'Its vocabulary changed'], answer: 0, why: 'Post-training concentrates probability on the model’s own style of answer; its own answer costs 0.12 nats per token, a different wording much more.' },
+    ],
+    recap: [
+      'SFT is the pretraining loss on chat-formatted conversations, counted only on the answers.',
+      'It turns a text continuer into an assistant that answers and stops.',
+      'Tuned models become sure of their own phrasing, and masked tokens get no training at all.',
+    ],
+  },
 }
 
 /** Give a page's player its code drawer, questions and recap. */

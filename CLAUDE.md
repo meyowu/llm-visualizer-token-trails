@@ -57,6 +57,8 @@ src/lib/rag/data.ts         types for src/data/rag.json, plainText() for model o
 src/lib/multi/data.ts       types for src/data/multi.json
 src/lib/backprop/data.ts    types for src/data/backprop.json
 src/lib/scaling/data.ts     types for src/data/scaling.json
+src/lib/finetune/data.ts    types for src/data/finetune.json and src/data/lora.json
+src/lib/sft/data.ts         types for src/data/sft.json
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
@@ -82,7 +84,7 @@ scripts/spec-export.ts      speculative decoding for real: distilgpt2 drafts, GP
                             weights in ~/.cache/token-trails/gpt2 and ~/.cache/token-trails/distilgpt2
 scripts/quant-export.ts     GPT-2 small with its linear weights rounded to int8/int4 (per tensor, channel, group of 128) and
                             rerun; writes src/data/quant.json
-scripts/gpt2-model.ts       shared GPT-2-shaped forward pass for spec-export and quant-export
+scripts/gpt2-model.ts       shared GPT-2-shaped forward pass (any GPT-2 width) for spec-, quant- and scaling-export
 scripts/qwen-model.ts       offline chat model for the Agents exports: Qwen3-1.7B (or Qwen2.5-Instruct) in plain TS with worker
                             threads, byte-level BPE, the ChatML/tool-call template (thinking off), KV cache, greedy generation
                             with stop strings and top-k; weights in ~/.cache/token-trails/qwen3
@@ -100,6 +102,15 @@ scripts/backprop-export.ts  GPT-2 small's forward and backward pass in float64 o
                             slice, per-position reach, finite-difference checks; writes src/data/backprop.json
 scripts/scaling-export.ts   GPT-2 small, medium and large (sizes via gpt2-model.ts's dims) scoring this site's glossary, which none of them
                             saw; losses per token and in the mean; writes src/data/scaling.json; weights in ~/.cache/token-trails/gpt2-medium, gpt2-large
+scripts/finetune-export.ts  GPT-2 small fine-tuned in float64 with Adam (gpt2-grad.ts): rank-4 LoRA vs full fine-tuning on two sentences,
+                            and DPO with the same adapters on three pairs; writes src/data/finetune.json
+scripts/lora-export.ts      Qwen3-1.7B minus Qwen3-1.7B-Base for four matrices of layer 15 (only those tensors read): top singular
+                            values of ΔW and W by randomized SVD; writes src/data/lora.json; base in ~/.cache/token-trails/qwen3base
+scripts/gpt2-grad.ts        GPT-2 small's forward and backward pass in float64, weighted losses, gradients only where asked
+                            (backprop-export, finetune-export)
+scripts/svd.ts              randomized SVD (Halko et al.) for the rank exports
+scripts/sft-export.ts       Qwen3-1.7B-Base and Qwen3-1.7B, each in a child process: per-token loss on one chat example, their answers,
+                            each scored on both; writes src/data/sft.json
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
   overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
@@ -119,6 +130,12 @@ src/exhibits/training/
                             on sample words, symbols per word vs merges, our first merges next to GPT-2's (merges.txt, lazy-loaded)
   scaling.ts                scaling laws: GPT-2 small/medium/large on unseen text (scripts/scaling-export.ts) with a power-law fit, per-token
                             gains, the Chinchilla fit L(N, D), isoFLOP curves and compute-optimal sizes, published models vs D = 20 N
+  lora.ts                   LoRA: W + A·B at toy size, trainable counts (GPT-2 here, LLaMA 3 8B r = 16), a real rank-4 run vs full fine-tuning
+                            (scripts/finetune-export.ts), captured energy by rank for that fine-tune vs Qwen3's post-training (lora-export.ts)
+  sft.ts                    SFT on Qwen3-1.7B-Base vs Qwen3-1.7B (scripts/sft-export.ts): the chat-formatted example with masked tokens
+                            hatched, per-token loss on the answer only, both models' answers, loss on each other's answers, drifted masked tokens
+  dpo.ts                    RLHF & DPO: preference pairs with GPT-2's log-probabilities, the RLHF pipeline, DPO's loss, a real DPO run with rank-4
+                            adapters (scripts/finetune-export.ts), log π of chosen and rejected per step, next-token shift
 src/exhibits/lineage/
   transformer2017.ts        the 2017 Transformer vs GPT-2: RNN → attention, encoder + decoder, a toy EN → DE
                             translation, the three attentions, cross-attention GEMM, post-LN (real GPT-2 stream

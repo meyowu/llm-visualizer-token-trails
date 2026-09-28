@@ -21,9 +21,12 @@ import { mountMixtral } from './lineage/mixtral'
 import { mountTransformer2017 } from './lineage/transformer2017'
 import { mountBackprop } from './training/backprop'
 import { mountBpeTrain } from './training/bpetrain'
+import { mountDpo } from './training/dpo'
 import { mountLoss } from './training/loss'
+import { mountLora } from './training/lora'
 import { mountOptimizer } from './training/optimizer'
 import { mountScaling } from './training/scaling'
+import { mountSft } from './training/sft'
 import { mountFoundations } from './foundations'
 import { mountGlossary } from './glossary'
 import { mountStart } from './start'
@@ -113,9 +116,9 @@ export const CATEGORIES: Category[] = [
       { name: 'Optimizer', tag: 'AdamW · warmup · schedule', route: 'training/optimizer', mount: mountOptimizer },
       { name: 'Learning the tokenizer', tag: 'counting pairs for BPE', route: 'training/tokenizer', mount: mountBpeTrain },
       { heading: 'After pretraining' },
-      { name: 'SFT', tag: 'instruction tuning' },
-      { name: 'RLHF & DPO', tag: 'learning from preferences' },
-      { name: 'LoRA', tag: 'low-rank adapters' },
+      { name: 'SFT', tag: 'instruction tuning', route: 'training/sft', mount: mountSft },
+      { name: 'RLHF & DPO', tag: 'learning from preferences', route: 'training/dpo', mount: mountDpo },
+      { name: 'LoRA', tag: 'low-rank adapters', route: 'training/lora', mount: mountLora },
       { name: 'Scaling laws', tag: 'loss vs compute', route: 'training/scaling', mount: mountScaling },
     ],
   },
