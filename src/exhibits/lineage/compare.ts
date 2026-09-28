@@ -226,12 +226,12 @@ function scenes({ stage, ctx, mk, k, frame, player }: Env, c: Ctl) {
     name(b, 1, xb, top + 14, eout(clamp(p / 0.1)), `${b.org} · ${b.released}`)
     const rows = c.diffRows()
     const y0 = top + 58, rowH = (H - bot - y0) / rows.length
-    let differ = 0
+    // counted over every row, however many the animation has drawn so far
+    const differ = rows.filter(([, va, vb]) => va !== vb).length
     rows.forEach(([label, va, vb, pa, pb], r) => {
       const al = eout(clamp((p - 0.06 - r * 0.045) / 0.12)), y = y0 + r * rowH + rowH / 2 + 4
       if (al <= 0) return
       const d = va !== vb
-      if (d) differ++
       ctx.strokeStyle = rgba(C.faint, 0.5 * al); ctx.lineWidth = 1
       ctx.beginPath(); ctx.moveTo(pad, y0 + (r + 1) * rowH); ctx.lineTo(W - pad, y0 + (r + 1) * rowH); ctx.stroke()
       title(label, pad + 16, y, al)
