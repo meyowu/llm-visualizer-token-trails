@@ -14,7 +14,7 @@ const PATH: [string, string, string][] = [
   ['anatomy/attention', 'Attention', 'How a token pulls in information from the tokens before it.'],
   ['anatomy/mlp', 'MLP', 'How each token is then transformed on its own.'],
   ['anatomy/unembed', 'Unembed & Sampling', 'How the last vector becomes probabilities, and one next token.'],
-  ['training/loss', 'Next-token loss', 'Where the numbers come from: the loss every weight is trained on.'],
+  ['training/loss', 'Training', 'Where the numbers come from: the loss every weight is trained on, backpropagation, optimizers, scaling laws, then SFT, preference tuning and LoRA.'],
   ['lineage/transformer-2017', 'Lineage', 'Where GPT-2 came from and what followed: ten architectures drawn as changes to it, from the 2017 Transformer to Mamba.'],
   ['serving/kv-cache', 'Serving', 'How a trained model is run fast and cheaply: the KV cache, FlashAttention, batching, speculative decoding, quantization.'],
   ['agents/in-context', 'Agents', 'How a model becomes an agent: examples and instructions in the prompt, a ReAct loop, tool calls, retrieval, and agents handing work to agents.'],
