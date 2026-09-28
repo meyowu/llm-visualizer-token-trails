@@ -815,6 +815,31 @@ const LEARN: Record<string, Learn> = {
       'Residual adds keep the gradient alive through depth; finite differences confirm the numbers.',
     ],
   },
+  optimizer: {
+    refs: [["Kingma & Ba 2014, Adam: A Method for Stochastic Optimization", "https://arxiv.org/abs/1412.6980"], ["Loshchilov & Hutter 2019, Decoupled Weight Decay Regularization (AdamW)", "https://arxiv.org/abs/1711.05101"], ["Touvron et al. 2023, Llama 2 (training hyperparameters)", "https://arxiv.org/abs/2307.09288"], ["Rajbhandari et al. 2020, ZeRO: Memory Optimizations Toward Training Trillion Parameter Models", "https://arxiv.org/abs/1910.02054"]],
+    code: {
+      lines: [
+        'opt = torch.optim.AdamW(model.parameters(), lr=3e-4, betas=(0.9, 0.95), weight_decay=0.1)',
+        'sched = get_cosine_schedule_with_warmup(opt, num_warmup_steps=2000, num_training_steps=500_000)',
+        'for batch in data:',
+        '    loss = model(batch).loss; loss.backward()',
+        '    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)',
+        '    opt.step(); sched.step(); opt.zero_grad()',
+        '# inside opt.step(), per weight: m = β1·m + (1−β1)·g;  v = β2·v + (1−β2)·g²',
+        '#   w -= lr · (m̂ / (√v̂ + ε) + weight_decay · w)',
+      ],
+      at: { sgd: [3, 5], momentum: [6], adam: [0, 6, 7], decay: [0, 7], schedule: [1, 5], memory: [0, 6] },
+    },
+    checks: [
+      { phase: 'adam', q: 'Why does Adam cope with the narrow valley better than plain gradient descent?', options: ['It divides each weight’s step by the size of that weight’s own gradients', 'It uses a larger learning rate', 'It computes the exact minimum', 'It ignores the steep direction'], answer: 0, why: 'Dividing by √v evens out the scales, so a step size that is safe across the valley is not also tiny along it.' },
+      { phase: 'memory', q: 'Roughly how many bytes per weight does mixed-precision Adam training keep?', options: ['About 16: bf16 weights and gradients, fp32 master weights, m and v', 'About 2, the same as serving', 'About 4', 'About 64'], answer: 0, why: '2 + 2 + 4 + 4 + 4 = 16 bytes, before activations; serving needs only the 2-byte weights.' },
+    ],
+    recap: [
+      'Plain gradient descent zigzags when directions have very different steepness; momentum smooths it.',
+      'Adam scales each weight’s step by its own gradient history; AdamW adds weight decay directly to the weights.',
+      'The learning rate is warmed up, then decayed, and Adam’s state makes training cost about 16 bytes per weight.',
+    ],
+  },
 }
 
 /** Give a page's player its code drawer, questions and recap. */

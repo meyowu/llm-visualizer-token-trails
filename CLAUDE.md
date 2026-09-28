@@ -110,6 +110,8 @@ src/exhibits/training/
   loss.ts                   next-token loss on a real GPT-2 run (per-position p, −log p), gradient p − y, a toy step
   backprop.ts               backprop through GPT-2 small on the Training sentence (scripts/backprop-export.ts): the chain, dW = Xᵀ·dY as a GEMM
                             on real slices, the MLP backwards, the causal mask backwards, ‖dW‖ per block, finite-difference checks
+  optimizer.ts              SGD, momentum and Adam on a toy valley (real arithmetic, computed in the page), AdamW's decoupled decay, LLaMA 2's
+                            warmup + cosine schedule, bytes per weight for Adam training
 src/exhibits/lineage/
   transformer2017.ts        the 2017 Transformer vs GPT-2: RNN → attention, encoder + decoder, a toy EN → DE
                             translation, the three attentions, cross-attention GEMM, post-LN (real GPT-2 stream

@@ -12,6 +12,7 @@ export interface Term {
 
 export const TERMS: Term[] = [
   { term: 'adaLN-Zero', match: ['adaln-zero', 'adaln'], def: 'DiT’s conditioning: the timestep and class set each block’s LayerNorm scale and shift and a gate on each sub-layer’s output; the gates start at zero, so blocks start as the identity.' },
+  { term: 'Adam', match: ['adam', 'adamw'], def: 'The standard optimizer for Transformers: it keeps a running mean of each weight’s gradient (m) and of its square (v), and steps by m / √v, so every weight moves at a similar pace. AdamW adds weight decay separately.' },
   { term: 'Agent', match: ['agent loop', 'agents'], def: 'A program that runs a language model in a loop: the model chooses actions such as tool calls, the program carries them out and feeds the results back, until the task is done.' },
   { term: 'Attention', match: [], def: 'Lets each position mix in information from itself and earlier positions, weighted by how well its query matches their keys.' },
   { term: 'Attention head', match: [], def: 'One of several attention computations run side by side, each on its own slice of the vector (64 of 768 numbers in GPT-2), free to track a different relation.' },
@@ -54,6 +55,8 @@ export const TERMS: Term[] = [
   { term: 'JSON Schema', match: ['json schema', 'json schemas'], def: 'A standard way to describe the shape of JSON data: its fields, their types and which are required. Tool definitions use it for their parameters.' },
   { term: 'KV cache', match: ['kv cache'], def: 'While generating, the keys and values of past tokens are stored so each new token only computes its own. It grows with every token and every layer.' },
   { term: 'BatchNorm', match: [], def: 'Normalises each feature across the examples in a batch (common in vision). Transformers use LayerNorm instead, which normalises each token on its own.' },
+  { term: 'Learning rate', match: ['learning rate', 'step size'], def: 'How far each training step moves the weights against the gradient (η). It is usually warmed up from zero, then decayed.' },
+  { term: 'Momentum', match: ['momentum'], def: 'Stepping along a running sum of past gradients instead of the latest one alone, so oscillations cancel and consistent directions build up speed.' },
   { term: 'Orchestrator', match: ['orchestrator'], def: 'In a multi-agent system, the agent that splits a task, hands the pieces to worker agents and combines what they report.' },
   { term: 'Patch embedding', match: ['patch embedding'], def: 'ViT’s replacement for a vocabulary lookup: each 16 × 16 image patch is flattened and multiplied by one shared matrix, the same as a convolution with a 16 × 16 kernel and stride 16.' },
   { term: 'Online softmax', match: ['online softmax'], def: 'Computing a softmax in chunks with a running maximum and a running sum, rescaling earlier terms when the maximum grows; the result equals the ordinary softmax.' },
@@ -74,6 +77,7 @@ export const TERMS: Term[] = [
   { term: 'MLP', match: ['mlp'], def: 'Multi-layer perceptron: two matrix products with a nonlinearity (GELU) between them, applied to each token on its own.' },
   { term: 'Stop string', match: ['stop string', 'stop strings'], def: 'Text that ends generation as soon as the model writes it; an agent loop uses one to take control back before the model makes up a tool’s result.' },
   { term: 'Tool call', match: ['tool call', 'tool calls', 'tool calling'], def: 'Text a model writes to ask the surrounding program to run a function, such as JSON with a name and arguments; the program runs it and puts the result back in the context.' },
+  { term: 'Weight decay', match: ['weight decay'], def: 'Shrinking every weight by a small fraction each training step, which keeps weights small unless the loss needs them large.' },
   { term: 'x · W and W x', match: [], def: 'Two ways to write the same product. Papers often write W x (a column vector); code and this site write x · W (x @ W), with one row per token.' },
   { term: 'Prefill and decode', match: ['prefill', 'decode step', 'decode steps'], def: 'The two phases of generation: prefill runs the whole prompt in one pass and fills the KV cache; each decode step then runs a single new token.' },
   { term: 'Quantization', match: ['quantization', 'quantized', 'quantizes'], def: 'Storing numbers in fewer bits, for example weights as 8- or 4-bit integers with a scale, to make a model smaller and faster to serve at a small cost in accuracy.' },
