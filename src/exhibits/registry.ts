@@ -115,11 +115,11 @@ export const CATEGORIES: Category[] = [
       { name: 'Backprop', tag: 'gradients through every block', route: 'training/backprop', mount: mountBackprop },
       { name: 'Optimizer', tag: 'AdamW · warmup · schedule', route: 'training/optimizer', mount: mountOptimizer },
       { name: 'Learning the tokenizer', tag: 'counting pairs for BPE', route: 'training/tokenizer', mount: mountBpeTrain },
+      { name: 'Scaling laws', tag: 'loss vs compute', route: 'training/scaling', mount: mountScaling },
       { heading: 'After pretraining' },
       { name: 'SFT', tag: 'instruction tuning', route: 'training/sft', mount: mountSft },
       { name: 'RLHF & DPO', tag: 'learning from preferences', route: 'training/dpo', mount: mountDpo },
       { name: 'LoRA', tag: 'low-rank adapters', route: 'training/lora', mount: mountLora },
-      { name: 'Scaling laws', tag: 'loss vs compute', route: 'training/scaling', mount: mountScaling },
     ],
   },
   {
