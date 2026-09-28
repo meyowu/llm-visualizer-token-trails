@@ -115,6 +115,7 @@ scripts/
   spec-export.ts          speculative decoding, distilgpt2 → GPT-2 → src/data/spec.json
   quant-export.ts         GPT-2 small quantized and rerun → src/data/quant.json
   gpt2-model.ts           the GPT-2 forward pass the two scripts above share
+  qwen-model.ts           Qwen3-1.7B chat model (tokenizer, chat template, KV cache) for the Agents exports
 ```
 
 To add an exhibit, write a `mount(root, nav) => destroy` function under `exhibits/` and give its entry in `registry.ts` a `route` and `mount`.

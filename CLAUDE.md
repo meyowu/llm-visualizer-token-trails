@@ -76,6 +76,9 @@ scripts/spec-export.ts      speculative decoding for real: distilgpt2 drafts, GP
 scripts/quant-export.ts     GPT-2 small with its linear weights rounded to int8/int4 (per tensor, channel, group of 128) and
                             rerun; writes src/data/quant.json
 scripts/gpt2-model.ts       shared GPT-2-shaped forward pass for spec-export and quant-export
+scripts/qwen-model.ts       offline chat model for the Agents exports: Qwen3-1.7B (or Qwen2.5-Instruct) in plain TS with worker
+                            threads, byte-level BPE, the ChatML/tool-call template (thinking off), KV cache, greedy generation
+                            with stop strings and top-k; weights in ~/.cache/token-trails/qwen3
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
   overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
