@@ -302,6 +302,7 @@ export const ui: Record<string, string> = {
   'A prompt splits into tokens; their lanes run through GPT-2’s {} blocks and mix their colours by the real attention of the run; the last lane becomes the real next-token probabilities, and the most likely token is appended.':
     '一句提示词被切成词元；它们的通道穿过 GPT-2 的 {0} 个块，并按这次运行的真实注意力混合颜色；最后一条通道变成真实的下一词元概率，最可能的词元被接到句尾。',
   'Replay the opening animation': '重播开场动画',
+  'Made by': '作者',
 
   // the glossary page
   'Reference': '参考',

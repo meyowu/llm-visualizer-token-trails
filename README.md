@@ -6,6 +6,8 @@ The atlas follows a model's life in five parts: **Inside the model** (GPT-2 take
 
 The site reads in English or Chinese (the EN / 中文 switch in the sidebar, or `?lang=zh` in the address). Model inputs and outputs, tokens and math stay as the models saw them.
 
+Made by Zhehao Wu · [zhehao075@gmail.com](mailto:zhehao075@gmail.com) · [github.com/meyowu/token-trails](https://github.com/meyowu/token-trails)
+
 ## What's here
 
 - **Start here**: what a language model does (a live next-token example with real GPT-2 numbers), what a Transformer is, the path through the chapters inside the model, and how to read the pictures.
