@@ -126,8 +126,11 @@ export function subLabel(t: string, x: number, y: number, on: boolean) {
 /* ---------- subscripts: "W_Q", "ln_f", "d_model" render as W with a subscript Q, and so on ---------- */
 
 /** An identifier with a subscript; not inside special tokens such as <|im_start|>. */
-/** x_1, W_up, x_{t−1}: a name, then a run of letters and digits or anything in braces as its subscript. */
-const SUB_RE = /(?<![|A-Za-z\u0391-\u03c9\u1f00-\u1fff\u0300-\u036f])([A-Za-z\u0391-\u03c9\u1f00-\u1fff][A-Za-z\u0391-\u03c9\u1f00-\u1fff\u0300-\u036f]*)_(?:\{([^}]+)\}|([A-Za-z0-9\u2205]+))/g
+/**
+ * x_1, W_up, ln_f, x_{t−1}: a one- or two-letter name, then a run of letters and digits or anything in braces as its
+ * subscript. Longer names before an underscore are code (count_letter, tool_call) and stay as written.
+ */
+const SUB_RE = /(?<![|_A-Za-z\u0391-\u03c9\u1f00-\u1fff\u0300-\u036f])((?:[A-Za-z\u0391-\u03c9\u1f00-\u1fff][\u0300-\u036f]*){1,2})_(?:\{([^}]+)\}|([A-Za-z0-9\u2205]+))/g
 /** Split text into [run, isSubscript] pieces. */
 export function richSegs(t: string): [string, boolean][] {
   const out: [string, boolean][] = []
