@@ -4,6 +4,8 @@ Follow the tokens through AI systems: animated, explorable walk-throughs of the 
 
 The atlas follows a model's life in five parts: **Anatomy** (GPT-2 taken apart), **Lineage** (other architectures as changes to GPT-2), **Training**, **Serving** and **Agents**.
 
+The site reads in English or Chinese (the EN / 中文 switch in the sidebar, or `?lang=zh` in the address). Model inputs and outputs, tokens and math stay as the models saw them.
+
 ## What's here
 
 - **Start here**: what a language model does (a live next-token example with real GPT-2 numbers), what a Transformer is, the path through the Anatomy chapters, and how to read the pictures.
@@ -92,6 +94,8 @@ src/
     draw.ts               shared drawing primitives: token chips, glass plates, labels, math text
     matrix.ts             matrices as 2.5D slabs, GEMM cell schedules, hover and the formula line
     theme.ts              canvas palette read from the CSS tokens; follows light/dark changes
+    i18n.ts               EN / 中文: t() translates finished strings (English is the key), canvas text included
+  locales/zh/             the Chinese text, one file per part, plus the glossary's Chinese names and definitions
   lib/gpt2/
     bpe.ts                GPT-2's byte-level BPE tokenizer
     data.ts               decodes the exported GPT-2 run: distributions at any T, head kinds, lane colours
@@ -166,6 +170,7 @@ scripts/
   sft-export.ts           Qwen3 base vs tuned on one SFT example → src/data/sft.json
   gpt2-grad.ts            GPT-2's backward pass in float64 (Backprop, LoRA, DPO)
   svd.ts                  randomized SVD for the rank exports
+  i18n-harvest.mjs        lists every string on every page and step that has no Chinese yet
 ```
 
 To add an exhibit, write a `mount(root, nav) => destroy` function under `exhibits/` and give its entry in `registry.ts` a `route` and `mount`.
