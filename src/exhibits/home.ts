@@ -79,7 +79,7 @@ export function mountHome(root: HTMLElement, nav: Nav): () => void {
     const y = (i: number) => cy + (i - (N - 1) / 2) * gap
     const xChip = left, rowH = wide ? 32 : 24
     const bw = wide ? Math.min(330, Wc * 0.27) : Wc
-    const bars = wide ? { x: left + Wc - bw, y: cy - 2.5 * rowH, w: bw } : { x: left, y: y(N) + gap * 1.6, w: bw }
+    const bars = wide ? { x: left + Wc - bw, y: cy - 2.5 * rowH, w: bw } : { x: left, y: y(N) + gap * 2.6, w: bw }
     const x0 = xChip + Math.max(...texts.map((s) => chipW(s, chip))) + 14, xe = wide ? bars.x - clamp(Wc * 0.08, 60, 110) : W - 18
     const px = (l: number) => lerp(x0 + (xe - x0) * 0.1, xe - (xe - x0) * 0.08, l / (BLOCKS - 1))
     const ap = eio(span(T, APPEND))
@@ -143,10 +143,17 @@ export function mountHome(root: HTMLElement, nav: Nav): () => void {
       const ye = y(N - 1), labW = wide ? 100 : 86
       const col = laneCol(N - 1, BLOCKS - 1)
       ctx.strokeStyle = rgba(col, 0.9 * dim); ctx.lineWidth = 2.2
+      // it runs into the top row: the token that is picked and appended
+      const fy = bars.y + rowH / 2, f = eout(clamp(na * 3)), path: [number, number][] = []
+      if (wide) {
+        const bx = bars.x - 12, mx = (xe + bx) / 2
+        for (let s = 0; s <= 32; s++) {
+          const u = s / 32, v = 1 - u
+          path.push([v * v * v * xe + 3 * v * v * u * mx + 3 * v * u * u * mx + u * u * u * bx, v * v * v * ye + 3 * v * v * u * ye + 3 * v * u * u * fy + u * u * u * fy])
+        }
+      } else path.push([xe, ye], [xe, fy], [xe - 8, fy])
       ctx.beginPath(); ctx.moveTo(xe, ye)
-      const bx = bars.x - 12, by = bars.y + rowH * 2.5
-      if (wide) ctx.bezierCurveTo(xe + (bx - xe) * 0.5, ye, xe + (bx - xe) * 0.5, by, lerp(xe, bx, eout(clamp(na * 3))), lerp(ye, by, eout(clamp(na * 3))))
-      else ctx.lineTo(xe, lerp(ye, bars.y - 14, eout(clamp(na * 3))))
+      polyTo(path, f)
       ctx.stroke()
       label('next token', bars.x, bars.y - 16, eout(clamp(na * 3)) * dim, 'left')
       dist.rows.forEach((r, k) => {
@@ -154,7 +161,7 @@ export function mountHome(root: HTMLElement, nav: Nav): () => void {
         if (g <= 0) return
         const on = k === 0 && T >= NEXT[0] + 1.2
         raw(() => tokText(bars.x, yy, r.text, g * dim * (on || k > 0 ? 1 : 0.85), on ? hue(N) : null, F.mono(wide ? 14 : 12)))
-        const w = (bars.w - labW - 44) * (r.p / top.p) * g
+        const w = (bars.w - labW - (wide ? 44 : 70)) * (r.p / top.p) * g
         rr(bars.x + labW, yy - 5, Math.max(2, w), 10, 3)
         ctx.fillStyle = rgba(on ? hue(N) : C.ink2, (on ? 0.9 : 0.45) * dim); ctx.fill()
         ctx.font = F.mono(wide ? 12.5 : 11); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(on ? C.ink : C.mute, g * dim)
@@ -187,6 +194,16 @@ export function mountHome(root: HTMLElement, nav: Nav): () => void {
       if (shown && (keyed || f === skip)) q('.home-start').focus({ preventScroll: true })
     }
     if (skip.hidden !== (T >= END)) skip.hidden = T >= END
+  }
+
+  /** Line along a polyline up to fraction f of its length. */
+  function polyTo(pts: [number, number][], f: number) {
+    const seg = pts.slice(1).map((q, i) => Math.hypot(q[0] - pts[i][0], q[1] - pts[i][1])), total = seg.reduce((a, b) => a + b, 0)
+    let left = total * f
+    for (let i = 0; i < seg.length && left > 0; i++) {
+      const u = Math.min(1, left / (seg[i] || 1)), [x0, y0] = pts[i], [x1, y1] = pts[i + 1]
+      ctx.lineTo(lerp(x0, x1, u), lerp(y0, y1, u)); left -= seg[i]
+    }
   }
 
   function label(s: string, x: number, y: number, a: number, align: CanvasTextAlign) {
