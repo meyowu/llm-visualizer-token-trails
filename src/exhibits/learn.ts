@@ -693,6 +693,30 @@ const LEARN: Record<string, Learn> = {
       'Instruction-tuned models follow a plain instruction in a chat template, so examples are needed mainly for formats.',
     ],
   },
+  react: {
+    refs: [["Yao et al. 2022, ReAct: Synergizing Reasoning and Acting in Language Models", "https://arxiv.org/abs/2210.03629"], ["Schick et al. 2023, Toolformer", "https://arxiv.org/abs/2302.04761"], ["Qwen Team 2025, Qwen3 Technical Report", "https://arxiv.org/abs/2505.09388"]],
+    code: {
+      lines: [
+        'while True:',
+        "    out = llm.generate(context, stop=['\\nObservation'])     # a Thought and an Action, then stop",
+        '    context += out',
+        "    name, arg = re.search(r'Action \\d+: (\\w+)\\[(.*)\\]', out).groups()",
+        "    if name == 'finish': return arg",
+        '    result = TOOLS[name](arg)                                # the program runs the tool, not the model',
+        "    context += f'\\nObservation {k}: {result}\\nThought {k + 1}:'",
+      ],
+      at: { prompt: [], step: [1], observe: [1, 3, 5, 6], trace: [0, 1, 2, 3, 4, 5, 6], context: [2, 6], unstopped: [1] },
+    },
+    checks: [
+      { phase: 'observe', q: 'Who runs the lookup?', options: ['The program around the model, after it stops the text', 'The model, inside its forward pass', 'The tokenizer', 'The KV cache'], answer: 0, why: 'The model only writes text naming a tool; the loop parses that text, calls the function and appends what it returns.' },
+      { phase: 'unstopped', q: 'Why stop generation at “Observation”?', options: ['Otherwise the model writes an observation itself, a guess', 'To save memory', 'The model cannot write that word', 'To clear the KV cache'], answer: 0, why: 'The model has learned the format, so it happily continues with a made-up result; the stop string hands control back to the program first.' },
+    ],
+    recap: [
+      'A ReAct agent alternates Thought, Action and Observation lines in one growing context.',
+      'The model only writes text; the program stops it, parses the action, runs the tool and appends the real result.',
+      'Every step lengthens the context, so caching the prefix between calls matters, and the stop string keeps results real.',
+    ],
+  },
 }
 
 /** Give a page's player its code drawer, questions and recap. */

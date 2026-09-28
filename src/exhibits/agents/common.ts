@@ -70,3 +70,30 @@ export function runs(parts: [string, RGB][], x: number, y: number, a: number, fo
   noLigatures(false)
   return x
 }
+
+/** Break text into lines no wider than w in the given font (words kept whole unless one alone is too wide). */
+export function wrap(text: string, w: number, font = F.mono(11)): string[] {
+  ctx.font = font
+  const out: string[] = []
+  for (const para of text.split('\n')) {
+    let line = ''
+    for (const word of para.split(' ')) {
+      const next = line ? line + ' ' + word : word
+      if (line && ctx.measureText(next).width > w) { out.push(line); line = word } else line = next
+    }
+    out.push(line)
+  }
+  return out
+}
+
+/**
+ * Who wrote a line of the context, drawn as a bar in the left gutter: the model (filled), the program
+ * around it (outlined), or the prompt's author (thin rule).
+ */
+export type Who = 'model' | 'tool' | 'prompt'
+export function whoBar(who: Who, x: number, y0: number, y1: number, a: number) {
+  if (a <= 0) return
+  if (who === 'model') { ctx.fillStyle = rgba(C.ink, 0.85 * a); ctx.fillRect(x, y0, 4, y1 - y0) }
+  else if (who === 'tool') { ctx.strokeStyle = rgba(C.ink, 0.7 * a); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y0 + 0.5, 3, y1 - y0 - 1) }
+  else { ctx.fillStyle = rgba(C.mute, 0.6 * a); ctx.fillRect(x + 1.5, y0, 1, y1 - y0) }
+}

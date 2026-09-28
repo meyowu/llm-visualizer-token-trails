@@ -12,6 +12,7 @@ export interface Term {
 
 export const TERMS: Term[] = [
   { term: 'adaLN-Zero', match: ['adaln-zero', 'adaln'], def: 'DiT’s conditioning: the timestep and class set each block’s LayerNorm scale and shift and a gate on each sub-layer’s output; the gates start at zero, so blocks start as the identity.' },
+  { term: 'Agent', match: ['agent loop', 'agents'], def: 'A program that runs a language model in a loop: the model chooses actions such as tool calls, the program carries them out and feeds the results back, until the task is done.' },
   { term: 'Attention', match: [], def: 'Lets each position mix in information from itself and earlier positions, weighted by how well its query matches their keys.' },
   { term: 'Attention head', match: [], def: 'One of several attention computations run side by side, each on its own slice of the vector (64 of 768 numbers in GPT-2), free to track a different relation.' },
   { term: 'Attention sink', match: ['attention sink'], def: 'Many heads park spare attention on the first token, whose value adds almost nothing; the overview colours treat that attention as a no-op.' },
@@ -54,10 +55,13 @@ export const TERMS: Term[] = [
   { term: 'Logits', match: ['logits', 'logit'], def: 'Raw, unnormalised scores, one per vocabulary token; softmax turns them into probabilities.' },
   { term: 'Masked language modelling', match: ['masked language modelling', 'masked language model', 'mlm'], def: 'BERT’s training task: some tokens are hidden and the model predicts them from the words on both sides.' },
   { term: 'Mixture of experts (MoE)', match: ['mixture of experts', 'moe'], def: 'A layer with several expert MLPs and a router; each token runs through only the few experts the router picks, so the model can store many more parameters than it uses per token.' },
+  { term: 'Prefix caching', match: ['prefix caching'], def: 'Keeping the KV cache of a prompt’s beginning between requests, so a long shared start such as a system prompt is not processed again.' },
+  { term: 'ReAct', match: ['react'], def: 'A prompt format for agents (Yao et al., 2022): the model alternates a written Thought, an Action that names a tool, and an Observation holding the tool’s result.' },
   { term: 'Router', match: ['router'], def: 'In a mixture of experts, a small matrix that scores every expert for a token; the top-scoring experts run, weighted by a softmax over their scores.' },
   { term: 'Multi-head latent attention (MLA)', match: ['mla', 'multi-head latent attention'], def: 'DeepSeek’s attention: each token’s keys and values are compressed into one small latent vector, which is all the KV cache stores; every head’s keys and values are rebuilt from it.' },
   { term: 'Multi-token prediction', match: ['multi-token prediction'], def: 'Training a model to also predict tokens further ahead (the one after next), as an extra, denser training signal.' },
   { term: 'MLP', match: ['mlp'], def: 'Multi-layer perceptron: two matrix products with a nonlinearity (GELU) between them, applied to each token on its own.' },
+  { term: 'Stop string', match: ['stop string', 'stop strings'], def: 'Text that ends generation as soon as the model writes it; an agent loop uses one to take control back before the model makes up a tool’s result.' },
   { term: 'x · W and W x', match: [], def: 'Two ways to write the same product. Papers often write W x (a column vector); code and this site write x · W (x @ W), with one row per token.' },
   { term: 'Prefill and decode', match: ['prefill', 'decode step', 'decode steps'], def: 'The two phases of generation: prefill runs the whole prompt in one pass and fills the KV cache; each decode step then runs a single new token.' },
   { term: 'Quantization', match: ['quantization', 'quantized', 'quantizes'], def: 'Storing numbers in fewer bits, for example weights as 8- or 4-bit integers with a scale, to make a model smaller and faster to serve at a small cost in accuracy.' },

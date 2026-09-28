@@ -51,6 +51,7 @@ src/lib/mamba/data.ts       types for src/data/mamba.json
 src/lib/spec/data.ts        types for src/data/spec.json, plain() for GPT-2 spellings
 src/lib/quant/data.ts       types for src/data/quant.json
 src/lib/icl/data.ts         types for src/data/icl.json
+src/lib/react/data.ts       types for src/data/react.json
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
@@ -82,6 +83,8 @@ scripts/qwen-model.ts       offline chat model for the Agents exports: Qwen3-1.7
                             with stop strings and top-k; weights in ~/.cache/token-trails/qwen3
 scripts/icl-export.ts       GPT-2 small given 0–4 examples of three tasks, the copying head's attention row, and GPT-2 vs
                             Qwen3-1.7B on a bare instruction; writes src/data/icl.json
+scripts/react-export.ts     a ReAct loop with Qwen3-1.7B: lookup and calculator tools, stop at "Observation", real results appended;
+                            also the run left unstopped and one without the look-up rule; writes src/data/react.json
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
   overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
@@ -132,6 +135,8 @@ src/exhibits/agents/
                             with ligatures off (JetBrains Mono joins <| and ->)
   incontext.ts              in-context learning on GPT-2 small (scripts/icl-export.ts): 0 → 3 examples, three tasks from one
                             question, the copying (induction) head, majority and recency bias, Qwen3 on a bare instruction
+  react.ts                  the ReAct loop, a real Qwen3-1.7B run (scripts/react-export.ts): the prompt's sections, Thought → Action
+                            with the model's choice, stop/parse/run/append, the whole trace, context per call, the run left unstopped
 ```
 
 ## Adding an exhibit or detail view
