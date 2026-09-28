@@ -82,6 +82,8 @@ document.fonts?.addEventListener('loadingdone', poke)
 const railNav = document.querySelector('.nav') as HTMLElement
 const main = document.querySelector('.main') as HTMLElement
 const app = document.querySelector('.app') as HTMLElement
+// the logo opens the opening animation again
+document.querySelector('.brand')!.addEventListener('click', (e) => { e.preventDefault(); go('home') })
 
 /* ---------- rail: collapsible on wide screens, a drawer on phones ---------- */
 const railBtn = document.querySelector('.rail-btn') as HTMLButtonElement
@@ -296,7 +298,9 @@ function go(target: string, origin?: { x: number; y: number }, push = true) {
   saveButton(route, root)
   current = { route, root, destroy }
   const cat = CATEGORIES.find((c) => exhibitsOf(c).some((e) => e.route === route))?.title
-  document.title = route === 'start' ? 'Token Trails' : [t(nameOf(route)), cat && t(cat), 'Token Trails'].filter(Boolean).join(' · ')
+  document.title = route === 'home' ? 'Token Trails' : [t(nameOf(route)), cat && t(cat), 'Token Trails'].filter(Boolean).join(' · ')
+  // the opening animation has the whole window: no rail
+  app.classList.toggle('home', route === 'home')
   app.classList.remove('menu-open'); syncRailBtn()
   renderRail(route)
   if (old) {

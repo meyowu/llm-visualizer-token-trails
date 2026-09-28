@@ -30,6 +30,7 @@ import { mountScaling } from './training/scaling'
 import { mountSft } from './training/sft'
 import { mountFoundations } from './foundations'
 import { mountGlossary } from './glossary'
+import { mountHome } from './home'
 import { mountStart } from './start'
 import { mountAttention } from './transformer/attention'
 import { mountEmbedding } from './transformer/embedding'
@@ -154,17 +155,19 @@ export const CATEGORIES: Category[] = [
 export const exhibitsOf = (c: Category): Exhibit[] =>
   c.entries.filter((e): e is Exhibit => !isHeading(e)).flatMap((e) => [e, ...(e.children ?? [])])
 
-/** The landing page, linked above the categories. */
+/** The opening animation (the default route; reached again from the logo, not listed in the rail). */
+export const HOME: Exhibit = { name: 'Token Trails', tag: '', route: 'home', mount: mountHome }
+/** The first page of the tour, linked above the categories. */
 export const START: Exhibit = { name: 'Start here', tag: 'what this model does', route: 'start', mount: mountStart }
 export const FOUNDATIONS: Exhibit = { name: 'Foundations', tag: 'dot product · matmul · softmax', route: 'foundations', mount: mountFoundations }
 export const GLOSSARY: Exhibit = { name: 'Glossary', tag: 'terms in plain words', route: 'glossary', mount: mountGlossary }
 
 export const ROUTES: Record<string, Mount> = Object.fromEntries(
-  [START, FOUNDATIONS, GLOSSARY, ...CATEGORIES.flatMap(exhibitsOf)].filter((e) => e.route && e.mount).map((e) => [e.route!, e.mount!]),
+  [HOME, START, FOUNDATIONS, GLOSSARY, ...CATEGORIES.flatMap(exhibitsOf)].filter((e) => e.route && e.mount).map((e) => [e.route!, e.mount!]),
 )
 /** The display name of a live route ('serving/kv-cache' → 'KV Cache'). */
 export const pageName = (route: string): string | undefined =>
   [START, FOUNDATIONS, GLOSSARY, ...CATEGORIES.flatMap(exhibitsOf)].find((e) => e.route === route)?.name
-export const DEFAULT_ROUTE = 'start'
+export const DEFAULT_ROUTE = 'home'
 /** Old route prefixes that still resolve (prefix → replacement). */
 export const ALIASES: [string, string][] = [['transformer', 'anatomy']]

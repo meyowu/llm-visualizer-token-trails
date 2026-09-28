@@ -358,6 +358,30 @@ abbr.term { text-decoration: underline dotted; text-decoration-color: var(--mute
 .st-resume { margin-left: 10px; background: none; color: var(--ink); border-color: var(--line2); }
 .st-resume:hover { background: var(--panel); }
 
+/* ---------- home: the opening animation, over the whole window ---------- */
+.brand { color: inherit; text-decoration: none; }
+.app.home .rail { visibility: hidden; }
+.view.home { position: fixed; inset: 0; z-index: 30; display: block; height: auto; overflow: hidden; background: var(--bg); }
+.home-stage { position: absolute; inset: 0; }
+.home-lang, .home-skip { position: absolute; z-index: 2; border: 1px solid var(--line2); border-radius: 6px; background: var(--panel); color: var(--ink2); padding: 5px 12px; font: 500 12px var(--sans); cursor: pointer; }
+.home-lang:hover, .home-skip:hover { color: var(--ink); border-color: var(--mute); }
+.home-lang { top: 16px; right: 16px; }
+.home-skip { bottom: 16px; right: 16px; }
+.home-cta { position: absolute; inset: 0; isolation: isolate; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; text-align: center; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .9s ease, visibility 0s .9s; }
+.home-cta.on { opacity: 1; visibility: visible; transition: opacity .9s ease; }
+.home-cta.on > * { pointer-events: auto; }
+/* keeps the words legible over the dimmed drawing */
+.home-cta::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse 72% 46% at 50% 50%, color-mix(in srgb, var(--bg) 92%, transparent), transparent); }
+.home-mark svg { display: block; width: 52px; height: 52px; margin: 0 auto 14px; }
+.home-cta h1 { margin: 0; font: italic 400 clamp(46px, 8vw, 84px)/1 var(--serif); letter-spacing: -.015em; }
+.home-tag { margin: 14px 0 0; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--mute); }
+.home-line { margin: 18px 0 0; max-width: 54ch; font-size: 15px; color: var(--ink2); }
+.home-go { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; margin-top: 26px; }
+.home-go .st-resume { margin-left: 0; }
+.home-replay { border: 0; background: none; color: var(--mute); padding: 10px 8px; font: 500 13px var(--sans); cursor: pointer; }
+.home-replay:hover { color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .home-cta, .home-cta.on { transition: none; } }
+
 .refs-d { order: 7; }
 .refs-d ul { margin: 10px 0 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; }
 .refs-d a { color: var(--ink2); }

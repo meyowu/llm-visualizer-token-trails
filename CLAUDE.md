@@ -39,7 +39,10 @@ src/core/matrix.ts          MatrixKit: drawMat (slabs), gemm() schedules, gemmOv
 src/core/legend.ts          the visual-language legend (start page and the How to read panel under every exhibit)
 src/core/glossary.ts        TERMS (term, spellings to mark, definition); withTerms() marks first mentions in captions
 src/core/theme.ts           canvas palette C (read from CSS tokens), rgba/mixc/blend/pop
-src/exhibits/start.ts       landing page (#/start, the default): live next-token demo, what a Transformer is, the path, legend
+src/exhibits/home.ts        #/home, the default: one full-window animation on the real "The cat sat on the" run (tokens, 12 blocks mixing
+                            the lanes, next-token bars, the pick appended), then the name and Start the tour / Resume; no rail,
+                            click / key / Skip jumps to the end, reduced motion opens there; the rail's logo comes back to it
+src/exhibits/start.ts       #/start, the first stop of the tour: live next-token demo, what a Transformer is, the path, legend
 src/exhibits/glossary.ts    #/glossary: every term in TERMS
 src/exhibits/foundations.ts #/foundations: dot product, matrix product layout, softmax, one-hot (small made-up numbers)
 src/exhibits/learn.ts       per page: code lines (marked per phase), predict-then-reveal checks (asked only when the reader turns

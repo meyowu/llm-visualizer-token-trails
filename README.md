@@ -103,7 +103,8 @@ src/
     data.ts               decodes the exported GPT-2 run: distributions at any T, head kinds, lane colours
   data/gpt2.json          real GPT-2 small activations for the overview and Unembed
   exhibits/
-    start.ts              landing page
+    home.ts               the opening animation (the default route)
+    start.ts              the first stop of the tour
     registry.ts           categories, sub-headings and exhibits (with child steps); an exhibit goes live once it has a route
     transformer/
       model.ts            toy model for the detail views: attention and MLP arithmetic at d_model 8

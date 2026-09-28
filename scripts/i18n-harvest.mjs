@@ -19,10 +19,11 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 860 } })
 await page.addInitScript(() => { localStorage.setItem('tt-i18n-harvest', '1'); localStorage.setItem('tt-pace', 'auto') })
 await page.goto(BASE + '#/start')
 await page.waitForFunction(() => window.__tt)
-const routes = await page.evaluate(() => [...document.querySelectorAll('.nav a[href^="#/"]')].map((a) => a.getAttribute('href').slice(2)))
+// the rail's pages, and the opening animation (not in the rail), which is watched to its end
+const routes = ['home', ...await page.evaluate(() => [...document.querySelectorAll('.nav a[href^="#/"]')].map((a) => a.getAttribute('href').slice(2)))]
 for (const route of routes.filter((r) => r.startsWith(prefix))) {
   await page.evaluate((r) => { location.hash = '#/' + r }, route)
-  await page.waitForTimeout(600)
+  await page.waitForTimeout(route === 'home' ? 11500 : 600)
   const phases = await page.evaluate(() => window.__ttPlayer?.phases.length ?? 0)
   for (let i = 0; i < phases; i++) {
     // the step's start, middle and end

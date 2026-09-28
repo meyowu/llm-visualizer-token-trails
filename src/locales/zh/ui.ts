@@ -294,6 +294,15 @@ export const ui: Record<string, string> = {
   'How a model becomes an agent: examples and instructions in the prompt, a ReAct loop, tool calls, retrieval, and agents handing work to agents.': '模型如何成为智能体：提示词中的示例与指令、ReAct 循环、工具调用、检索，以及智能体之间的任务交接。',
   'Resume': '继续',
 
+  // the opening animation
+  'Skip ›': '跳过 ›',
+  'attention mixes the lanes': '注意力让各条通道相互混合',
+  'That is all a language model does: split the text into tokens, mix them through its layers, pick the next one, and go again. This site follows those tokens, with the numbers of real models.':
+    '语言模型做的全部事情就是这些：把文本切成词元，让它们穿过一层层网络相互混合，挑出下一个词元，然后再来一遍。这个网站跟着这些词元走，用的是真实模型的数字。',
+  'A prompt splits into tokens; their lanes run through GPT-2’s {} blocks and mix their colours by the real attention of the run; the last lane becomes the real next-token probabilities, and the most likely token is appended.':
+    '一句提示词被切成词元；它们的通道穿过 GPT-2 的 {0} 个块，并按这次运行的真实注意力混合颜色；最后一条通道变成真实的下一词元概率，最可能的词元被接到句尾。',
+  'Replay the opening animation': '重播开场动画',
+
   // the glossary page
   'Reference': '参考',
   'terms of art, in plain words': '用大白话解释术语',
