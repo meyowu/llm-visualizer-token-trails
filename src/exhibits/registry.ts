@@ -15,6 +15,7 @@ import { mountDeepseek } from './lineage/deepseek'
 import { mountDit } from './lineage/dit'
 import { mountLlama } from './lineage/llama'
 import { mountMamba } from './lineage/mamba'
+import { mountCompare } from './lineage/compare'
 import { mountT5 } from './lineage/t5'
 import { mountVit } from './lineage/vit'
 import { mountMixtral } from './lineage/mixtral'
@@ -89,6 +90,8 @@ export const CATEGORIES: Category[] = [
     id: 'lineage',
     title: 'Lineage',
     entries: [
+      { heading: 'Compare' },
+      { name: 'Architecture diff', tag: 'any two of 29 models, 2019–2025', route: 'lineage/compare', mount: mountCompare },
       { heading: 'Origin' },
       { name: 'Transformer (2017)', tag: 'encoder–decoder · post-LN · sinusoids', route: 'lineage/transformer-2017', mount: mountTransformer2017 },
       { heading: 'Decoder-only' },

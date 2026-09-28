@@ -85,6 +85,18 @@ function record(s: string) {
   e.routes.add(harvest.route)
 }
 
+/**
+ * A template with {} slots for text t() cannot key because it is built around names (a model's, say): the
+ * template is translated as a whole, then filled. The Chinese places the values as {0}, {1}…, like any key.
+ */
+export function tf(template: string, ...args: (string | number)[]): string {
+  if (harvest.on) record(template)
+  const v = lang === 'zh' ? ZH[template] : undefined
+  if (v !== undefined) return v.replace(/\{(\d+)\}/g, (_: string, i: string) => String(args[+i] ?? ''))
+  let i = 0
+  return template.replace(/\{\}/g, () => String(args[i++] ?? ''))
+}
+
 /** A glossary term in the current language: its name, the spellings to mark in captions, its definition. */
 export function termText(term: string, def: string, match: string[]): { term: string; def: string; match: string[] } {
   if (lang === 'en') return { term, def, match }

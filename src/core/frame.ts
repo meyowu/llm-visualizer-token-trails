@@ -35,6 +35,8 @@ export interface Frame {
   /** title: phase name; sub: optional short form (hidden when equal to title). */
   setCaption(title: string, sub: string, text: string, shape: string): void
   setSubtitle(s: string): void
+  /** Replace the header's specs (pages whose subject changes, like the architecture diff). */
+  setSpecs(specs: Spec[]): void
   /** Show a formula line and note under the stage (null clears it); `announce` also reads it to screen readers. */
   setFormula(segs: FormulaSeg[] | null, note?: string, announce?: boolean): void
   /** Replace the hint under the formula strip ('' hides it), e.g. per phase. */
@@ -49,6 +51,8 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 export const rich = (s: string) =>
   esc(s).replace(/(?<![|_A-Za-z\u0391-\u03c9\u1f00-\u1fff\u0300-\u036f])((?:[A-Za-z\u0391-\u03c9\u1f00-\u1fff][\u0300-\u036f]*){1,2})_(?:\{([^}]+)\}|([A-Za-z0-9\u2205]+))/g, (_, b: string, br?: string, sub?: string) => `<span class="m">${b}<sub>${br ?? sub}</sub></span>`).replace(/(?:[A-Za-z]\u0302|[\u0370-\u03ff\u221a\u2211\u1d40])[A-Za-z0-9\u0302\u0370-\u03ff\u1d40]*/g, '<span class="m">$&</span>')
 
+const specsHtml = (specs: Spec[]) => specs.map((s) => `<div><dt>${rich(t(s.label))}</dt><dd>${rich(t(s.value))}${s.real ? `<small>${rich([t(s.realLabel ?? 'GPT-2'), t(s.real)].filter(Boolean).join(' '))}</small>` : ''}</dd></div>`).join('')
+
 const ROLE = (c: RGB) => (c === C.ink ? 'f-ink' : c === C.ink2 ? 'f-ink2' : c === C.mute ? 'f-mute' : '')
 
 export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
@@ -60,7 +64,7 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
         <div class="titlebar"><h1>${esc(t(o.title))}</h1><p class="sub">${rich(t(o.subtitle))}</p></div>
       </div>
       <dl class="specs">
-        ${o.specs.map((s) => `<div><dt>${rich(t(s.label))}</dt><dd>${rich(t(s.value))}${s.real ? `<small>${rich([t(s.realLabel ?? 'GPT-2'), t(s.real)].filter(Boolean).join(' '))}</small>` : ''}</dd></div>`).join('')}
+        ${specsHtml(o.specs)}
       </dl>
     </header>
     <section class="stage"></section>
@@ -114,6 +118,10 @@ export function createFrame(root: HTMLElement, o: FrameOptions): Frame {
       fHint.textContent = s
       fHint.hidden = !s
     },
+    setSpecs(specs) {
+      const html = specsHtml(specs), dl = q('.specs')
+      if (dl.innerHTML !== html) dl.innerHTML = html
+    },
     setSubtitle(s) {
       const html = rich(t(s))
       if (sub.innerHTML !== html) sub.innerHTML = html
@@ -158,6 +166,18 @@ export function toggle(parent: HTMLElement, label: string, options: string[], va
   }
   parent.prepend(el)
   return { set: (i: number) => set(i, false) }
+}
+
+/** A labelled dropdown placed in the player's meta slot, its options in groups: [group, [[value, text], …]]. */
+export function select(parent: HTMLElement, label: string, groups: [string, [string, string][]][], value: string, onChange: (v: string) => void) {
+  const el = document.createElement('label')
+  el.className = 'pick'
+  el.innerHTML = `<span>${esc(t(label))}</span><select>${groups.map(([g, opts]) => `<optgroup label="${esc(g)}">${opts.map(([v, s]) => `<option value="${esc(v)}">${esc(s)}</option>`).join('')}</optgroup>`).join('')}</select>`
+  const sel = el.querySelector('select')!
+  sel.value = value
+  sel.addEventListener('change', () => onChange(sel.value))
+  parent.prepend(el)
+  return { set: (v: string) => { sel.value = v } }
 }
 
 /** A ‹ label n › stepper placed in the player's meta slot; wraps around at both ends. */

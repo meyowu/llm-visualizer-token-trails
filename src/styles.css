@@ -163,6 +163,9 @@ h1 { margin: 10px 0 0; font: 400 46px/1 var(--serif); letter-spacing: -.02em; te
 .textin input:focus { outline: none; border-color: var(--ink2); }
 .ropectl { display: flex; align-items: center; gap: 12px; font: 400 11px var(--mono); color: var(--mute); }
 .ropectl select { margin-left: 4px; border: 1px solid var(--line2); border-radius: 6px; background: var(--panel); color: var(--ink); padding: 4px 6px; font: 400 11.5px var(--mono); }
+.pick { display: flex; align-items: center; gap: 6px; font: 400 11px var(--mono); color: var(--mute); }
+.pick select { max-width: 13em; border: 1px solid var(--line2); border-radius: 6px; background: var(--panel); color: var(--ink); padding: 4px 6px; font: 500 12px var(--mono); }
+.pick select:focus-visible { outline: 2px solid var(--ink2); outline-offset: 1px; }
 .resample { border: 1px solid var(--line2); border-radius: 6px; background: none; padding: 5px 10px; cursor: pointer; color: var(--ink2); font: 500 12px var(--mono); }
 .resample:hover { border-color: var(--mute); color: var(--ink); }
 .temp { display: flex; align-items: center; gap: 8px; }

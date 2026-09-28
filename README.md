@@ -47,6 +47,7 @@ The site reads in English or Chinese (the EN / 中文 switch in the sidebar, or 
 - **Lineage / T5**: every task as text in, text out, with real T5-small answers (translation, summary, a question, sentiment, similarity), span corruption with sentinels and a real fill, the blocks against GPT-2 and 2017 (scale-only pre-norm, no biases, no position vector), the relative-position buckets, and T5-small's real learned bias per bucket and head.
 - **Lineage / BERT**: the encoder-only model with GPT-2 small's exact shape: a real GPT-2 previous-token head next to BERT's real look-ahead head, WordPiece inputs with segments, real bert-base-uncased fill-in-the-blank predictions next to GPT-2's real guesses from the left side alone, and a classifier on the [CLS] vector.
 - **Lineage / DeepSeek**: DeepSeek-V3's two changes: multi-head latent attention as three GEMMs through a small cached latent, the KV cache per token for MHA, GQA, MQA and MLA at V3's size (3.8 MiB vs 69 KiB), DeepSeekMoE with a shared expert and 8 of 256 routed experts, and auxiliary-loss-free balancing simulated step by step.
+- **Lineage / Architecture diff**: any two of 29 decoder models, GPT-2 small to 2025 (gpt-oss, Llama 4, Gemma 3, Qwen3 and Qwen3-Next, DeepSeek-V3 and V3.2, Kimi K2 and Kimi Linear, GLM-4.5/4.6, MiniMax-M2 …), chosen from two dropdowns grouped by family: the rows that differ, a map of every layer (full, sliding-window, chunked, latent or linear attention; dense MLP or experts; layers without RoPE), the attention heads and what each caches per token, the experts a token uses, where the parameters are (stored against per token), and the KV cache as the context grows. Every number is read from the model's own config.json and checkpoint headers, and the totals match the published ones.
 - **Lineage / Mixtral**: the mixture of experts: the MLP becomes a router and 8 SwiGLU experts, the router's scores and top-2 pick as a small GEMM, six tokens dispatched to their two experts and combined, 46.7B stored vs 12.9B used per token, and the Switch Transformer balancing loss computed on the batch.
 
 Every page has an All steps list, a Code drawer with the matching PyTorch, a Go deeper reading list, a question or two to answer before key steps, and a recap at the end. It pauses at the end of each step so there is time to read (switch to Auto to play straight through); ← and → move between steps. On the overview, click a part marked ↗ (the tokens, the embedding strips, the attn, mlp, ln_f and W_U plates, the next-token bars) to zoom into its detail view.
@@ -77,6 +78,7 @@ node scripts/scaling-export.ts # regenerate src/data/scaling.json (GPT-2 small, 
 node scripts/finetune-export.ts # regenerate src/data/finetune.json (LoRA, full fine-tune, DPO on GPT-2)
 node scripts/lora-export.ts  # regenerate src/data/lora.json (Qwen3 instruct minus base, by rank)
 node scripts/sft-export.ts    # regenerate src/data/sft.json (Qwen3-1.7B-Base vs Qwen3-1.7B)
+node scripts/models-export.ts # regenerate src/data/models.json (29 models' configs and checkpoint headers, no weights)
 ```
 
 The browser never runs a model. `scripts/gpt2-export.ts` runs GPT-2 small once, offline, in plain TypeScript, and exports the slices the pages draw to `src/data/gpt2.json`; `scripts/bert-export.ts` and `scripts/t5-export.ts` do the same for BERT-base and T5-small (`src/data/bert.json`, `src/data/t5.json`). The detail views that animate every matrix product use a toy model at d_model 8 and say so.
@@ -125,6 +127,7 @@ src/
       transformer2017.ts  the 2017 Transformer compared with GPT-2
       llama.ts            LLaMA 3 compared with GPT-2
       mixtral.ts          Mixtral 8x7B compared with GPT-2
+      compare.ts          any two models compared, from their checkpoints
       deepseek.ts         DeepSeek-V3 compared with GPT-2
       bert.ts             BERT-base compared with GPT-2
       t5.ts               T5 compared with GPT-2 and the 2017 Transformer
@@ -170,6 +173,8 @@ scripts/
   sft-export.ts           Qwen3 base vs tuned on one SFT example → src/data/sft.json
   gpt2-grad.ts            GPT-2's backward pass in float64 (Backprop, LoRA, DPO)
   svd.ts                  randomized SVD for the rank exports
+  models-lib.ts           Hub configs and safetensors headers, fetched by range
+  models-export.ts        the model library → src/data/models.json
   i18n-harvest.mjs        lists every string on every page and step that has no Chinese yet
 ```
 

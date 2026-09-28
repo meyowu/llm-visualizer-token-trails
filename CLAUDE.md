@@ -29,9 +29,11 @@ src/core/link.ts            getParams()/setParams(): page state in the address (
 src/core/progress.ts        steps seen per page and the last place (rail ✓ / n of m, Resume on the start page)
 src/core/prefs.ts           pref.get/set: reader preferences in localStorage (speed, pacing, temperature, strategy, lang)
 src/core/i18n.ts            EN / 中文: lang, setLang/onLang, t() (English is the key; numbers and quoted spans are {} placeholders),
+                            tf(template, …args) for text built around names (the template is the key),
                             localizeCanvas() (fillText/measureText translate), raw() for text that must stay as is, harvest mode
 src/locales/zh/             Chinese: ZH (key → text with {0}, {1}…) and ZH_TERMS (glossary names, definitions, spellings), one file per part
-src/core/frame.ts           createFrame(): header/specs, stage host, formula strip, caption line, controls; toggle(), stepper(), rich()
+src/core/frame.ts           createFrame(): header/specs (setSpecs), stage host, formula strip, caption line, controls; toggle(), stepper(),
+                            select() (a dropdown with option groups), rich()
 src/core/draw.ts            primitives: chips, plate(), bracketLabel(), mathName()/mathRun(), fonts F
 src/core/matrix.ts          MatrixKit: drawMat (slabs), gemm() schedules, gemmOverlay, hover and pinned cells (mk.focus); formula → frame.setFormula
 src/core/legend.ts          the visual-language legend (start page and the How to read panel under every exhibit)
@@ -62,6 +64,7 @@ src/lib/backprop/data.ts    types for src/data/backprop.json
 src/lib/scaling/data.ts     types for src/data/scaling.json
 src/lib/finetune/data.ts    types for src/data/finetune.json and src/data/lora.json
 src/lib/sft/data.ts         types for src/data/sft.json
+src/lib/models/data.ts      the model library (src/data/models.json): types, families() for the dropdowns, kvBytes(m, n), fmtParams/Bytes/Tokens
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
@@ -115,6 +118,11 @@ scripts/gpt2-grad.ts        GPT-2 small's forward and backward pass in float64, 
 scripts/svd.ts              randomized SVD (Halko et al.) for the rank exports
 scripts/sft-export.ts       Qwen3-1.7B-Base and Qwen3-1.7B, each in a child process: per-token loss on one chat example, their answers,
                             each scored on both; writes src/data/sft.json
+scripts/models-lib.ts       Hub access for the model library: config.json, the shard index and each shard's safetensors header by HTTP
+                            range (no weights), cached in ~/.cache/token-trails/models
+scripts/models-export.ts    the model library: 29 decoder LMs (GPT-2 to 2025, grouped by family); parameters per component counted from
+                            the checkpoints' tensor shapes, active parameters, every layer's attention kind and KV size, checked against
+                            the Hub's count and the published totals (per author's convention); writes src/data/models.json
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
   overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
@@ -161,6 +169,9 @@ src/exhibits/lineage/
                             DeepSeekMoE (1 shared + top 8 of 256), bias balancing simulated on 16 toy experts
   mixtral.ts                Mixtral 8x7B vs GPT-2: MoE block, router GEMM + top-2, dispatch/combine, stored vs
                             active params, balancing loss (toy routing, d_model 4, ROUTE_SEED)
+  compare.ts                Architecture diff: any two models of src/data/models.json (two dropdowns, ?a=&b=): the differing rows,
+                            a layer map (attention kind, MLP or experts, no-RoPE layers), heads and KV per token, experts, where the
+                            parameters are, the KV cache against context; captions via tf()
 src/exhibits/serving/
   kvcache.ts                why a KV cache (n² → n), prefill, a real GPT-2 decode step (q · Kᵀ, softmax, · V for one head),
                             cache sizes across models, the roofline (prefill compute-bound, decode memory-bound)

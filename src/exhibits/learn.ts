@@ -481,6 +481,32 @@ const LEARN: Record<string, Learn> = {
       'Its work grows linearly with the length of the text and its memory stays constant.',
     ],
   },
+  compare: {
+    refs: [["Ainslie et al. 2023, GQA: Training Generalized Multi-Query Transformer Models", "https://arxiv.org/abs/2305.13245"], ["DeepSeek-AI 2024, DeepSeek-V2 (multi-head latent attention)", "https://arxiv.org/abs/2405.04434"], ["Jiang et al. 2023, Mistral 7B (sliding-window attention)", "https://arxiv.org/abs/2310.06825"], ["OpenAI 2025, gpt-oss-120b & gpt-oss-20b model card", "https://arxiv.org/abs/2508.10925"], ["Hugging Face, reading a safetensors header (how these checkpoints were read)", "https://huggingface.co/docs/safetensors/metadata_parsing"]],
+    code: {
+      lines: [
+        '# every number on this page, from the model’s own files on the Hub',
+        "cfg = json.load(open(hf_hub_download(repo, 'config.json')))",
+        "n = struct.unpack('<Q', get_range(url, 0, 7))[0]           # a safetensors header's length",
+        'header = json.loads(get_range(url, 8, 7 + n))              # every tensor: name, dtype, shape',
+        'params = sum(prod(t["shape"]) for name, t in header.items() if not is_scale(name))',
+        'idle = routed_experts * (1 - top_k / n_experts)           # stored, not used by this token',
+        'active = params - idle',
+        'per_token = 2 * kv_heads * head_dim                        # a full layer; MLA: latent + rope key',
+        'kv(n) = sum(min(n, window) * per_token or state for layer in layers)',
+      ],
+      at: { diff: [0, 1], layers: [1], heads: [7], mlp: [5], params: [2, 3, 4, 5, 6], kv: [7, 8] },
+    },
+    checks: [
+      { phase: 'params', q: 'Kimi K2 stores about 1T parameters. Roughly how many does one token run through?', options: ['About 33B: the shared parts plus 8 of 384 experts per layer', 'All 1T', 'About 1B', 'Half of them'], answer: 0, why: 'Each MoE layer sends a token to 8 of its 384 routed experts plus one shared expert; the idle experts sit in memory but are not computed.' },
+      { phase: 'kv', q: 'Why does gpt-oss-120b’s KV cache grow half as fast as it would if every layer were full attention?', options: ['Half its layers use a sliding window of 128 tokens and stop growing', 'It stores the cache in 8 bits', 'It has no attention at all', 'Its vocabulary is larger'], answer: 0, why: 'Its sliding-window layers keep only the last 128 tokens, so past that only its 18 full layers add to the cache.' },
+    ],
+    recap: [
+      'New models mostly change the same few parts: what attention caches (GQA, latent, sliding windows, linear layers), the MLP (experts), positions and norms.',
+      'A mixture of experts stores far more parameters than a token runs through; the idle experts cost memory, not compute.',
+      'The KV cache per token decides how long a context fits; sliding windows and linear layers stop it growing.',
+    ],
+  },
   kvcache: {
     refs: [["Pope et al. 2022, Efficiently Scaling Transformer Inference", "https://arxiv.org/abs/2211.05102"], ["Williams et al. 2009, Roofline: an insightful visual performance model", "https://doi.org/10.1145/1498765.1498785"]],
     code: {
