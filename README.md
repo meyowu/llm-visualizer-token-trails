@@ -2,7 +2,7 @@
 
 Follow the tokens through AI systems: animated, explorable walk-throughs of the Transformer, inference engines and agent workflows.
 
-The atlas follows a model's life in six parts: **Anatomy** (GPT-2 taken apart), **Lineage** (other architectures as changes to GPT-2), **Training**, **Interpretability**, **Serving** and **Agents**.
+The atlas follows a model's life in five parts: **Anatomy** (GPT-2 taken apart), **Lineage** (other architectures as changes to GPT-2), **Training**, **Serving** and **Agents**.
 
 ## What's here
 

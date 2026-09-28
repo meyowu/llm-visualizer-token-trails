@@ -63,8 +63,8 @@ export interface Category {
 }
 
 /*
- * The atlas follows a model's life: its anatomy, its lineage, how it is trained, what it has learned, how it is
- * served, and how agents use it.
+ * The atlas follows a model's life: its anatomy, its lineage, how it is trained, how it is served, and how
+ * agents use it.
  */
 export const CATEGORIES: Category[] = [
   {
@@ -120,16 +120,6 @@ export const CATEGORIES: Category[] = [
       { name: 'SFT', tag: 'instruction tuning', route: 'training/sft', mount: mountSft },
       { name: 'RLHF & DPO', tag: 'learning from preferences', route: 'training/dpo', mount: mountDpo },
       { name: 'LoRA', tag: 'low-rank adapters', route: 'training/lora', mount: mountLora },
-    ],
-  },
-  {
-    id: 'interpretability',
-    title: 'Interpretability',
-    entries: [
-      { name: 'Logit lens', tag: 'predictions block by block' },
-      { name: 'Induction heads', tag: 'copying patterns' },
-      { name: 'Attention sinks', tag: 'the first token' },
-      { name: 'Superposition', tag: 'more features than dimensions' },
     ],
   },
   {

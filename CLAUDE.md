@@ -40,7 +40,7 @@ src/exhibits/foundations.ts #/foundations: dot product, matrix product layout, s
 src/exhibits/learn.ts       per page: code lines (marked per phase), predict-then-reveal checks, recap; teach(player, page)
 src/exhibits/kit.ts         mountExhibit(): the shared frame of a scene-per-phase page, Lineage, Serving, Training and Agents (Compare button,
                             pills that jump to a phase, onFrame hooks) and canvas helpers (Kit: pill, lane, glass, arrow…)
-src/exhibits/registry.ts    categories (Anatomy, Lineage, Training, Interpretability, Serving, Agents) → entries: exhibits or sub-headings;
+src/exhibits/registry.ts    categories (Anatomy, Lineage, Training, Serving, Agents) → entries: exhibits or sub-headings;
                             an exhibit may have `children` (its steps); live when it has `route` and `mount`
 src/lib/bert/data.ts        types for src/data/bert.json (masked-word examples, a look-ahead head, a sentence pair)
 src/lib/t5/data.ts          types for src/data/t5.json, and T5's relative-position bucket()
