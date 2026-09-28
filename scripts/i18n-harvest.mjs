@@ -43,6 +43,8 @@ const missing = await page.evaluate(async () => {
   const tt = window.__tt
   tt.harvest.route = 'learn'
   for (const [k, texts] of Object.entries(tt.learnTexts())) { tt.harvest.route = 'learn:' + k; texts.forEach((s) => tt.t(s)) }
+  // switching re-renders the page and the check calls t() again: record neither
+  tt.harvest.on = false
   tt.setLang('zh')
   const out = {}
   for (const [key, e] of tt.harvest.seen) if (tt.t(e.ex) === e.ex) out[key] = { ex: e.ex, routes: [...e.routes] }
