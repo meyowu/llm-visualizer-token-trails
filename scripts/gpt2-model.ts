@@ -44,8 +44,11 @@ function linear(x: Float32Array, Wt: Float32Array, b: Float32Array, out: number)
 }
 const gelu = (x: number) => 0.5 * x * (1 + Math.tanh(Math.sqrt(2 / Math.PI) * (x + 0.044715 * x ** 3)))
 
-/** A GPT-2-shaped model over weights W; returns log-probabilities for the next token at every position. */
-export function model(W: Weights, L: number, onMlpIn?: (layer: number, rows: Float32Array[]) => void) {
+/**
+ * A GPT-2-shaped model over weights W; returns log-probabilities for the next token at every position.
+ * onAttn receives each head's attention weights (rows[i][j], j ≤ i).
+ */
+export function model(W: Weights, L: number, onMlpIn?: (layer: number, rows: Float32Array[]) => void, onAttn?: (layer: number, head: number, rows: number[][]) => void) {
   const w = (n: string) => { const t = W.get(n); if (!t) throw new Error(n); return t }
   const wte = w('wte.weight'), wpe = w('wpe.weight')
   return (ids: number[]): Float32Array[] => {
@@ -55,11 +58,16 @@ export function model(W: Weights, L: number, onMlpIn?: (layer: number, rows: Flo
       const P = `h.${l}.`
       const qkv = x.map((r) => linear(layerNorm(r, w(P + 'ln_1.weight'), w(P + 'ln_1.bias')), w(P + 'attn.c_attn.weight'), w(P + 'attn.c_attn.bias'), 3 * D))
       const o = x.map(() => new Float32Array(D))
-      for (let h = 0; h < H; h++) for (let i = 0; i < N; i++) {
-        const sc: number[] = []
-        for (let j = 0; j <= i; j++) { let s = 0; for (let k = 0; k < DH; k++) s += qkv[i][h * DH + k] * qkv[j][D + h * DH + k]; sc.push(s / 8) }
-        const m = Math.max(...sc), e = sc.map((s) => Math.exp(s - m)), z = e.reduce((a, b) => a + b, 0)
-        for (let j = 0; j <= i; j++) { const p = e[j] / z; for (let k = 0; k < DH; k++) o[i][h * DH + k] += p * qkv[j][2 * D + h * DH + k] }
+      for (let h = 0; h < H; h++) {
+        const rows: number[][] = []
+        for (let i = 0; i < N; i++) {
+          const sc: number[] = []
+          for (let j = 0; j <= i; j++) { let s = 0; for (let k = 0; k < DH; k++) s += qkv[i][h * DH + k] * qkv[j][D + h * DH + k]; sc.push(s / 8) }
+          const m = Math.max(...sc), e = sc.map((s) => Math.exp(s - m)), z = e.reduce((a, b) => a + b, 0)
+          rows.push(e.map((v) => v / z))
+          for (let j = 0; j <= i; j++) { const p = e[j] / z; for (let k = 0; k < DH; k++) o[i][h * DH + k] += p * qkv[j][2 * D + h * DH + k] }
+        }
+        onAttn?.(l, h, rows)
       }
       x = x.map((r, i) => { const p = linear(o[i], w(P + 'attn.c_proj.weight'), w(P + 'attn.c_proj.bias'), D); return r.map((v, k) => v + p[k]) })
       const mlpIn = x.map((r) => layerNorm(r, w(P + 'ln_2.weight'), w(P + 'ln_2.bias')))

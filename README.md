@@ -27,6 +27,7 @@ The atlas follows a model's life in six parts: **Anatomy** (GPT-2 taken apart), 
 - **Serving / Continuous Batching**: why a batch is nearly free (throughput against batch size for LLaMA 3 8B on an A100), a toy scheduler drawn as Gantt charts for static and iteration-level batching, the waiting, latency and throughput it changes, and chunked prefill keeping every step under the memory-bound step time.
 - **Serving / Speculative Decoding**: a real run of distilgpt2 drafting 4 tokens at a time for GPT-2 small: one round checked position by position, the whole run (12 tokens from 5 GPT-2 passes, identical to GPT-2's own greedy text), the sampling rule min(1, p/q) with the two models' real probabilities, and the expected speed-up, which needs a much cheaper draft than distilgpt2.
 - **Serving / Quantization**: number formats and model sizes, absmax rounding of a real GPT-2 weight column onto the int8 and int4 grids, per-tensor against per-channel against group-of-128 scales with GPT-2's real weight error and perplexity after quantizing every linear layer, a real activation's outliers, and the real next-token guesses at each precision (int8 nearly free, int4 per tensor broken).
+- **Agents / In-context learning**: GPT-2 small given 0 to 3 examples of country: capital lines (one example takes “ Cairo” from under 0.1% to 58%), three tasks computed from the same question by changing the examples, the induction head that copies from earlier answers (97% of its attention from the last colon), the majority and recency bias this brings, and Qwen3-1.7B answering from a bare instruction where GPT-2 rambles.
 - **Lineage / Diffusion Transformer**: a Transformer that predicts noise: the exact DDPM noising of a toy image with DiT's schedule, latent 2 × 2 patches, adaLN-Zero with DiT-XL/2's real gates and scales across timesteps (block 28's MLP is nearly switched off), and a 250-step sampling run that uses the true noise, next to the compute it costs.
 - **Lineage / CLIP**: two encoders, an image ViT and a GPT-2-like text Transformer, meeting in one 512-dimensional space; everything real (CLIP ViT-B/32 on four drawn shapes and their captions): the embeddings and their principal directions (the modality gap), the image × caption matrix with both softmaxes and the loss, zero-shot classification by shape and by colour, and the learned temperature of 100.
 - **Lineage / Vision Transformer**: an image cut into 14 × 14 patches that become the tokens, the patch embedding as one shared matrix product next to the real ViT-B/16 filters' principal components, the real position embeddings, whose similarities rediscover the 2D grid, and a head that reads only [CLS].
@@ -53,6 +54,7 @@ node scripts/dit-export.ts   # regenerate src/data/dit.json from DiT-XL/2 tensor
 node scripts/mamba-export.ts # regenerate src/data/mamba.json from Mamba-130m weights (see the script header)
 node scripts/spec-export.ts  # regenerate src/data/spec.json (distilgpt2 drafting for GPT-2 small)
 node scripts/quant-export.ts # regenerate src/data/quant.json (GPT-2 small quantized to int8 and int4)
+node scripts/icl-export.ts   # regenerate src/data/icl.json (GPT-2 small few-shot, Qwen3-1.7B)
 ```
 
 The browser never runs a model. `scripts/gpt2-export.ts` runs GPT-2 small once, offline, in plain TypeScript, and exports the slices the pages draw to `src/data/gpt2.json`; `scripts/bert-export.ts` and `scripts/t5-export.ts` do the same for BERT-base and T5-small (`src/data/bert.json`, `src/data/t5.json`). The detail views that animate every matrix product use a toy model at d_model 8 and say so.
@@ -104,6 +106,9 @@ src/
       batching.ts         static vs continuous batching, chunked prefill
       speculative.ts      real distilgpt2 → GPT-2 speculative decoding
       quantization.ts     int8 and int4 on the real GPT-2
+    agents/
+      common.ts           next-token bars, prompts as chips, the model glyph
+      incontext.ts        few-shot GPT-2, an induction head, Qwen3 on an instruction
 scripts/
   gpt2-export.ts          offline GPT-2 small forward pass that writes src/data/gpt2.json
   bert-export.ts          offline BERT-base forward pass that writes src/data/bert.json
@@ -116,6 +121,7 @@ scripts/
   quant-export.ts         GPT-2 small quantized and rerun → src/data/quant.json
   gpt2-model.ts           the GPT-2 forward pass the two scripts above share
   qwen-model.ts           Qwen3-1.7B chat model (tokenizer, chat template, KV cache) for the Agents exports
+  icl-export.ts           GPT-2 few-shot and Qwen3 on an instruction → src/data/icl.json
 ```
 
 To add an exhibit, write a `mount(root, nav) => destroy` function under `exhibits/` and give its entry in `registry.ts` a `route` and `mount`.

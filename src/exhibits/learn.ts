@@ -668,6 +668,31 @@ const LEARN: Record<string, Learn> = {
       'SwiGLU gates the MLP, and GQA shares keys and values to shrink the KV cache.',
     ],
   },
+  incontext: {
+    refs: [["Brown et al. 2020, Language Models are Few-Shot Learners", "https://arxiv.org/abs/2005.14165"], ["Olsson et al. 2022, In-context Learning and Induction Heads", "https://arxiv.org/abs/2209.11895"], ["Zhao et al. 2021, Calibrate Before Use: Improving Few-Shot Performance of Language Models", "https://arxiv.org/abs/2102.09690"], ["Ouyang et al. 2022, Training language models to follow instructions (InstructGPT)", "https://arxiv.org/abs/2203.02155"], ["Qwen Team 2025, Qwen3 Technical Report", "https://arxiv.org/abs/2505.09388"]],
+    code: {
+      lines: [
+        "examples = [('France', 'Paris'), ('Japan', 'Tokyo'), ('Italy', 'Rome')]",
+        "prompt = ''.join(f'{c}: {a}\\n' for c, a in examples) + 'Egypt:'",
+        'ids = tokenizer(prompt, return_tensors="pt").input_ids     # no training: the weights stay as they are',
+        'probs = model(ids).logits[0, -1].softmax(-1)              # the next token after "Egypt:"',
+        "probs[tokenizer(' Cairo').input_ids[0]]                   # 0.1% with no examples, 58% with one",
+        '# an instruction-tuned model reads its chat template instead of examples',
+        "text = tokenizer.apply_chat_template([{'role': 'user', 'content': question}],",
+        '                                     add_generation_prompt=True, enable_thinking=False, tokenize=False)',
+      ],
+      at: { zero: [2, 3, 4], shots: [0, 1, 4], program: [0, 1], copy: [3], bias: [0, 1, 4], instruct: [5, 6, 7] },
+    },
+    checks: [
+      { phase: 'shots', q: 'What happens to GPT-2’s weights when examples are added to the prompt?', options: ['Nothing: only the context changes', 'They are updated once per example', 'The last layer is fine-tuned on the examples', 'They are reset to their initial values'], answer: 0, why: 'In-context learning uses the same forward pass on a longer prompt; no gradient is computed and no weight changes.' },
+      { phase: 'copy', q: 'From the last “:”, where does the copying head put most of its attention?', options: ['On the answers after the earlier colons, most on the latest', 'On the country names', 'On the first token', 'Evenly on every token'], answer: 0, why: 'It attends to the tokens that followed earlier copies of the current token, which is what an induction head does, and weights recent ones more.' },
+    ],
+    recap: [
+      'Examples in the prompt tell a model which task to do; its weights stay fixed.',
+      'Induction heads, which copy what followed earlier copies of the current token, are part of the mechanism, and they also bring majority and recency bias.',
+      'Instruction-tuned models follow a plain instruction in a chat template, so examples are needed mainly for formats.',
+    ],
+  },
 }
 
 /** Give a page's player its code drawer, questions and recap. */

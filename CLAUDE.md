@@ -50,6 +50,7 @@ src/lib/dit/data.ts         decodes src/data/dit.json (meanAbs, heatAt) and DDPM
 src/lib/mamba/data.ts       types for src/data/mamba.json
 src/lib/spec/data.ts        types for src/data/spec.json, plain() for GPT-2 spellings
 src/lib/quant/data.ts       types for src/data/quant.json
+src/lib/icl/data.ts         types for src/data/icl.json
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
@@ -79,6 +80,8 @@ scripts/gpt2-model.ts       shared GPT-2-shaped forward pass for spec-export and
 scripts/qwen-model.ts       offline chat model for the Agents exports: Qwen3-1.7B (or Qwen2.5-Instruct) in plain TS with worker
                             threads, byte-level BPE, the ChatML/tool-call template (thinking off), KV cache, greedy generation
                             with stop strings and top-k; weights in ~/.cache/token-trails/qwen3
+scripts/icl-export.ts       GPT-2 small given 0–4 examples of three tasks, the copying head's attention row, and GPT-2 vs
+                            Qwen3-1.7B on a bare instruction; writes src/data/icl.json
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
   overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
@@ -124,13 +127,18 @@ src/exhibits/serving/
                             all rounds, the min(1, p/q) rule with real p and q, tokens per pass and speed-up vs draft cost
   quantization.ts           number formats, absmax rounding of a real GPT-2 weight column (int8, int4), per-tensor/channel/group
                             scales with real errors and perplexities, a real activation's outliers, real next-token effect
+src/exhibits/agents/
+  common.ts                 shared pieces: next-token bars (distRows), prompts as rows of chips, the model as plates, text runs
+                            with ligatures off (JetBrains Mono joins <| and ->)
+  incontext.ts              in-context learning on GPT-2 small (scripts/icl-export.ts): 0 → 3 examples, three tasks from one
+                            question, the copying (induction) head, majority and recency bias, Qwen3 on a bare instruction
 ```
 
 ## Adding an exhibit or detail view
 
 1. Write `mountX(root, nav): () => void`: `createFrame` (with `formula: true` for a detail view) → `new Stage` → `new Player(PHASES, frame.controls)` → `new MatrixKit(stage, tokens, frame.setFormula)` → set `player.describe` (caption per phase, for All steps) → `teach(player, page)` with an entry in `learn.ts` → `runLoop(step, () => !player.playing)` that ticks, draws, updates the timeline UI and sets the caption. Only set an initial `player.t` when it is still 0 (a `?phase=` link may have placed it). Return a destroy that stops the loop and calls `player.destroy()` and `stage.destroy()`.
 2. Register it in `registry.ts` (`route` + `mount`), and add it to `TOUR` in `main.ts` if it belongs to the reading order. Steps of an exhibit go in its `children` with a deeper route (`anatomy/mlp`), which opens with a zoom-in. Routes are hash-based (`#/anatomy/attention`, `#/lineage/llama`); old ones keep working through `ALIASES`.
-   A Lineage or Serving page (scenes per phase rather than one matrix walk-through) uses `mountExhibit()` from `exhibits/kit.ts` instead: pass the frame options, phases, captions, a Compare route per phase and a `scenes(env)` factory. Serving pages pass `compareLabel: 'Related'`, since their links go to related pages rather than to the GPT-2 part they change. Give it `hints` per phase: the hint under the formula strip should offer only what that phase has (hover targets, labels to click, controls).
+   A Lineage, Serving or Agents page (scenes per phase rather than one matrix walk-through) uses `mountExhibit()` from `exhibits/kit.ts` instead: pass the frame options, phases, captions, a Compare route per phase and a `scenes(env)` factory. Serving and Agents pages pass `compareLabel: 'Related'`, since their links go to related pages rather than to the GPT-2 part they change. Give it `hints` per phase: the hint under the formula strip should offer only what that phase has (hover targets, labels to click, controls).
 3. To open a detail view from the overview, add its plate to `plateAt` / `PLATE_ROUTES` in `overview.ts` (hover highlight and `drawOpenHint` follow). Mention the click in that phase's caption.
 
 ## Conventions
