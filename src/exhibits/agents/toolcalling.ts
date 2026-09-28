@@ -4,7 +4,7 @@ import { clamp, eout } from '../../core/util'
 import { tools as T } from '../../lib/tools/data'
 import { mountExhibit, words, type Env } from '../kit'
 import type { Nav } from '../registry'
-import { bars, distRows, pct, runs, whoBar, wrap, type Who } from './common'
+import { authorKey, bars, distRows, pct, runs, whoBar, wrap, type Who } from './common'
 
 /*
  * Tool calling: tools are described to the model as JSON schemas in its system prompt, the model writes a
@@ -86,6 +86,7 @@ function scenes({ stage, mk, k }: Env) {
     title('question', pad, y0 - 14, 1)
     let y = block([{ text: T.question, who: 'prompt' }], pad, y0, 560, 1)
     const aa = eout(clamp((p - 0.1) / 0.12))
+    authorKey(pad + 560, stage.H - 90, aa, ['prompt', 'model'])
     title(`${T.model}, no tools · ${T.plain.tokens} tokens`, pad, y + 18, aa)
     const ans = T.plain.answer.replace(/\*\*/g, '').replace(/^#+ */gm, '').split('\n').filter((l) => l.trim() && !/^[^\x20-\x7e]+$/.test(l.trim()))
     y = block(ans.map((l) => ({ text: l.replace(/[^\x20-\x7e’“”→…]/g, '').trim(), who: 'model' as Who, strong: /answer/i.test(l) })), pad, y + 32, 560, aa)
@@ -174,6 +175,7 @@ function scenes({ stage, mk, k }: Env) {
     // back into the context
     const a4 = eout(clamp((p - 0.62) / 0.1)), yb = y0 + 150
     title('4 · written back into the context by the chat template', pad, yb - 14, a4)
+    authorKey(W - pad, yb - 18, a4, ['model', 'tool'])
     const resp = T.response.split('\n').filter((l) => l.length), cut = resp.findIndex((l) => l.includes('</tool_call>')) + 1
     const y = block([{ text: resp.slice(0, cut).join('\n'), who: 'model' }, { text: resp.slice(cut).join('\n'), who: 'tool', strong: true }], pad, yb, W - 2 * pad, a4)
     caption('the model’s call stays in the context; the result arrives as a new user turn', pad + 14, y + 16, a4, C.mute, 'left')

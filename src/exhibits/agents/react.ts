@@ -4,7 +4,7 @@ import { clamp, eout } from '../../core/util'
 import { react, type ReactStep } from '../../lib/react/data'
 import { mountExhibit, words, type Env } from '../kit'
 import type { Nav } from '../registry'
-import { bars, distRows, noLigatures, pct, runs, whoBar, wrap, type Who } from './common'
+import { authorKey, bars, distRows, noLigatures, pct, runs, whoBar, wrap, type Who } from './common'
 
 /*
  * The ReAct loop: a model writes a Thought and an Action, the program around it stops the text at
@@ -97,10 +97,7 @@ function scenes({ stage, mk, k }: Env) {
     if (s.obs) out.push({ text: `Observation ${i + 1}: ${s.obs}`, who: 'tool' })
     return out
   }
-  function key(x: number, y: number, a: number) {
-    whoBar('model', x, y - 6, y + 6, a); caption('written by the model', x + 12, y + 4, a, C.mute, 'left')
-    whoBar('tool', x + 180, y - 6, y + 6, a); caption('appended by the program', x + 192, y + 4, a, C.mute, 'left')
-  }
+  const key = (x: number, y: number, a: number) => authorKey(x + 360, y, a)
 
   /* ---------- 1: the prompt ---------- */
   function scenePrompt(p: number) {

@@ -97,3 +97,17 @@ export function whoBar(who: Who, x: number, y0: number, y1: number, a: number) {
   else if (who === 'tool') { ctx.strokeStyle = rgba(C.ink, 0.7 * a); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y0 + 0.5, 3, y1 - y0 - 1) }
   else { ctx.fillStyle = rgba(C.mute, 0.6 * a); ctx.fillRect(x + 1.5, y0, 1, y1 - y0) }
 }
+
+const AUTHOR: Record<Who, string> = { model: 'written by the model', tool: 'added by the program', prompt: 'written by the prompt’s author' }
+/** A key to the author bars, right-aligned so its last entry ends at x. */
+export function authorKey(x: number, y: number, a: number, whos: Who[] = ['model', 'tool']) {
+  if (a <= 0) return
+  ctx.font = F.small
+  const ws = whos.map((w) => ctx.measureText(AUTHOR[w]).width + 12), total = ws.reduce((s, w) => s + w + 24, -24)
+  let cx = x - total
+  whos.forEach((w, i) => {
+    whoBar(w, cx, y - 6, y + 6, a)
+    ctx.font = F.small; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.mute, a); ctx.fillText(AUTHOR[w], cx + 12, y + 0.5)
+    cx += ws[i] + 24
+  })
+}

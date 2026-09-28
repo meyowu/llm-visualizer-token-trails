@@ -4,7 +4,7 @@ import { clamp, eout } from '../../core/util'
 import { multi as M, type Call } from '../../lib/multi/data'
 import { mountExhibit, words, type Env } from '../kit'
 import type { Nav } from '../registry'
-import { runs, whoBar, wrap, type Who } from './common'
+import { authorKey, runs, whoBar, wrap, type Who } from './common'
 
 /*
  * Multi-agent handoff: an orchestrator hands each part of a request to a worker agent that starts from an empty
@@ -107,6 +107,7 @@ function scenes({ stage, mk, k }: Env) {
     ]
     const n = Math.floor(clamp((p - 0.03) / 0.55) * items.length + 0.999)
     box(x - 8, y0 - 26, w + 16, 270, 'single agent · its context', `${maxCtx(M.calls.single)} tokens at the end`, 1, true)
+    authorKey(x + w + 8, stage.H - 64, eout(clamp((p - 0.3) / 0.12)), ['prompt', 'model', 'tool'])
     block(items.slice(0, n), x, y0, w, 1, 15)
     const aa = eout(clamp((p - 0.62) / 0.12)), xr = x + w + 50
     title('its answer', xr, y0 - 12, aa)
@@ -140,6 +141,7 @@ function scenes({ stage, mk, k }: Env) {
   function sceneWorker(p: number) {
     const wk = W_[0], x = pad + 10, w = 600, y0 = top + 30
     box(x - 10, y0 - 26, w + 20, 250, 'worker 1 · its whole context', `${Math.max(...workerCalls(0).map((c) => c.context + c.output))} tokens`, 1, true)
+    authorKey(x + w + 10, stage.H - 64, eout(clamp((p - 0.3) / 0.12)), ['prompt', 'model', 'tool'])
     const items: { text: string; who: Who; strong?: boolean }[] = [
       { text: M.prompts.worker, who: 'prompt' }, { text: wk.task, who: 'prompt' },
       ...wk.lookups.flatMap((l) => [{ text: `lookup(${l.name})`, who: 'model' as Who, strong: true }, { text: l.result, who: 'tool' as Who }]),
