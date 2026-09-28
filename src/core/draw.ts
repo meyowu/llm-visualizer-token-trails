@@ -125,7 +125,8 @@ export function subLabel(t: string, x: number, y: number, on: boolean) {
 
 /* ---------- subscripts: "W_Q", "ln_f", "d_model" render as W with a subscript Q, and so on ---------- */
 
-const SUB_RE = /([A-Za-z]+)_([A-Za-z0-9]+)/g
+/** An identifier with a subscript; not inside special tokens such as <|im_start|>. */
+const SUB_RE = /(?<![|A-Za-z])([A-Za-z]+)_([A-Za-z0-9]+)/g
 /** Split text into [run, isSubscript] pieces. */
 export function richSegs(t: string): [string, boolean][] {
   const out: [string, boolean][] = []

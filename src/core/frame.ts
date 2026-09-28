@@ -47,7 +47,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
  * math signs are wrapped too, so uppercase labels (timeline, specs) never turn σ into Σ.
  */
 export const rich = (s: string) =>
-  esc(s).replace(/([A-Za-z]+)_([A-Za-z0-9]+)/g, '<span class="m">$1<sub>$2</sub></span>').replace(/(?:[A-Za-z]\u0302|[\u0370-\u03ff\u221a\u2211\u1d40])[A-Za-z0-9\u0302\u0370-\u03ff\u1d40]*/g, '<span class="m">$&</span>')
+  esc(s).replace(/(?<![|A-Za-z])([A-Za-z]+)_([A-Za-z0-9]+)/g, '<span class="m">$1<sub>$2</sub></span>').replace(/(?:[A-Za-z]\u0302|[\u0370-\u03ff\u221a\u2211\u1d40])[A-Za-z0-9\u0302\u0370-\u03ff\u1d40]*/g, '<span class="m">$&</span>')
 
 const ROLE = (c: RGB) => (c === C.ink ? 'f-ink' : c === C.ink2 ? 'f-ink2' : c === C.mute ? 'f-mute' : '')
 
