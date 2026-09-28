@@ -159,6 +159,8 @@ function scenes({ stage, mk, k }: Env) {
       }
     })
     caption('solid: chosen · dashed: rejected', x0 + 40, y0 + 276, 1, C.mute, 'left')
+    ctx.font = F.mono(10.5); ctx.fillStyle = rgba(C.mute, 1); ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.fillText(`step ${N}`, x0 + colW, y0 + 256)
+    P.forEach((q, i) => { ctx.fillStyle = rgba(C.tok[i], 1); ctx.fillRect(x0 + 40, y0 + 296 + i * 18, 14, 3); caption(`${q.prompt} … ${q.chosen.trim()} / ${q.rejected.trim()}`, x0 + 62, y0 + 301 + i * 18, 1, C.tok[i], 'left') })
     // the next token after the first prompt
     const ta = eout(clamp((p - 0.6) / 0.12)), xr = x0 + colW + 60
     title(`next token after “${P[0].prompt}”`, xr, y0 - 18, ta)
