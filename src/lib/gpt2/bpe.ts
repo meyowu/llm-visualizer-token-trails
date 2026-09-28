@@ -42,6 +42,13 @@ export function symbolText(symbol: string): string {
   try { return new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(bytes)) } catch { return symbol }
 }
 
+let byteCharTable: string[] | null = null
+/** A piece of text as GPT-2's byte symbols, before any merge (" cat" → ["Ġ", "c", "a", "t"]). */
+export function byteSymbols(text: string): string[] {
+  byteCharTable ??= bytesToUnicode().byteChar
+  return [...new TextEncoder().encode(text)].map((b) => byteCharTable![b])
+}
+
 export interface MergeStep {
   /** The rule that fired: left + right → merged, with its rank. */
   left: string

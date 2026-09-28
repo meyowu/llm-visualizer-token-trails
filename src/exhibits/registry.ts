@@ -20,6 +20,7 @@ import { mountVit } from './lineage/vit'
 import { mountMixtral } from './lineage/mixtral'
 import { mountTransformer2017 } from './lineage/transformer2017'
 import { mountBackprop } from './training/backprop'
+import { mountBpeTrain } from './training/bpetrain'
 import { mountLoss } from './training/loss'
 import { mountOptimizer } from './training/optimizer'
 import { mountFoundations } from './foundations'
@@ -109,7 +110,7 @@ export const CATEGORIES: Category[] = [
       { name: 'Next-token loss', tag: 'cross-entropy · p − y', route: 'training/loss', mount: mountLoss },
       { name: 'Backprop', tag: 'gradients through every block', route: 'training/backprop', mount: mountBackprop },
       { name: 'Optimizer', tag: 'AdamW · warmup · schedule', route: 'training/optimizer', mount: mountOptimizer },
-      { name: 'Learning the tokenizer', tag: 'counting pairs for BPE' },
+      { name: 'Learning the tokenizer', tag: 'counting pairs for BPE', route: 'training/tokenizer', mount: mountBpeTrain },
       { heading: 'After pretraining' },
       { name: 'SFT', tag: 'instruction tuning' },
       { name: 'RLHF & DPO', tag: 'learning from preferences' },

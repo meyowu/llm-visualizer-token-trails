@@ -840,6 +840,33 @@ const LEARN: Record<string, Learn> = {
       'The learning rate is warmed up, then decayed, and Adam’s state makes training cost about 16 bytes per weight.',
     ],
   },
+  bpetrain: {
+    refs: [["Sennrich, Haddow & Birch 2016, Neural Machine Translation of Rare Words with Subword Units", "https://arxiv.org/abs/1508.07909"], ["Radford et al. 2019, GPT-2 (byte-level BPE)", "https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf"], ["Karpathy, minbpe", "https://github.com/karpathy/minbpe"]],
+    code: {
+      lines: [
+        'words = Counter(regex.findall(PAT, text))              # pre-split, counted',
+        'vocab = {w: tuple(w.encode()) for w in words}          # every word as bytes',
+        'merges = []',
+        'for _ in range(num_merges):',
+        '    pairs = Counter()',
+        '    for w, n in words.items():',
+        '        for a, b in zip(vocab[w], vocab[w][1:]): pairs[a, b] += n',
+        '    best = max(pairs, key=pairs.get)',
+        '    merges.append(best)                                # the rule, in order',
+        '    vocab = {w: merge(s, best) for w, s in vocab.items()}',
+      ],
+      at: { bytes: [0, 1], count: [4, 5, 6], merge: [3, 7, 8, 9], vocab: [3], gpt2: [8] },
+    },
+    checks: [
+      { phase: 'count', q: 'Why can a pair not span two words?', options: ['Pairs are counted inside each pre-split word only', 'Spaces are removed first', 'The merge list is sorted alphabetically', 'Bytes of different words are different'], answer: 0, why: 'Training counts pairs within the pieces the pre-tokenizer produced, so no merge ever joins a word to the next one.' },
+      { phase: 'vocab', q: 'What does a larger vocabulary cost?', options: ['A bigger embedding and output layer, and rarer tokens with less training each', 'Longer sequences', 'Slower tokenizing only', 'Nothing'], answer: 0, why: 'Every token needs its own rows in the input and output matrices, and its row is only trained when the token appears.' },
+    ],
+    recap: [
+      'BPE starts from the 256 bytes and repeatedly merges the most frequent adjacent pair within words.',
+      'The ordered list of merges is the tokenizer; encoding replays it.',
+      'More merges give fewer tokens per word at the cost of a bigger vocabulary.',
+    ],
+  },
 }
 
 /** Give a page's player its code drawer, questions and recap. */

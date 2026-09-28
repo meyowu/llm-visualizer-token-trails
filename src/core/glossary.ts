@@ -77,6 +77,7 @@ export const TERMS: Term[] = [
   { term: 'MLP', match: ['mlp'], def: 'Multi-layer perceptron: two matrix products with a nonlinearity (GELU) between them, applied to each token on its own.' },
   { term: 'Stop string', match: ['stop string', 'stop strings'], def: 'Text that ends generation as soon as the model writes it; an agent loop uses one to take control back before the model makes up a tool’s result.' },
   { term: 'Tool call', match: ['tool call', 'tool calls', 'tool calling'], def: 'Text a model writes to ask the surrounding program to run a function, such as JSON with a name and arguments; the program runs it and puts the result back in the context.' },
+  { term: 'Vocabulary', match: ['vocabulary'], def: 'The fixed set of tokens a model knows, each with an id and its own row in the embedding matrix; set by the tokenizer before training.' },
   { term: 'Weight decay', match: ['weight decay'], def: 'Shrinking every weight by a small fraction each training step, which keeps weights small unless the loss needs them large.' },
   { term: 'x · W and W x', match: [], def: 'Two ways to write the same product. Papers often write W x (a column vector); code and this site write x · W (x @ W), with one row per token.' },
   { term: 'Prefill and decode', match: ['prefill', 'decode step', 'decode steps'], def: 'The two phases of generation: prefill runs the whole prompt in one pass and fills the KV cache; each decode step then runs a single new token.' },

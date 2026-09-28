@@ -112,6 +112,8 @@ src/exhibits/training/
                             on real slices, the MLP backwards, the causal mask backwards, ‖dW‖ per block, finite-difference checks
   optimizer.ts              SGD, momentum and Adam on a toy valley (real arithmetic, computed in the page), AdamW's decoupled decay, LLaMA 2's
                             warmup + cosine schedule, bytes per weight for Adam training
+  bpetrain.ts               BPE trained live in the page on this site's glossary (byteSymbols() from bpe.ts): bytes, pair counts, 300 merges
+                            on sample words, symbols per word vs merges, our first merges next to GPT-2's (merges.txt, lazy-loaded)
 src/exhibits/lineage/
   transformer2017.ts        the 2017 Transformer vs GPT-2: RNN → attention, encoder + decoder, a toy EN → DE
                             translation, the three attentions, cross-attention GEMM, post-LN (real GPT-2 stream
