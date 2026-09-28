@@ -2,9 +2,11 @@
  * A GPT-2-shaped model in plain TypeScript for the offline export scripts (GPT-2 small, distilgpt2):
  * safetensors loading and a forward pass that returns next-token log-probabilities at every position.
  */
-import { readFileSync, openSync, readSync } from 'node:fs'
+import { closeSync, openSync, readSync } from 'node:fs'
 
 export const D = 768, H = 12, DH = 64, V = 50257, FF = 3072
+/** Width and heads of the GPT-2 sizes (small 768/12, medium 1024/16, large 1280/20, xl 1600/25). */
+export interface Dims { D: number; H: number }
 export type Weights = Map<string, Float32Array>
 
 export function loadSafetensors(path: string): Map<string, Float32Array> {
@@ -15,15 +17,16 @@ export function loadSafetensors(path: string): Map<string, Float32Array> {
   const hbuf = Buffer.alloc(hlen)
   readSync(fd, hbuf, 0, hlen, 8)
   const header = JSON.parse(hbuf.toString('utf8'))
-  const all = readFileSync(path)
   const out = new Map<string, Float32Array>()
+  // tensor by tensor, since files over 2 GB (GPT-2 large) cannot be read into one buffer
   for (const [name, t] of Object.entries<any>(header)) {
     if (name === '__metadata__' || t.dtype !== 'F32') continue
     const [a, b] = t.data_offsets as [number, number]
     const copy = new Float32Array((b - a) / 4)
-    Buffer.from(copy.buffer).set(all.subarray(8 + hlen + a, 8 + hlen + b))
+    readSync(fd, new Uint8Array(copy.buffer), 0, b - a, 8 + hlen + a)
     out.set(name.replace(/^transformer\./, ''), copy)
   }
+  closeSync(fd)
   return out
 }
 function layerNorm(x: Float32Array, g: Float32Array, b: Float32Array): Float32Array {
@@ -48,8 +51,9 @@ const gelu = (x: number) => 0.5 * x * (1 + Math.tanh(Math.sqrt(2 / Math.PI) * (x
  * A GPT-2-shaped model over weights W; returns log-probabilities for the next token at every position.
  * onAttn receives each head's attention weights (rows[i][j], j ≤ i).
  */
-export function model(W: Weights, L: number, onMlpIn?: (layer: number, rows: Float32Array[]) => void, onAttn?: (layer: number, head: number, rows: number[][]) => void) {
+export function model(W: Weights, L: number, onMlpIn?: (layer: number, rows: Float32Array[]) => void, onAttn?: (layer: number, head: number, rows: number[][]) => void, dims: Dims = { D, H }) {
   const w = (n: string) => { const t = W.get(n); if (!t) throw new Error(n); return t }
+  const { D, H } = dims, DH = D / H, FF = 4 * D
   const wte = w('wte.weight'), wpe = w('wpe.weight')
   return (ids: number[]): Float32Array[] => {
     const N = ids.length
@@ -62,7 +66,7 @@ export function model(W: Weights, L: number, onMlpIn?: (layer: number, rows: Flo
         const rows: number[][] = []
         for (let i = 0; i < N; i++) {
           const sc: number[] = []
-          for (let j = 0; j <= i; j++) { let s = 0; for (let k = 0; k < DH; k++) s += qkv[i][h * DH + k] * qkv[j][D + h * DH + k]; sc.push(s / 8) }
+          for (let j = 0; j <= i; j++) { let s = 0; for (let k = 0; k < DH; k++) s += qkv[i][h * DH + k] * qkv[j][D + h * DH + k]; sc.push(s / Math.sqrt(DH)) }
           const m = Math.max(...sc), e = sc.map((s) => Math.exp(s - m)), z = e.reduce((a, b) => a + b, 0)
           rows.push(e.map((v) => v / z))
           for (let j = 0; j <= i; j++) { const p = e[j] / z; for (let k = 0; k < DH; k++) o[i][h * DH + k] += p * qkv[j][2 * D + h * DH + k] }

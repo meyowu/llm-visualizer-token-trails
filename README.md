@@ -35,6 +35,7 @@ The atlas follows a model's life in six parts: **Anatomy** (GPT-2 taken apart), 
 - **Training / Backprop**: the chain rule from the loss back through GPT-2 small, computed for real in float64 on the Training sentence: a linear layer's weight gradient dW = Xᵀ · dY animated on real slices (summed over the positions), the gradient passed down through GELU, LayerNorm and attention, the causal mask seen backwards (each position's loss reaches only earlier tokens), the gradient on every weight matrix of all twelve blocks with the residual stream keeping it alive, and three weights checked against finite differences to six digits.
 - **Training / Optimizer**: plain gradient descent, momentum and Adam run step by step on the same toy loss valley (real arithmetic, made-up surface) with their loss curves, AdamW's weight decay applied apart from Adam's scaling, LLaMA 2's learning-rate schedule (2,000 warmup steps, cosine to 10% of 3 × 10⁻⁴ over about half a million steps), and why training LLaMA 3 8B needs about 16 bytes per weight against 2 to serve it.
 - **Training / Learning the tokenizer**: byte-pair encoding trained for real, in the page, on this site's own glossary: every word as bytes, the pair counts, 300 merges learned one by one with sample words falling into larger pieces, symbols per word against vocabulary size, and our first merges next to GPT-2's real ones (the first four are the same).
+- **Training / Scaling laws**: GPT-2 small, medium and large (one recipe at three sizes) on text none of them saw, this site's glossary: loss 4.36 → 4.19 → 4.00 on a near-straight power-law line, which tokens got easier for the large model, the Chinchilla fit L = E + A/N^α + B/D^β with its published constants, loss against model size for four compute budgets with the best size for each, and GPT-3, Gopher, Chinchilla and the LLaMAs against the 20-tokens-per-parameter line.
 - **Lineage / Diffusion Transformer**: a Transformer that predicts noise: the exact DDPM noising of a toy image with DiT's schedule, latent 2 × 2 patches, adaLN-Zero with DiT-XL/2's real gates and scales across timesteps (block 28's MLP is nearly switched off), and a 250-step sampling run that uses the true noise, next to the compute it costs.
 - **Lineage / CLIP**: two encoders, an image ViT and a GPT-2-like text Transformer, meeting in one 512-dimensional space; everything real (CLIP ViT-B/32 on four drawn shapes and their captions): the embeddings and their principal directions (the modality gap), the image × caption matrix with both softmaxes and the loss, zero-shot classification by shape and by colour, and the learned temperature of 100.
 - **Lineage / Vision Transformer**: an image cut into 14 × 14 patches that become the tokens, the patch embedding as one shared matrix product next to the real ViT-B/16 filters' principal components, the real position embeddings, whose similarities rediscover the 2D grid, and a head that reads only [CLS].
@@ -67,6 +68,7 @@ node scripts/tools-export.ts # regenerate src/data/tools.json (tool calling with
 node scripts/rag-export.ts   # regenerate src/data/rag.json (MiniLM retrieval, Qwen3-1.7B answers)
 node scripts/multi-export.ts # regenerate src/data/multi.json (an orchestrator and workers, Qwen3-1.7B)
 node scripts/backprop-export.ts # regenerate src/data/backprop.json (GPT-2 small's gradients)
+node scripts/scaling-export.ts # regenerate src/data/scaling.json (GPT-2 small, medium, large)
 ```
 
 The browser never runs a model. `scripts/gpt2-export.ts` runs GPT-2 small once, offline, in plain TypeScript, and exports the slices the pages draw to `src/data/gpt2.json`; `scripts/bert-export.ts` and `scripts/t5-export.ts` do the same for BERT-base and T5-small (`src/data/bert.json`, `src/data/t5.json`). The detail views that animate every matrix product use a toy model at d_model 8 and say so.
@@ -105,6 +107,7 @@ src/
       backprop.ts         the chain rule through GPT-2, checked
       optimizer.ts        SGD, momentum, Adam, schedules
       bpetrain.ts         BPE learned in the page
+      scaling.ts          GPT-2 at three sizes, Chinchilla's fit
     lineage/
       transformer2017.ts  the 2017 Transformer compared with GPT-2
       llama.ts            LLaMA 3 compared with GPT-2
@@ -148,6 +151,7 @@ scripts/
   rag-export.ts           MiniLM retrieval + Qwen3 answers → src/data/rag.json
   multi-export.ts         orchestrator + workers with Qwen3 → src/data/multi.json
   backprop-export.ts      GPT-2 backprop in float64 → src/data/backprop.json
+  scaling-export.ts       GPT-2 at three sizes → src/data/scaling.json
 ```
 
 To add an exhibit, write a `mount(root, nav) => destroy` function under `exhibits/` and give its entry in `registry.ts` a `route` and `mount`.

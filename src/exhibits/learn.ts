@@ -867,6 +867,29 @@ const LEARN: Record<string, Learn> = {
       'More merges give fewer tokens per word at the cost of a bigger vocabulary.',
     ],
   },
+  scaling: {
+    refs: [["Kaplan et al. 2020, Scaling Laws for Neural Language Models", "https://arxiv.org/abs/2001.08361"], ["Hoffmann et al. 2022, Training Compute-Optimal Large Language Models (Chinchilla)", "https://arxiv.org/abs/2203.15556"], ["Llama Team 2024, The Llama 3 Herd of Models", "https://arxiv.org/abs/2407.21783"]],
+    code: {
+      lines: [
+        'E, A, B, alpha, beta = 1.69, 406.4, 410.7, 0.34, 0.28      # Chinchilla, approach 3',
+        'def loss(N, D): return E + A / N**alpha + B / D**beta',
+        'def flops(N, D): return 6 * N * D                        # forward + backward, per token',
+        'C = 1e23',
+        'N_best = min(np.logspace(8, 12, 2000), key=lambda N: loss(N, C / (6 * N)))',
+        'D_best = C / (6 * N_best)                                # about 20 tokens per parameter',
+      ],
+      at: { size: [], tokens: [], fit: [0, 1], compute: [2, 3, 4, 5], models: [5] },
+    },
+    checks: [
+      { phase: 'compute', q: 'With a fixed compute budget, why is the loss worse for a very large model?', options: ['It can only be trained on few tokens, so it is under-trained', 'Large models always overfit', 'Its learning rate is too low', 'It has too few layers'], answer: 0, why: 'C ≈ 6ND: a larger N leaves fewer tokens D, and the data term B/D^β grows faster than the size term falls.' },
+      { phase: 'models', q: 'Why train LLaMA 3 8B on about 1,900 tokens per parameter, far past the compute-optimal 20?', options: ['A smaller, longer-trained model reaches good quality and is much cheaper to serve', 'The Chinchilla fit is wrong', 'Tokens are free', 'To reduce training compute'], answer: 0, why: 'Compute-optimal minimizes training cost for a given loss; a model that will serve billions of requests is worth over-training to keep it small.' },
+    ],
+    recap: [
+      'Loss falls smoothly as a power law in parameters, data and compute; three GPT-2 sizes show it on unseen text.',
+      'Chinchilla’s fit L = E + A/N^α + B/D^β puts the compute-optimal point near 20 training tokens per parameter.',
+      'Real models trade that off: GPT-3 was under-trained, LLaMA 3 is over-trained on purpose to be cheap to serve.',
+    ],
+  },
 }
 
 /** Give a page's player its code drawer, questions and recap. */

@@ -56,6 +56,7 @@ src/lib/tools/data.ts       types for src/data/tools.json
 src/lib/rag/data.ts         types for src/data/rag.json, plainText() for model output
 src/lib/multi/data.ts       types for src/data/multi.json
 src/lib/backprop/data.ts    types for src/data/backprop.json
+src/lib/scaling/data.ts     types for src/data/scaling.json
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
@@ -97,6 +98,8 @@ scripts/multi-export.ts     a multi-agent run with Qwen3-1.7B: an orchestrator w
                             must call lookup first; also one agent alone; every call's token counts; writes src/data/multi.json
 scripts/backprop-export.ts  GPT-2 small's forward and backward pass in float64 on the Training sentence: every weight's gradient, a dW
                             slice, per-position reach, finite-difference checks; writes src/data/backprop.json
+scripts/scaling-export.ts   GPT-2 small, medium and large (sizes via gpt2-model.ts's dims) scoring this site's glossary, which none of them
+                            saw; losses per token and in the mean; writes src/data/scaling.json; weights in ~/.cache/token-trails/gpt2-medium, gpt2-large
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
   overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
@@ -114,6 +117,8 @@ src/exhibits/training/
                             warmup + cosine schedule, bytes per weight for Adam training
   bpetrain.ts               BPE trained live in the page on this site's glossary (byteSymbols() from bpe.ts): bytes, pair counts, 300 merges
                             on sample words, symbols per word vs merges, our first merges next to GPT-2's (merges.txt, lazy-loaded)
+  scaling.ts                scaling laws: GPT-2 small/medium/large on unseen text (scripts/scaling-export.ts) with a power-law fit, per-token
+                            gains, the Chinchilla fit L(N, D), isoFLOP curves and compute-optimal sizes, published models vs D = 20 N
 src/exhibits/lineage/
   transformer2017.ts        the 2017 Transformer vs GPT-2: RNN → attention, encoder + decoder, a toy EN → DE
                             translation, the three attentions, cross-attention GEMM, post-LN (real GPT-2 stream

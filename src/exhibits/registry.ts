@@ -23,6 +23,7 @@ import { mountBackprop } from './training/backprop'
 import { mountBpeTrain } from './training/bpetrain'
 import { mountLoss } from './training/loss'
 import { mountOptimizer } from './training/optimizer'
+import { mountScaling } from './training/scaling'
 import { mountFoundations } from './foundations'
 import { mountGlossary } from './glossary'
 import { mountStart } from './start'
@@ -115,7 +116,7 @@ export const CATEGORIES: Category[] = [
       { name: 'SFT', tag: 'instruction tuning' },
       { name: 'RLHF & DPO', tag: 'learning from preferences' },
       { name: 'LoRA', tag: 'low-rank adapters' },
-      { name: 'Scaling laws', tag: 'loss vs compute' },
+      { name: 'Scaling laws', tag: 'loss vs compute', route: 'training/scaling', mount: mountScaling },
     ],
   },
   {
