@@ -361,7 +361,7 @@ export class Qwen {
       this.truncate(base + k)
       if (keep > len) this.feed(this.tok.encode(text.slice(len, keep)))
       text = text.slice(0, keep)
-    }
+    } else text = this.tok.decode(steps.map((s) => s.id)) // whole characters, even where one spans two tokens
     return { text, steps, stopped }
   }
 }

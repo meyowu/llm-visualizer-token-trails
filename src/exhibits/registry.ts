@@ -1,5 +1,6 @@
 import { mountInContext } from './agents/incontext'
 import { mountReact } from './agents/react'
+import { mountToolCalling } from './agents/toolcalling'
 import { mountContinuousBatching } from './serving/batching'
 import { mountFlashAttention } from './serving/flashattention'
 import { mountKvCache } from './serving/kvcache'
@@ -140,7 +141,7 @@ export const CATEGORIES: Category[] = [
     entries: [
       { name: 'In-context learning', tag: 'prompts as programs', route: 'agents/in-context', mount: mountInContext },
       { name: 'ReAct Loop', tag: 'think → act → observe', route: 'agents/react', mount: mountReact },
-      { name: 'Tool Calling', tag: 'schema → call → result' },
+      { name: 'Tool Calling', tag: 'schema → call → result', route: 'agents/tool-calling', mount: mountToolCalling },
       { name: 'RAG Pipeline', tag: 'embed → retrieve → read' },
       { name: 'Multi-agent Handoff', tag: 'orchestrator' },
     ],

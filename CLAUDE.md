@@ -52,6 +52,7 @@ src/lib/spec/data.ts        types for src/data/spec.json, plain() for GPT-2 spel
 src/lib/quant/data.ts       types for src/data/quant.json
 src/lib/icl/data.ts         types for src/data/icl.json
 src/lib/react/data.ts       types for src/data/react.json
+src/lib/tools/data.ts       types for src/data/tools.json
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
@@ -85,6 +86,8 @@ scripts/icl-export.ts       GPT-2 small given 0–4 examples of three tasks, the
                             Qwen3-1.7B on a bare instruction; writes src/data/icl.json
 scripts/react-export.ts     a ReAct loop with Qwen3-1.7B: lookup and calculator tools, stop at "Observation", real results appended;
                             also the run left unstopped and one without the look-up rule; writes src/data/react.json
+scripts/tools-export.ts     tool calling with Qwen3-1.7B: count_letter and tokenize as JSON schemas, the call parsed, validated and
+                            run, the answer; also the answer without tools and the mask at the function name; writes src/data/tools.json
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
   overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
@@ -137,6 +140,8 @@ src/exhibits/agents/
                             question, the copying (induction) head, majority and recency bias, Qwen3 on a bare instruction
   react.ts                  the ReAct loop, a real Qwen3-1.7B run (scripts/react-export.ts): the prompt's sections, Thought → Action
                             with the model's choice, stop/parse/run/append, the whole trace, context per call, the run left unstopped
+  toolcalling.ts            tool calling with Qwen3-1.7B's own format (scripts/tools-export.ts): the no-tool answer (wrong), tool schemas in the
+                            system prompt, the <tool_call> with its probabilities, checks/run/<tool_response>, the answer, the vocabulary mask
 ```
 
 ## Adding an exhibit or detail view

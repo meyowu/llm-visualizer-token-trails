@@ -717,6 +717,30 @@ const LEARN: Record<string, Learn> = {
       'Every step lengthens the context, so caching the prefix between calls matters, and the stop string keeps results real.',
     ],
   },
+  toolcalling: {
+    refs: [["Schick et al. 2023, Toolformer: Language Models Can Teach Themselves to Use Tools", "https://arxiv.org/abs/2302.04761"], ["Qwen documentation, Function Calling", "https://qwen.readthedocs.io/en/latest/framework/function_call.html"], ["Willard & Louf 2023, Efficient Guided Generation for Large Language Models", "https://arxiv.org/abs/2307.09702"], ["JSON Schema", "https://json-schema.org"]],
+    code: {
+      lines: [
+        "tools = [{'type': 'function', 'function': {'name': 'count_letter', 'parameters': {...}}}]",
+        'text = tokenizer.apply_chat_template(messages, tools=tools, add_generation_prompt=True, enable_thinking=False, tokenize=False)',
+        "out = generate(text)                    # '<tool_call>\\n{\"name\": \"count_letter\", \"arguments\": {...}}\\n</tool_call>'",
+        "call = json.loads(re.search(r'<tool_call>(.*?)</tool_call>', out, re.S).group(1))",
+        "jsonschema.validate(call['arguments'], schema)   # a malformed call never reaches the function",
+        "result = FUNCTIONS[call['name']](**call['arguments'])",
+        "messages += [{'role': 'assistant', 'tool_calls': [{'function': call}]}, {'role': 'tool', 'content': str(result)}]",
+      ],
+      at: { why: [], schema: [0, 1], call: [2], run: [3, 4, 5, 6], answer: [2, 6], constrain: [2] },
+    },
+    checks: [
+      { phase: 'call', q: 'What does the model produce when it uses a tool?', options: ['Text: JSON between <tool_call> tags, which the program parses', 'A function call inside its own memory', 'A special vector the server decodes', 'Nothing; the server decides on its own'], answer: 0, why: 'The model only ever writes tokens. The call is text in an agreed format; running it is the program’s job.' },
+      { phase: 'constrain', q: 'With constrained decoding, what happens to a token that cannot continue a valid call?', options: ['Its probability is set to zero before the next token is chosen', 'It is chosen less often', 'It is swapped for the nearest valid token afterwards', 'The whole call is retried'], answer: 0, why: 'Its logit is set to −∞, so after softmax it has probability zero and the remaining tokens are renormalised, as in a causal mask.' },
+    ],
+    recap: [
+      'Tools reach the model as JSON schemas in its system prompt, written there by the chat template.',
+      'The model writes a call as JSON in <tool_call> tags; the program parses, validates and runs it, and returns the result in a <tool_response>.',
+      'Calling or answering directly is a next-token choice; constrained decoding can guarantee the call is well formed.',
+    ],
+  },
 }
 
 /** Give a page's player its code drawer, questions and recap. */
