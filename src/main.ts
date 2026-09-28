@@ -30,10 +30,18 @@ themeBtn.addEventListener('click', () => {
 })
 // ?embed=1 drops the rail and tour chrome, for an iframe in slides or a course page
 if (getParams().get('embed') === '1') document.querySelector('.app')!.classList.add('embed')
-// presentation mode: no rail, larger captions; Escape leaves it
+// presentation mode: no rail, larger captions; the Exit button (the rail and its Present button are hidden) or Escape
+// leaves it, and focus moves between the two buttons so a keyboard reader is never left on a hidden one
 const presentBtn = document.querySelector('.present-btn') as HTMLButtonElement
-const setPresent = (on: boolean) => { document.querySelector('.app')!.classList.toggle('present', on); presentBtn.setAttribute('aria-pressed', String(on)); poke() }
+const exitBtn = document.querySelector('.present-exit') as HTMLButtonElement
+const setPresent = (on: boolean) => {
+  document.querySelector('.app')!.classList.toggle('present', on)
+  presentBtn.setAttribute('aria-pressed', String(on))
+  ;(on ? exitBtn : presentBtn).focus()
+  poke()
+}
 presentBtn.addEventListener('click', () => setPresent(true))
+exitBtn.addEventListener('click', () => setPresent(false))
 window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.querySelector('.app.present')) setPresent(false) })
 // the skip link lands on the current page's title
 ;(document.querySelector('.skip') as HTMLButtonElement).addEventListener('click', () => {

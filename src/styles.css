@@ -339,6 +339,12 @@ abbr.term { text-decoration: underline dotted; text-decoration-color: var(--mute
 .app.present .cap-title b { font-size: 24px; }
 .app.present .f-line { font-size: 14px; }
 .app.present .f-note { font-size: 15px; }
+.present-exit { display: none; }
+/* the only way out once the rail is hidden: fixed at the top left, with room made for it above the page header */
+.app.present .present-exit { display: block; position: fixed; top: 10px; left: 12px; z-index: 20; border: 1px solid var(--line2); border-radius: 6px; background: var(--panel); color: var(--ink2); padding: 4px 10px; font: 500 12px var(--sans); cursor: pointer; }
+.app.present .present-exit:hover { color: var(--ink); border-color: var(--mute); }
+.app.present .head { padding-top: 48px; }
+.app.present .chapnav { top: 42px; }
 .ex .done, .ex .part { grid-column: 2; justify-self: start; margin-top: 3px; font: 500 10.5px var(--mono); font-style: normal; color: var(--t4); }
 .ex .part { color: var(--mute); }
 .st-resume { margin-left: 10px; background: none; color: var(--ink); border-color: var(--line2); }
