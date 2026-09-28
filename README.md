@@ -31,6 +31,7 @@ The atlas follows a model's life in six parts: **Anatomy** (GPT-2 taken apart), 
 - **Agents / ReAct Loop**: a real run of Qwen3-1.7B with a lookup tool and a calculator: the prompt that teaches the format (362 tokens, most of it one worked example), a Thought and an Action whose tool name is just the likeliest next token, the program stopping the text at "Observation", parsing the action, running the tool and appending its result, the whole loop (two lookups, one subtraction, finish[20]), the context growing call by call (658 tokens kept in a cache against 2,200 re-sent), and what the model writes when it is not stopped (a made-up fact sheet: LLaMA 3 8B with 8 layers).
 - **Agents / Tool Calling**: a real run of Qwen3-1.7B with its own tool-call format: without tools it spells "strawberry" out and still answers 2 (the word is a single token to it), the tools as JSON schemas in the system prompt (241 tokens for two), the <tool_call> it writes (p ≈ 1 at the first token and at the name), the program parsing, validating and running it and returning <tool_response>3</tool_response>, the correct answer, a question it answers without calling, and constrained decoding (8 of 151,669 tokens allowed at the function name).
 - **Agents / RAG Pipeline**: retrieval-augmented generation over this site's own text, all real: 92 passages (the glossary and the legend) embedded with all-MiniLM-L6-v2, a question's 384-dimensional vector against a passage's, the passages on their top two principal components (hover to read one), cosine ranking with the top 3 kept (for one question the right passage only comes second), the prompt the passages are pasted into, Qwen3-1.7B guessing what a hatched cell means without them and answering from the legend with them, and two misses: a question worded unlike its passage, and one whose passage lacks the answer (without passages the model made an author up).
+- **Agents / Multi-agent Handoff**: a real run with Qwen3-1.7B in every role: one agent answering alone (two lookups at once, 887 tokens), then an orchestrator that hands the request to 5 workers through an ask_worker tool (and drops one piece), a worker's context from empty (its first reply is required to be a lookup), the reports coming back and the answer (which drops one of them), a timeline with the workers in parallel, and the cost: 4,189 tokens against 887, with no smaller largest context on a task this small.
 - **Lineage / Diffusion Transformer**: a Transformer that predicts noise: the exact DDPM noising of a toy image with DiT's schedule, latent 2 × 2 patches, adaLN-Zero with DiT-XL/2's real gates and scales across timesteps (block 28's MLP is nearly switched off), and a 250-step sampling run that uses the true noise, next to the compute it costs.
 - **Lineage / CLIP**: two encoders, an image ViT and a GPT-2-like text Transformer, meeting in one 512-dimensional space; everything real (CLIP ViT-B/32 on four drawn shapes and their captions): the embeddings and their principal directions (the modality gap), the image × caption matrix with both softmaxes and the loss, zero-shot classification by shape and by colour, and the learned temperature of 100.
 - **Lineage / Vision Transformer**: an image cut into 14 × 14 patches that become the tokens, the patch embedding as one shared matrix product next to the real ViT-B/16 filters' principal components, the real position embeddings, whose similarities rediscover the 2D grid, and a head that reads only [CLS].
@@ -61,6 +62,7 @@ node scripts/icl-export.ts   # regenerate src/data/icl.json (GPT-2 small few-sho
 node scripts/react-export.ts # regenerate src/data/react.json (a ReAct loop with Qwen3-1.7B)
 node scripts/tools-export.ts # regenerate src/data/tools.json (tool calling with Qwen3-1.7B)
 node scripts/rag-export.ts   # regenerate src/data/rag.json (MiniLM retrieval, Qwen3-1.7B answers)
+node scripts/multi-export.ts # regenerate src/data/multi.json (an orchestrator and workers, Qwen3-1.7B)
 ```
 
 The browser never runs a model. `scripts/gpt2-export.ts` runs GPT-2 small once, offline, in plain TypeScript, and exports the slices the pages draw to `src/data/gpt2.json`; `scripts/bert-export.ts` and `scripts/t5-export.ts` do the same for BERT-base and T5-small (`src/data/bert.json`, `src/data/t5.json`). The detail views that animate every matrix product use a toy model at d_model 8 and say so.
@@ -118,6 +120,7 @@ src/
       react.ts            Thought → Action → Observation with Qwen3
       toolcalling.ts      schemas, <tool_call>, <tool_response>, masks
       rag.ts              embeddings, cosine ranking, grounded answers
+      multiagent.ts       orchestrator, workers, handoffs, cost
 scripts/
   gpt2-export.ts          offline GPT-2 small forward pass that writes src/data/gpt2.json
   bert-export.ts          offline BERT-base forward pass that writes src/data/bert.json
@@ -134,6 +137,7 @@ scripts/
   react-export.ts         a real ReAct loop with Qwen3 → src/data/react.json
   tools-export.ts         Qwen3 tool calling → src/data/tools.json
   rag-export.ts           MiniLM retrieval + Qwen3 answers → src/data/rag.json
+  multi-export.ts         orchestrator + workers with Qwen3 → src/data/multi.json
 ```
 
 To add an exhibit, write a `mount(root, nav) => destroy` function under `exhibits/` and give its entry in `registry.ts` a `route` and `mount`.

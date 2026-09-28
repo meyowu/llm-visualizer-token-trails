@@ -54,6 +54,7 @@ src/lib/icl/data.ts         types for src/data/icl.json
 src/lib/react/data.ts       types for src/data/react.json
 src/lib/tools/data.ts       types for src/data/tools.json
 src/lib/rag/data.ts         types for src/data/rag.json, plainText() for model output
+src/lib/multi/data.ts       types for src/data/multi.json
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
@@ -91,6 +92,8 @@ scripts/tools-export.ts     tool calling with Qwen3-1.7B: count_letter and token
                             run, the answer; also the answer without tools and the mask at the function name; writes src/data/tools.json
 scripts/rag-export.ts       RAG for real: this site's glossary and legend embedded with all-MiniLM-L6-v2 (a 6-layer BERT, mean-pooled),
                             four questions ranked by cosine, Qwen3-1.7B answers with and without the top 3; writes src/data/rag.json
+scripts/multi-export.ts     a multi-agent run with Qwen3-1.7B: an orchestrator with ask_worker hands pieces to workers that start empty and
+                            must call lookup first; also one agent alone; every call's token counts; writes src/data/multi.json
 src/exhibits/transformer/
   model.ts                  toy model: prompt ids, toy attention + MLP blocks, LayerNorm params, laneMix()
   overview.ts               forward pass with real GPT-2 numbers, tokenizer → greedy pick; plates open the detail views
@@ -147,6 +150,8 @@ src/exhibits/agents/
                             system prompt, the <tool_call> with its probabilities, checks/run/<tool_response>, the answer, the vocabulary mask
   rag.ts                    RAG over this site's glossary and legend (scripts/rag-export.ts): passages, MiniLM embeddings as cells, a 2D PCA
                             map with hover, cosine ranking with the top-3 cut, the assembled prompt, answers with and without, two misses
+  multiagent.ts             orchestrator and workers, a real Qwen3-1.7B run (scripts/multi-export.ts): one agent alone, the handoffs (ask_worker),
+                            a worker's fresh context, the reports and the answer, a parallel timeline, tokens and contexts against one agent
 ```
 
 ## Adding an exhibit or detail view

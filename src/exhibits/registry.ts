@@ -1,4 +1,5 @@
 import { mountInContext } from './agents/incontext'
+import { mountMultiAgent } from './agents/multiagent'
 import { mountRag } from './agents/rag'
 import { mountReact } from './agents/react'
 import { mountToolCalling } from './agents/toolcalling'
@@ -144,7 +145,7 @@ export const CATEGORIES: Category[] = [
       { name: 'ReAct Loop', tag: 'think → act → observe', route: 'agents/react', mount: mountReact },
       { name: 'Tool Calling', tag: 'schema → call → result', route: 'agents/tool-calling', mount: mountToolCalling },
       { name: 'RAG Pipeline', tag: 'embed → retrieve → read', route: 'agents/rag', mount: mountRag },
-      { name: 'Multi-agent Handoff', tag: 'orchestrator' },
+      { name: 'Multi-agent Handoff', tag: 'orchestrator', route: 'agents/multi-agent', mount: mountMultiAgent },
     ],
   },
 ]

@@ -765,6 +765,29 @@ const LEARN: Record<string, Learn> = {
       'Retrieval can miss, by wording or because no passage holds the answer, and the answer is only as good as what was retrieved.',
     ],
   },
+  multiagent: {
+    refs: [["Anthropic 2025, How we built our multi-agent research system", "https://www.anthropic.com/engineering/multi-agent-research-system"], ["Anthropic 2024, Building effective agents (orchestrator-workers)", "https://www.anthropic.com/engineering/building-effective-agents"], ["OpenAI Agents SDK, Handoffs", "https://openai.github.io/openai-agents-python/handoffs/"], ["Wu et al. 2023, AutoGen", "https://arxiv.org/abs/2308.08155"]],
+    code: {
+      lines: [
+        'def ask_worker(model, question):                       # the orchestrator\'s one tool',
+        "    worker = Agent(instructions=WORKER, tools=[lookup])     # a fresh, empty context",
+        "    return worker.run(f'Model: {model}\\nQuestion: {question}')   # only the report comes back",
+        '',
+        'orchestrator = Agent(instructions=ORCHESTRATOR, tools=[ask_worker])',
+        'answer = orchestrator.run(request)       # calls ask_worker once per piece, then answers from the reports',
+      ],
+      at: { single: [], split: [0, 4, 5], worker: [1, 2], reports: [2, 5], timeline: [5], cost: [1, 2] },
+    },
+    checks: [
+      { phase: 'worker', q: 'What does a worker see of the user’s original request?', options: ['Only what the orchestrator wrote into its task', 'The whole request', 'The request and the other workers’ reports', 'Everything the orchestrator has read'], answer: 0, why: 'A worker starts from an empty context with its own instructions and its task; the handoff is all it gets.' },
+      { phase: 'cost', q: 'Why did the multi-agent run process more tokens than one agent?', options: ['Every worker reads its own instructions and fact sheet, and there are more model calls', 'Workers use a bigger model', 'The orchestrator reads every fact sheet', 'Reports are longer than fact sheets'], answer: 0, why: 'Splitting repeats the fixed costs (instructions, tool schemas) in every context and adds calls; in exchange each context stays small and the workers can run at once.' },
+    ],
+    recap: [
+      'An orchestrator hands pieces of a task to worker agents with a tool call; each worker starts from an empty context.',
+      'Workers do their own tool calls and return short reports; the orchestrator never sees their full contexts.',
+      'The split costs more tokens overall but keeps contexts small and lets independent work run in parallel.',
+    ],
+  },
 }
 
 /** Give a page's player its code drawer, questions and recap. */
