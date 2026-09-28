@@ -954,11 +954,12 @@ const LEARN: Record<string, Learn> = {
         'loss = -F.logsigmoid(r_w - r_l)',
         'loss.backward(); opt.step()                   # ref is frozen; only the policy moves',
       ],
-      at: { pairs: [0, 1, 2], rlhf: [], dpo: [3, 4, 5], run: [5, 6], where: [3, 4] },
+      at: { pairs: [0, 1, 2], reward: [], rl: [], dpo: [3, 4, 5], run: [5, 6], effect: [3, 4] },
     },
     checks: [
       { phase: 'dpo', q: 'At the first step, when the policy equals the reference, what is the DPO loss?', options: ['ln 2 ≈ 0.693, since both implicit rewards are 0', '0', '1', 'It depends on the answers'], answer: 0, why: 'Both log-ratios are 0, so the margin is 0 and −log σ(0) = ln 2.' },
-      { phase: 'where', q: 'In this run, how did the margins mostly grow?', options: ['The rejected answers’ probabilities fell far', 'The chosen answers became near-certain', 'The reference model changed', 'β grew'], answer: 0, why: 'The chosen log-probabilities moved a little; the rejected ones dropped by tens of nats. Lowering the rejected answer is the cheapest way to widen the gap.' },
+      { phase: 'rl', q: 'With a small β, where does the RLHF loop leave the probabilities?', options: ['Piled onto the highest-scoring token', 'Where they started', 'Spread evenly over all tokens', 'On the token GPT-2 liked most'], answer: 0, why: 'The loop settles at π_ref · exp(r / β). A small β makes the reward term dominate, so almost all probability goes to the best-scoring token; a large β keeps it near the start.' },
+      { phase: 'effect', q: 'In this run, how did the margins mostly grow?', options: ['The rejected answers’ probabilities fell far', 'The chosen answers became near-certain', 'The reference model changed', 'β grew'], answer: 0, why: 'The chosen log-probabilities moved a little; the rejected ones dropped by tens of nats. Lowering the rejected answer is the cheapest way to widen the gap.' },
     ],
     recap: [
       'Preference tuning learns from pairs of answers where one was preferred, which is easier to collect than written answers.',
@@ -977,10 +978,10 @@ const LEARN: Record<string, Learn> = {
         'loss = F.cross_entropy(logits, labels[1:], ignore_index=-100)   # the answer only',
         'loss.backward(); opt.step()',
       ],
-      at: { format: [0], mask: [1, 2, 3, 4], before: [5], sharp: [4], untrained: [2] },
+      at: { chat: [0], grade: [1, 2, 3, 4], before: [5], sharp: [4], untrained: [2] },
     },
     checks: [
-      { phase: 'mask', q: 'Which tokens does SFT’s loss count?', options: ['Only the answer’s tokens (and its end marker)', 'Every token of the conversation', 'Only the user’s question', 'Only special tokens'], answer: 0, why: 'The prompt and template tokens get the ignore label, so the model is trained to write answers, not to predict the user.' },
+      { phase: 'grade', q: 'Which tokens does SFT’s loss count?', options: ['Only the answer’s tokens (and its end marker)', 'Every token of the conversation', 'Only the user’s question', 'Only special tokens'], answer: 0, why: 'The prompt and template tokens get the ignore label, so the model is trained to write answers, not to predict the user.' },
       { phase: 'sharp', q: 'Why does the tuned model give a human-written answer a higher loss than the base model does?', options: ['It has become very sure of its own phrasing, so other wordings get less probability', 'The answer is wrong', 'It forgot English', 'Its vocabulary changed'], answer: 0, why: 'Post-training concentrates probability on the model’s own style of answer; its own answer costs 0.12 nats per token, a different wording much more.' },
     ],
     recap: [

@@ -148,10 +148,13 @@ src/exhibits/training/
                             gains, the Chinchilla fit L(N, D), isoFLOP curves and compute-optimal sizes, published models vs D = 20 N
   lora.ts                   LoRA: W + A·B at toy size, trainable counts (GPT-2 here, LLaMA 3 8B r = 16), a real rank-4 run vs full fine-tuning
                             (scripts/finetune-export.ts), captured energy by rank for that fine-tune vs Qwen3's post-training (lora-export.ts)
-  sft.ts                    SFT on Qwen3-1.7B-Base vs Qwen3-1.7B (scripts/sft-export.ts): the chat-formatted example with masked tokens
-                            hatched, per-token loss on the answer only, both models' answers, loss on each other's answers, drifted masked tokens
-  dpo.ts                    RLHF & DPO: preference pairs with GPT-2's log-probabilities, the RLHF pipeline, DPO's loss, a real DPO run with rank-4
-                            adapters (scripts/finetune-export.ts), log π of chosen and rejected per step, next-token shift
+  sft.ts                    SFT on Qwen3-1.7B-Base vs Qwen3-1.7B (scripts/sft-export.ts), drawn as token chips with probability bars:
+                            chat bubbles unrolling into the template's tokens, a cursor predicting every token while only the answer's
+                            −log p fills the loss bar, both models' replies, the tuned model's odds on another wording and on the template
+  dpo.ts                    RLHF & DPO: preference pairs with GPT-2's own split between the answers, a reward model scoring six next
+                            tokens (toy scores), the RL loop on GPT-2's real next-token probabilities computed in the page (converges to
+                            π_ref·exp(r/β); β toggle), toy DPO on the same bars, the real GPT-2 DPO run (scripts/finetune-export.ts) as
+                            answers riding a log-probability axis, the next token before and after
 src/exhibits/lineage/
   transformer2017.ts        the 2017 Transformer vs GPT-2: RNN → attention, encoder + decoder, a toy EN → DE
                             translation, the three attentions, cross-attention GEMM, post-LN (real GPT-2 stream

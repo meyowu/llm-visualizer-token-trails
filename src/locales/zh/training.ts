@@ -594,4 +594,119 @@ export const training: Record<string, string> = {
   'LoRA freezes W and learns ΔW = A·B with a small rank r, a fraction of a percent of the weights.': 'LoRA 冻结 W，以很小的秩 r 学习 ΔW = A·B，只占权重的不到百分之一。',
   'Only the adapters need gradients and optimizer state; after training they can be merged into W for free.': '只有适配器需要梯度和优化器状态；训练后可以零成本地合并进 W。',
   'Narrow fine-tunes change weights in few directions, so a low rank suffices; broad post-training does not.': '窄任务微调只在少数方向上改变权重，所以低秩就够了；广泛的后训练则不然。',
+  /* ---------- SFT, rebuilt around probability bars ---------- */
+  'Real probabilities from Qwen3-1.7B-Base and Qwen3-1.7B, exported offline.': 'Qwen3-1.7B-Base 与 Qwen3-1.7B 的真实概率，离线导出。',
+  'Supervised fine-tuning: a chat becomes one token sequence in the chat template; the model predicts every next token and only the answer’s predictions are added into the loss; the same prompt answered before and after tuning; the tuned model’s probabilities on another wording and on the template it was never trained on.':
+    '监督微调：一段对话按聊天模板变成一串词元；模型预测每一个下一个词元，只有回答部分的预测计入损失；同一个提示词在微调前后的回答；微调后的模型对另一种措辞、以及对从未训练过的模板给出的概率。',
+  'Template': '模板',
+  'What the model sees': '模型看到的是什么',
+  'Graded on the answer only': '只给回答打分',
+  'What it learns to do': '它学会了做什么',
+  'the user asks': '用户提问',
+  'the assistant answers': '助手回答',
+  'the user’s turn': '用户的回合',
+  'the assistant’s turn': '助手的回合',
+  'the template adds <|im_start|>, the role, <|im_end|> and Qwen3’s empty <think> block': '模板加上了 <|im_start|>、角色名、<|im_end|>，以及 Qwen3 的空 <think> 块',
+  'The template is part of the data. The model learns that an answer follows <|im_start|>assistant and ends with <|im_end|>, which is how it knows when to stop.':
+    '模板本身也是数据。模型学到回答跟在 <|im_start|>assistant 后面、以 <|im_end|> 结束，这就是它知道何时停下的原因。',
+  'A model never sees chat bubbles. The chat template turns the conversation into one token sequence, with special tokens around each turn: <|im_start|>, the role, the text, <|im_end|>. SFT trains on many such sequences; this one has {} tokens, {} of them the answer.':
+    '模型从来看不到聊天气泡。聊天模板把对话变成一串词元，每个回合前后加上特殊词元：<|im_start|>、角色、正文、<|im_end|>。SFT 在大量这样的序列上训练；这一条共 {0} 个词元，其中 {1} 个属于回答。',
+  'bar: the probability Qwen3-1.7B-Base gave the real next token': '柱：Qwen3-1.7B-Base 给真实下一个词元的概率',
+  'not graded': '不打分',
+  'the loss: −log p of the answer’s tokens, added up': '损失：回答各词元的 −log p 之和',
+  '{} nats': '{0} nats',
+  '{} of {} answer tokens so far': '已算 {1} 个回答词元中的 {0} 个',
+  'The hatched positions are predicted too, in the same forward pass, but their guesses are dropped from the loss. SFT lowers the graded ones, over many thousands of such examples.':
+    '带斜纹的位置也会被预测，就在同一次前向传播里，但它们的猜测不计入损失。SFT 在成千上万个这样的例子上，降低被打分的那些。',
+  'Training reads the whole sequence and, at every position, asks the model for the next token, exactly as in pretraining. Only the answer’s guesses are graded: their −log p is added up into the loss, while the prompt and template are masked. Before any tuning, Qwen3-1.7B-Base pays {} nats per answer token.':
+    '训练时读入整条序列，在每个位置都让模型预测下一个词元，和预训练完全一样。只有回答部分的猜测被打分：它们的 −log p 加总进损失，提示词和模板被掩码。微调之前，Qwen3-1.7B-Base 每个回答词元要付出 {0} nats。',
+  'p({} | the {} tokens before)': 'p({0} | 前面 {1} 个词元)',
+  'masked: not in the loss': '被掩码：不计入损失',
+  'Every position is predicted in one forward pass, as in pretraining; the causal mask keeps each guess from seeing its own token. The loss mask is a different thing: it only decides which guesses are graded.':
+    '每个位置都在一次前向传播中被预测，和预训练一样；因果掩码让每次猜测看不到自己要猜的词元。损失掩码是另一回事：它只决定哪些猜测被打分。',
+  '÷ {} tokens = {} nats per token': '÷ {0} 个词元 = 每词元 {1} nats',
+  'before post-training': '后训练之前',
+  'after post-training': '后训练之后',
+  'Base models were trained to continue documents, so a chat is just more text to continue. SFT shows the model thousands of turns that end where the answer ends.':
+    '基座模型被训练来续写文档，所以一段对话只是又一段要续写的文本。SFT 给模型看成千上万个在回答结束处就结束的回合。',
+  'What that training does, over many thousands of such examples: the same prompt, before and after. The base model treats the chat as a transcript to continue and writes the speaker label itself; the tuned model just answers. (Qwen’s real post-training used far more than SFT.)':
+    '在成千上万个这样的例子上训练之后会怎样：同一个提示词，训练前与训练后。基座模型把对话当成要续写的记录，自己写出说话人标签；微调后的模型直接回答。（Qwen 真实的后训练远不止 SFT。）',
+  'it writes the speaker label itself: to a base model, a chat is a transcript to continue': '它自己写出说话人标签：对基座模型来说，对话是一份要续写的记录',
+  'it answers the question, in one sentence as asked': '它直接回答问题，按要求只用一句话',
+  'the page’s answer · bars: the probability of each token': '本页的回答 · 柱：每个词元的概率',
+  '{}, before': '{0}（之前）',
+  '{}, after': '{0}（之后）',
+  'what Qwen3-1.7B wrote itself': 'Qwen3-1.7B 自己写的回答',
+  'before: 1 in {}': '之前：{0} 分之 1',
+  'after: 1 in {}': '之后：{0} 分之 1',
+  'Qwen3-1.7B, per token:': 'Qwen3-1.7B，每词元：',
+  'on its own answer': '自己的回答',
+  'on the base model’s': '基座模型的回答',
+  'on this page’s': '本页的回答',
+  'Training on answers also makes a model very sure of its own phrasing. On the answer written for this page, the tuned model gives most tokens a probability near {}, but where the page’s wording leaves its own it drops to nearly {}. Per token it pays {} nats on its own answer and {} on this one.':
+    '在回答上训练，也让模型对自己的措辞非常笃定。在为本页写的回答上，微调后的模型给大多数词元的概率接近 {0}，但本页的措辞一偏离它自己的说法，概率就跌到几乎为 {1}。每个词元，它在自己的回答上付出 {2} nats，在这个回答上付出 {3}。',
+  'the prompt and template · masked, so never trained': '提示词与模板 · 被掩码，所以从未训练',
+  'Masked tokens get no gradient, so nothing holds the model’s guesses there in place. After post-training most of these tokens became more likely, but a few fell off a cliff: Qwen3 now gives {} after <|im_start|> a probability below {}⁻¹⁵. It never has to predict it: the program writes the template.':
+    '被掩码的词元得不到梯度，所以没有什么能让模型在那里的猜测保持稳定。后训练之后，这些词元大多变得更可能了，但有几个断崖式下跌：Qwen3 现在给 <|im_start|> 后面的 {0} 的概率低于 {1}⁻¹⁵。它永远不必预测它：模板由程序写出。',
+
+  /* ---------- RLHF & DPO, rebuilt as a loop ---------- */
+  'rewards': '奖励',
+  'RLHF steps': 'RLHF 步骤',
+  'Learning from preferences: pairs of chosen and rejected answers; a reward model scoring six next tokens; the RLHF loop moving GPT-2’s next-token probabilities toward high reward while a penalty holds them near the start; DPO doing the same from the pairs alone; and a real DPO run on GPT-2 small in which the rejected answers fall far.':
+    '从偏好中学习：被选中与被拒绝的回答对；给六个下一个词元打分的奖励模型；RLHF 循环把 GPT-2 的下一词元概率推向高奖励，同时惩罚项把它拉在起点附近；DPO 只凭回答对做到同样的事；以及在 GPT-2 small 上真实运行的 DPO，被拒绝的回答大幅下跌。',
+  'Reward': '奖励',
+  'RLHF: a reward model': 'RLHF：奖励模型',
+  'RLHF: sample, score, shift': 'RLHF：采样、打分、调整',
+  'DPO: no reward model': 'DPO：不要奖励模型',
+  'prompt · two answers · which one a person preferred': '提示词 · 两个回答 · 人更喜欢哪一个',
+  'GPT-2 small between the two': 'GPT-2 small 在两者之间',
+  'In every pair GPT-2 leans toward the rejected answer. Preference tuning has to turn that around. Real preference data comes from people, or from a stronger model, comparing two samples.':
+    '在每一对里，GPT-2 都偏向被拒绝的回答。偏好微调要把这一点扭转过来。真实的偏好数据来自人工，或来自更强的模型对两个样本的比较。',
+  'After instruction tuning, models are tuned on preferences: for one prompt, two answers and which one people preferred. Judging is easier than writing. In these three pairs GPT-2 small leans the other way: after {} it finds {} {} times as likely as {}.':
+    '指令微调之后，模型还会在偏好上微调：一条提示词、两个回答，以及人们更喜欢哪一个。评判比撰写容易。在这三组里，GPT-2 small 的倾向正好相反：在 {0} 之后，它认为 {1} 的可能性是 {3} 的 {2} 倍。',
+  'six possible next tokens': '六个可能的下一个词元',
+  'score · toy': '分数 · 玩具',
+  'Trained on many pairs, the reward model gives every answer a score, including answers no one compared. InstructGPT’s was a 6B-parameter copy of the model with its output replaced by one number.':
+    '在大量回答对上训练后，奖励模型能给任何回答打分，包括没人比较过的回答。InstructGPT 的奖励模型是一个 6B 参数的模型副本，输出层换成了一个数。',
+  'Classic RLHF first trains a reward model on such pairs: a network that reads a prompt and an answer and outputs one score, trained so that the preferred answer scores higher. Here it scores six possible next tokens after {}; these scores are made up for the example.':
+    '经典的 RLHF 先在这样的回答对上训练一个奖励模型：一个读入提示词和回答、输出一个分数的网络，训练目标是让更受欢迎的回答得分更高。这里它给 {0} 之后六个可能的下一个词元打分；这些分数是为本例编造的。',
+  'the reward model agrees with the person, as it was trained to': '奖励模型和人的判断一致，这正是它被训练的目标',
+  'the policy π': '策略 π',
+  'outlined: the start, π_ref (GPT-2)': '描边：起点 π_ref（GPT-2）',
+  'reward model': '奖励模型',
+  'toy scores': '玩具分数',
+  'Each step here moves the policy along the exact expected direction, as with a very large batch; PPO estimates that direction from the answers it samples. It needs the policy, a frozen reference, the reward model and a value model in memory at once.':
+    '这里每一步都沿精确的期望方向移动策略，相当于用了极大的批次；PPO 则从采样的回答中估计这个方向。它需要同时在内存里放下策略、冻结的参考模型、奖励模型和价值模型。',
+  'Then reinforcement learning: the model samples an answer, the reward model scores it, and probability moves toward what scores well. A penalty on drifting from the start (the outlined bars) holds it back, so it settles at π_ref · exp(r / β) rather than on the single best token. Change β to loosen or tighten that pull.':
+    '接着是强化学习：模型采样一个回答，奖励模型给它打分，概率向得分高的回答移动。对偏离起点（描边的柱）的惩罚会把它往回拉，所以它最终停在 π_ref · exp(r / β)，而不是全押在得分最高的那个词元上。改变 β 可以放松或收紧这股拉力。',
+  'β in the controls: how hard the start pulls back.': '控制栏里的 β：起点往回拉的力度。',
+  'β in the controls: how far DPO may move.': '控制栏里的 β：DPO 能走多远。',
+  'the pairs · σ(margin)': '回答对 · σ(差距)',
+  'step {} of {} · no reward model, no sampling': '第 {0} / {1} 步 · 没有奖励模型，没有采样',
+  'β log π/π_ref acts as the reward the model implies: DPO trains the policy so that this implicit reward orders each pair the way people did. At step {} every margin is {} and the loss is ln {} ≈ {}. Rafailov et al. ({}).':
+    'β log π/π_ref 相当于模型隐含的奖励：DPO 训练策略，让这个隐含奖励按人的判断给每一对排序。第 {0} 步时每个差距都是 {1}，损失为 ln {2} ≈ {3}。Rafailov 等（{4}）。',
+  'DPO drops the reward model and the sampling. Its loss looks at each pair directly: how much more likely the model makes the chosen answer than the reference does, against the same for the rejected one, and it pushes that gap open. β again sets how far it may go.':
+    'DPO 去掉了奖励模型和采样。它的损失直接看每一对：模型让被选中回答比参考模型更可能多少，对比被拒绝回答的同一个量，并把这个差距拉开。β 同样决定它能走多远。',
+  'log π(answer | prompt) · each {} is {} times less likely': 'log π(回答 | 提示词) · 每 {0} 就是可能性小 {1} 倍',
+  'margin {}': '差距 {0}',
+  'P(chosen ≻ rejected) {}': 'P(选中 ≻ 拒绝) {0}',
+  'margin = β × (gap now − gap at the start)': '差距 = β × (现在的差 − 起点的差)',
+  'The chosen answers barely move; the rejected ones fall by tens of nats. Lowering the rejected answer is the cheapest way to widen the gap, a known DPO behaviour. Adam, learning rate {}, rank-4 adapters on W_qkv.':
+    '被选中的回答几乎不动；被拒绝的回答下跌了几十 nats。压低被拒绝的回答是拉开差距最省事的办法，这是 DPO 的已知行为。Adam，学习率 {0}，W_qkv 上的秩 4 适配器。',
+  'A real run on GPT-2 small: rank-4 adapters, the frozen model as reference, β = {}, {} steps on the three pairs. Each answer sits at its log-probability; the gap opens until the loss falls from {} to {}. Most of the gap comes from the rejected answers falling.':
+    '在 GPT-2 small 上的真实运行：秩 4 适配器，冻结的模型作参考，β = {0}，在三组回答对上训练 {1} 步。每个回答都停在它的对数概率上；差距不断拉开，直到损失从 {2} 降到 {3}。差距大多来自被拒绝回答的下跌。',
+  'GPT-2, before': 'GPT-2，之前',
+  'after {} steps of DPO': 'DPO {0} 步之后',
+  '“mat” was number {} for GPT-2; the others are no longer in the top {}': '“mat” 在 GPT-2 里排第 {0}；其余几个已不在前 {1} 名',
+  'Three pairs and {} steps: the model has memorized its preferences. With thousands of varied pairs and the reference’s pull, the same loss makes a model prefer better answers without forgetting everything else.':
+    '三组回答对、{0} 步：模型把它的偏好背下来了。用上成千上万组多样的回答对，再加上参考模型的拉力，同样的损失能让模型偏向更好的回答，又不忘掉其余的一切。',
+  'Where the probability went, for the next token after {}: GPT-2 spread it over floor, bed, couch and more; after {} steps nearly all of it is on {}. With three pairs the model simply memorized them. Real runs use many thousands of pairs, and β and the reference keep them from drifting this far.':
+    '概率去了哪里（{0} 之后的下一个词元）：GPT-2 把它分给 floor、bed、couch 等；{1} 步之后几乎全部落在 {2} 上。只有三组回答对，模型干脆把它们背了下来。真实训练用成千上万组回答对，β 和参考模型让它不至于偏离这么远。',
+  'With a small β, where does the RLHF loop leave the probabilities?': 'β 很小时，RLHF 循环最后把概率留在哪里？',
+  'Piled onto the highest-scoring token': '堆到得分最高的词元上',
+  'Where they started': '留在起点',
+  'Spread evenly over all tokens': '平均分给所有词元',
+  'On the token GPT-2 liked most': '留在 GPT-2 最喜欢的词元上',
+  'The loop settles at π_ref · exp(r / β). A small β makes the reward term dominate, so almost all probability goes to the best-scoring token; a large β keeps it near the start.':
+    '循环最终停在 π_ref · exp(r / β)。β 小时奖励项占主导，几乎所有概率都流向得分最高的词元；β 大时它会停在起点附近。',
 }

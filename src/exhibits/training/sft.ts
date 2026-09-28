@@ -1,178 +1,335 @@
-import { F, chipW, ctx, drawChip, mathName } from '../../core/draw'
-import { C, rgba } from '../../core/theme'
-import { clamp, eout } from '../../core/util'
-import { sft as S, type SftToken } from '../../lib/sft/data'
+import { F, chipW, ctx, drawChip, rr } from '../../core/draw'
+import { raw, t, tf } from '../../core/i18n'
+import { C, rgba, type RGB } from '../../core/theme'
+import { clamp, eio, eout, lerp } from '../../core/util'
+import { sft as S } from '../../lib/sft/data'
 import { mountExhibit, words, type Env } from '../kit'
 import type { Nav } from '../registry'
-import { noLigatures, runs, whoBar, wrap } from '../agents/common'
+import { noLigatures, pct, runs, wrap } from '../agents/common'
 
 /*
- * Supervised fine-tuning: the pretraining loss, applied to conversations in the chat template, counted only on the
+ * Supervised fine-tuning: the pretraining loss, applied to conversations in the chat template, graded only on the
  * answer's tokens. Real numbers from Qwen3-1.7B-Base (before) and Qwen3-1.7B (after Qwen's post-training) on one
- * example (scripts/sft-export.ts).
+ * example (scripts/sft-export.ts). One picture throughout: token chips, with the probability a model gave each
+ * token as a bar under it.
  */
 
 const PHASES = [
-  { id: 'format', name: 'A conversation, in the template', short: 'Format', dur: 9 },
-  { id: 'mask', name: 'Loss only on the answer', short: 'Mask', dur: 11 },
-  { id: 'before', name: 'Before and after', short: 'Behaviour', dur: 10 },
+  { id: 'chat', name: 'What the model sees', short: 'Template', dur: 10 },
+  { id: 'grade', name: 'Graded on the answer only', short: 'Loss', dur: 13 },
+  { id: 'before', name: 'What it learns to do', short: 'Behaviour', dur: 10 },
   { id: 'sharp', name: 'Sure of its own words', short: 'Sharpness', dur: 10 },
-  { id: 'untrained', name: 'Tokens it never learned', short: 'Masked', dur: 10 },
+  { id: 'untrained', name: 'Tokens it never learned', short: 'Masked', dur: 9 },
 ]
 
-const T = S.tokens
+const T = S.tokens, N = T.length, ANS = S.promptTokens
+const ALL = T.map((_, i) => i)
 const answer = T.filter((t) => t.trained)
-const show = (t: string) => t.replace(/\n/g, '↵')
+/** Where the assistant's turn starts (its <|im_start|>), and the user's words: after "<|im_start|>user\n", up to <|im_end|>. */
+const ASSIST = T.findIndex((t, i) => i > 0 && t.text === '<|im_start|>')
+const USER0 = 3, USER_END = T.findIndex((t) => t.text === '<|im_end|>')
+const show = (s: string) => s.replace(/\n/g, '↵')
 const one = (s: string) => s.replace(/\s+/g, ' ').trim()
-/** Template tokens where the tuned model does much worse than the base: never trained, so free to drift. */
-const DRIFT = T.map((t, i) => ({ ...t, i })).filter((t) => !t.trained && t.base !== null && t.tuned !== null && t.tuned - t.base > 4).sort((a, b) => (b.tuned! - b.base!) - (a.tuned! - a.base!))
+const prob = (nll: number | null) => (nll === null ? 0 : Math.exp(-nll))
+const hue = (i: number): RGB => C.tok[i % 7]
+/** The answer's summed −log p under the base model: the loss before dividing by its length. */
+const TOTAL = answer.reduce((s, t) => s + t.base!, 0)
+/** Where Qwen3-1.7B's own answer leaves the page's: the first word that differs (one token per word up to there). */
+const DIV_WORD = (() => { const a = S.answer.split(' '), b = one(S.wrote.tuned).split(' '); let d = 0; while (a[d] === b[d]) d++; return d })()
+const DIV = ANS + DIV_WORD
+/** Template tokens the tuned model now finds far less likely than the base did: never trained, so free to drift. */
+const DRIFT = ALL.filter((i) => !T[i].trained && T[i].base !== null && T[i].tuned! - T[i].base! > 4).sort((a, b) => (T[b].tuned! - T[b].base!) - (T[a].tuned! - T[a].base!)).slice(0, 3).sort((a, b) => a - b)
+/** A small probability as odds: 6, 530,000, 7.6 × 10¹⁵ (for "1 in …"). */
+function odds(nll: number): string {
+  const n = Math.exp(nll)
+  if (n < 1e6) return Number(n < 10 ? n.toFixed(1) : n.toPrecision(2)).toLocaleString('en-US')
+  const e = Math.floor(Math.log10(n))
+  return `${(n / 10 ** e).toFixed(1)} × 10${[...String(e)].map((d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[+d]).join('')}`
+}
 
 const COMPARE: Record<string, [string, string]> = {
-  format: ['the chat template in in-context learning', 'agents/in-context?phase=instruct'],
-  mask: ['the same loss in pretraining', 'training/loss?phase=loss'],
+  chat: ['the chat template in in-context learning', 'agents/in-context?phase=instruct'],
+  grade: ['the same loss in pretraining', 'training/loss?phase=loss'],
   before: ['what a base model does with an instruction', 'agents/in-context?phase=instruct'],
   sharp: ['temperature and sharp distributions', 'anatomy/unembed?phase=temp'],
   untrained: ['the causal mask, which is different', 'anatomy/attention?phase=mask'],
 }
 
 const CAPS: Record<string, [string, string]> = {
-  format: [`Supervised fine-tuning trains a pretrained model on conversations written in its chat template: special tokens mark whose turn it is, the user asks, the assistant answers. This example is ${T.length} tokens, ${answer.length} of them the answer.`, `${T.length} tokens · ${answer.length} in the answer`],
-  mask: [`The loss is the same next-token loss as in pretraining, but only the answer’s tokens count; the prompt and template are masked. Under the base model, before any SFT, this answer costs ${S.answerLoss.base.toFixed(2)} nats per token.`, `loss = mean −log p over the ${answer.length} answer tokens`],
-  before: [`What each model writes for the prompt. The base model has no notion of turns and invents a speaker label; the tuned one answers in one sentence and stops. (Qwen’s real post-training used far more than SFT, and far more than one example.)`, 'base: continue the text · tuned: answer it'],
-  sharp: [`Training on its answers makes a model very sure of its own phrasing. Each model scored both answers: the tuned model finds its own nearly certain and the base model’s unlikely. On the answer written for this page it does worse than the base, ${S.answerLoss.tuned.toFixed(2)} against ${S.answerLoss.base.toFixed(2)}.`, 'post-training sharpens the distribution'],
-  untrained: [`Masked tokens get no gradient, so nothing keeps the model’s guesses there sensible. After post-training, Qwen3 finds even the template’s own “assistant” very unlikely where it appears. It never has to predict it: the program writes the template.`, 'no loss, no training signal'],
+  chat: [`A model never sees chat bubbles. The chat template turns the conversation into one token sequence, with special tokens around each turn: <|im_start|>, the role, the text, <|im_end|>. SFT trains on many such sequences; this one has ${N} tokens, ${answer.length} of them the answer.`, `${N} tokens · ${answer.length} in the answer`],
+  grade: [`Training reads the whole sequence and, at every position, asks the model for the next token, exactly as in pretraining. Only the answer’s guesses are graded: their −log p is added up into the loss, while the prompt and template are masked. Before any tuning, Qwen3-1.7B-Base pays ${S.answerLoss.base.toFixed(2)} nats per answer token.`, `loss = mean −log p over the ${answer.length} answer tokens`],
+  before: [`What that training does, over many thousands of such examples: the same prompt, before and after. The base model treats the chat as a transcript to continue and writes the speaker label itself; the tuned model just answers. (Qwen’s real post-training used far more than SFT.)`, 'base: continue the text · tuned: answer it'],
+  sharp: [`Training on answers also makes a model very sure of its own phrasing. On the answer written for this page, the tuned model gives most tokens a probability near 1, but where the page’s wording leaves its own it drops to nearly 0. Per token it pays ${S.cross.tuned[1].toFixed(2)} nats on its own answer and ${S.answerLoss.tuned.toFixed(2)} on this one.`, 'post-training sharpens the distribution'],
+  untrained: [`Masked tokens get no gradient, so nothing holds the model’s guesses there in place. After post-training most of these tokens became more likely, but a few fell off a cliff: Qwen3 now gives “assistant” after <|im_start|> a probability below 10⁻¹⁵. It never has to predict it: the program writes the template.`, 'no loss, no training signal'],
 }
 
 export function mountSft(root: HTMLElement, nav: Nav): () => void {
   return mountExhibit(root, nav, {
     frame: {
-      formulaHint: `Real per-token losses from ${S.base} and ${S.model}, exported offline.`,
+      formulaHint: `Real probabilities from ${S.base} and ${S.model}, exported offline.`,
       eyebrow: 'Training · After pretraining',
       title: 'SFT',
       subtitle: 'instruction tuning: the loss, on answers only',
       specs: [
         { label: 'before', value: S.base },
         { label: 'after', value: S.model, real: 'Qwen’s post-training', realLabel: '' },
-        { label: 'example', value: `${T.length} tokens`, real: `${answer.length} trained`, realLabel: '' },
+        { label: 'example', value: `${N} tokens`, real: `${answer.length} trained`, realLabel: '' },
       ],
     },
     size: [1040, 480],
-    aria: 'Supervised fine-tuning: a conversation in the chat template, the loss counted only on the answer’s tokens, what a base and an instruction-tuned model write, how the tuned model becomes sure of its own phrasing, and how template tokens that are never trained drift.',
+    aria: 'Supervised fine-tuning: a chat becomes one token sequence in the chat template; the model predicts every next token and only the answer’s predictions are added into the loss; the same prompt answered before and after tuning; the tuned model’s probabilities on another wording and on the template it was never trained on.',
     phases: PHASES, learn: 'sft', tokens: words(['user', 'assistant']), compare: COMPARE, compareLabel: 'Related', caps: CAPS,
-    still: ['mask', 10.5],
+    still: ['grade', 12],
     scenes,
   })
 }
 
+type Box = { x: number; y: number; w: number; h: number }
+
 function scenes({ stage, mk, k }: Env) {
-  const { title, caption } = k
-  const pad = 36, top = 56
+  const { title, caption, arrow, rowName } = k
+  const pad = 36, top = 56, lh = 19, font = F.mono(12)
+
   /** Diagonal hatching over a chip: this token is masked. */
   function hatchRect(x: number, y: number, w: number, h: number, a: number) {
+    if (a <= 0) return
     ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip()
     ctx.strokeStyle = rgba(C.mute, 0.55 * a); ctx.lineWidth = 1; ctx.beginPath()
     for (let d = -h; d < w; d += 6) { ctx.moveTo(x + d, y + h); ctx.lineTo(x + d + h, y) }
     ctx.stroke(); ctx.restore()
   }
-  /** The example as chips, wrapped; masked tokens hatched. Returns each chip's box. */
-  function tokens(a: number, o: { hatchMasked?: number; bars?: 'base' | 'tuned' | null; grow?: number; only?: (t: SftToken) => boolean } = {}) {
-    const { W } = stage, boxes: { x: number; y: number; w: number }[] = []
-    let x = pad, y = top + 34
-    noLigatures(true)
-    T.forEach((t, i) => {
-      const w = chipW(show(t.text))
-      if (x + w > W - pad) { x = pad; y += o.bars ? 74 : 34 }
-      const on = o.only ? o.only(t) : true
-      drawChip(x, y, { text: show(t.text), c: i }, a * (on ? 1 : 0.35), 22, t.trained && (o.hatchMasked ?? 0) > 0)
-      if (!t.trained && (o.hatchMasked ?? 0) > 0) hatchRect(x, y - 11, w, 22, (o.hatchMasked ?? 0) * a)
-      if (o.bars && on) {
-        const v = t[o.bars]
-        if (v !== null) {
-          const h = Math.min(40, v * 3) * (o.grow ?? 1)
-          ctx.fillStyle = rgba(t.trained ? C.ink : C.mute, (t.trained ? 0.8 : 0.35) * a); ctx.fillRect(x + 4, y + 16, Math.max(2, (w - 10) * 0.4), Math.max(1, h))
-          if (t.trained) { ctx.font = F.mono(10.5); ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillStyle = rgba(C.ink2, a); ctx.fillText(v.toFixed(1), x + 4 + (w - 10) * 0.4 + 3, y + 16) }
-        }
-      }
-      boxes.push({ x, y, w })
-      x += w + 5
-    })
-    noLigatures(false)
-    return boxes
+  const chip = (i: number, x: number, y: number, a: number, hl = false) => {
+    if (a <= 0) return
+    noLigatures(true); drawChip(x, y, { text: show(T[i].text), c: i }, a, 22, hl); noLigatures(false)
   }
-
-  /* ---------- 1: the format ---------- */
-  function sceneFormat(p: number) {
-    title('one training example, as Qwen3’s tokens', pad, top + 12, 1)
-    tokens(1, { hatchMasked: eout(clamp((p - 0.5) / 0.15)) })
-    const ka = eout(clamp((p - 0.6) / 0.12)), ky = stage.H - 110
-    hatchRect(pad, ky - 8, 16, 16, ka); caption('prompt and template: masked', pad + 24, ky + 4, ka, C.mute, 'left')
-    ctx.strokeStyle = rgba(C.ink, ka); ctx.lineWidth = 1.5; ctx.strokeRect(pad + 260, ky - 8, 16, 16); caption('the answer: trained', pad + 284, ky + 4, ka, C.mute, 'left')
-    mk.formula = { segs: [['<|im_start|>user', C.mute], [' … ', C.ink2], ['<|im_end|>', C.mute], ['  ', C.mute], ['<|im_start|>assistant', C.mute], [' answer ', C.ink], ['<|im_end|>', C.mute]], note: 'The template is part of the data: the model learns to write the answer and then <|im_end|>, which is how it knows to stop.' }
-  }
-
-  /* ---------- 2: the loss, on the answer only ---------- */
-  function sceneMask(p: number) {
-    title(`−log p under ${S.base}, per token · the answer counts, the rest is masked`, pad, top + 12, 1)
-    tokens(1, { hatchMasked: 1, bars: 'base', grow: eout(clamp((p - 0.1) / 0.3)) })
-    const worst = answer.filter((t) => t.base !== null).sort((a, b) => b.base! - a.base!)[0]
-    mk.formula = { segs: [['L', C.ink], [' = ', C.mute], [`mean over ${answer.length} answer tokens of −log p`, C.ink2], [' = ', C.mute], [S.answerLoss.base.toFixed(3), C.ink]], note: `The hardest answer token for the base model is “${worst.text.trim()}” (${worst.base!.toFixed(1)} nats). SFT lowers exactly these losses, over many thousands of such examples.` }
-  }
-
-  /* ---------- 3: before and after ---------- */
-  function sceneBefore(p: number) {
-    const { W } = stage, colW = (W - 2 * pad - 50) / 2, y0 = top + 60
-    title('prompt', pad, top + 12, 1)
-    runs([[S.user, C.ink2]], pad, top + 32, 1, F.mono(12))
-    const col = (x: number, name: string, text: string, a: number) => {
-      if (a <= 0) return
-      mathName(name, x, y0 + 18, a, 20)
-      let y = y0 + 40
-      for (const l of wrap(one(text), colW - 20, F.mono(11))) { runs([[l, C.ink]], x + 14, y + 9, a, F.mono(11)); y += 19 }
-      whoBar('model', x, y0 + 43, y - 3, a)
+  /** Chip places for tokens idx, wrapping at the right edge; `breakAt` starts a new row after a gap. */
+  function slots(idx: number[], y0: number, pitch: number, breakAt = -1, breakGap = 0) {
+    const { W } = stage, out: Record<number, { x: number; y: number; w: number }> = {}
+    let x = pad, y = y0
+    for (const i of idx) {
+      const w = chipW(show(T[i].text))
+      if (i === breakAt && x > pad) { x = pad; y += pitch + breakGap }
+      else if (x + w > W - pad) { x = pad; y += pitch }
+      out[i] = { x, y, w }; x += w + 5
     }
-    col(pad, `${S.base}, before`, S.wrote.base, eout(clamp(p / 0.15)))
-    col(pad + colW + 50, `${S.model}, after`, S.wrote.tuned, eout(clamp((p - 0.35) / 0.15)))
-    mk.formula = { segs: [['same prompt, same template', C.ink2], ['  ·  ', C.mute], ['different weights', C.ink]], note: 'Base models were trained to continue documents, so a chat transcript is just more text to continue; tuned models were trained to end their turn.' }
+    return out
+  }
+  /** A probability as a bar under a chip, filled from the bottom: full height is p = 1. */
+  function pbar(cx: number, y: number, p: number, h: number, col: RGB, a: number, w = 10) {
+    if (a <= 0) return
+    ctx.fillStyle = rgba(C.ink, 0.07 * a); ctx.fillRect(cx - w / 2, y, w, h)
+    const f = p * h
+    if (f > 0.1) { ctx.fillStyle = rgba(col, a); ctx.fillRect(cx - w / 2, y + h - Math.max(1, f), w, Math.max(1, f)) }
+  }
+  /** A chat bubble: the user's filled, the assistant's outlined; a small label above. */
+  function bubble(b: Box, lines: string[], a: number, label: string, side: 'left' | 'right', n = Infinity) {
+    if (a <= 0) return
+    rr(b.x, b.y, b.w, b.h, 12)
+    if (side === 'right') { ctx.fillStyle = rgba(C.ink, 0.07 * a); ctx.fill() }
+    ctx.strokeStyle = rgba(C.ink, (side === 'right' ? 0.2 : 0.45) * a); ctx.lineWidth = 1; ctx.stroke()
+    if (label) caption(label, side === 'right' ? b.x + b.w : b.x, b.y - 8, a, C.mute, side === 'right' ? 'right' : 'left')
+    let left = n
+    lines.forEach((l, i) => { runs([[l.slice(0, Math.max(0, left)), C.ink]], b.x + 14, b.y + 11 + lh * i + lh / 2, a, font); left -= l.length + 1 })
+  }
+  /** Where character `c` of the text wrapped into `lines` sits in bubble b. */
+  function textPos(b: Box, lines: string[], c: number): [number, number] {
+    let at = 0
+    for (let i = 0; i < lines.length; i++) {
+      if (c <= at + lines[i].length || i === lines.length - 1) {
+        ctx.font = font
+        const x = b.x + 14 + raw(() => ctx.measureText(lines[i].slice(0, Math.max(0, c - at))).width)
+        return [x, b.y + 11 + lh * i + lh / 2]
+      }
+      at += lines[i].length + 1
+    }
+    return [b.x, b.y]
+  }
+  /** Offset of token i's first visible character in the text that starts at token `from`. */
+  const charAt = (from: number, i: number) => T.slice(from, i).reduce((s, t) => s + t.text.length, 0) + (i > from && T[i].text.startsWith(' ') ? 1 : 0)
+  /** Model names with a key: a thin bar for before, a bar in the token's colour for after. */
+  function modelKey(x: number, y: number, a: number) {
+    ctx.fillStyle = rgba(C.ink2, 0.45 * a); ctx.fillRect(x, y - 5, 8, 10)
+    caption(tf('{}, before', S.base), x + 14, y + 4, a, C.mute, 'left')
+    ctx.font = F.small
+    const x2 = x + ctx.measureText(tf('{}, before', S.base)).width + 40
+    for (let j = 0; j < 3; j++) { ctx.fillStyle = rgba(hue(j * 2), 0.95 * a); ctx.fillRect(x2 + j * 3, y - 5, 3, 10) }
+    caption(tf('{}, after', S.model), x2 + 15, y + 4, a, C.mute, 'left')
   }
 
-  /* ---------- 4: sharpness ---------- */
-  function sceneSharp(p: number) {
-    const x0 = pad + 250, y0 = top + 70, cw = 230, rh = 60
-    title('mean −log p per token: rows score, columns wrote', pad, top + 12, 1)
-    const cols = [`${S.base}’s answer`, `${S.model}’s answer`, 'the answer on this page']
-    cols.forEach((c, j) => { ctx.font = F.mono(11); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.ink2, 1); ctx.fillText(c, x0 + j * cw, y0 - 16) })
-    const rows: [string, number[]][] = [[S.base, [...S.cross.base, S.answerLoss.base]], [S.model, [...S.cross.tuned, S.answerLoss.tuned]]]
-    const mx = Math.max(...rows.flatMap((r) => r[1]))
-    rows.forEach(([name, vals], i) => {
-      const a = eout(clamp((p - 0.05 - i * 0.25) / 0.15)), y = y0 + 10 + i * rh
-      mathName(name, pad, y + 14, a, 18)
-      vals.forEach((v, j) => {
-        const x = x0 + j * cw
-        ctx.fillStyle = rgba(C.ink, 0.07 * a); ctx.fillRect(x, y, cw - 60, 12)
-        ctx.fillStyle = rgba(C.ink, 0.75 * a); ctx.fillRect(x, y, (v / mx) * (cw - 60), 12)
-        ctx.font = F.mono(12, 600); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.ink, a); ctx.fillText(v.toFixed(2), x + (v / mx) * (cw - 60) + 8, y + 6)
-      })
+  /* ---------- 1: from chat bubbles to one token sequence ---------- */
+  function sceneChat(p: number) {
+    const { W } = stage, L = slots(ALL, top + 44, 74, ASSIST, 30)
+    const bw = Math.min(460, W * 0.44)
+    const uLines = wrap(S.user, bw - 28, font), aLines = wrap(S.answer, bw - 28, font)
+    const ub: Box = { x: W - pad - bw, y: top + 30, w: bw, h: uLines.length * lh + 22 }
+    const ab: Box = { x: pad, y: ub.y + ub.h + 34, w: bw, h: aLines.length * lh + 22 }
+    // the bubbles fade as their words leave them
+    const out = 1 - eout(clamp((p - 0.4) / 0.16))
+    bubble(ub, uLines, eout(clamp(p / 0.08)) * out, 'the user asks', 'right')
+    bubble(ab, aLines, eout(clamp((p - 0.1) / 0.08)) * out, 'the assistant answers', 'left')
+    const src = (i: number): [number, number] | null => {
+      if (i >= USER0 && i < USER_END) return textPos(ub, uLines, charAt(USER0, i))
+      if (i >= ANS && i < N - 1) return textPos(ab, aLines, charAt(ANS, i))
+      return null
+    }
+    // words fly to their places in the sequence; the template's tokens appear around them
+    ALL.forEach((i) => {
+      const s = 0.3 + 0.34 * (i / N), f = eio(clamp((p - s) / 0.14)), l = L[i], from = src(i)
+      if (f <= 0) return
+      if (from) chip(i, lerp(from[0], l.x, f), lerp(from[1], l.y, f), 1)
+      else chip(i, l.x, l.y, f)
     })
-    mk.formula = { segs: [[`${S.model} on its own answer`, C.ink2], [' ', C.mute], [S.cross.tuned[1].toFixed(2), C.ink], ['   ·   on the base model’s', C.ink2], [' ', C.mute], [S.cross.tuned[0].toFixed(2), C.ink]], note: 'A sharper distribution is what makes tuned models consistent, and also why they repeat stock phrases: probability has moved from many acceptable wordings onto a few.' }
+    const la = eout(clamp((p - 0.74) / 0.1))
+    title('the user’s turn', L[0].x, L[0].y - 22, la)
+    title('the assistant’s turn', L[ASSIST].x, L[ASSIST].y - 22, la)
+    title('the answer', L[ANS].x, L[ANS].y - 22, la)
+    // a rule under the answer, row by row
+    ctx.strokeStyle = rgba(C.ink, 0.6 * la); ctx.lineWidth = 1.5
+    for (let i = ANS; i < N; i++) {
+      const l = L[i], nx = L[i + 1], end = nx && nx.y === l.y ? nx.x : l.x + l.w
+      ctx.beginPath(); ctx.moveTo(l.x, l.y + 16); ctx.lineTo(end, l.y + 16); ctx.stroke()
+    }
+    noLigatures(true); caption('the template adds <|im_start|>, the role, <|im_end|> and Qwen3’s empty <think> block', pad, L[N - 1].y + 52, la, C.mute, 'left'); noLigatures(false)
+    mk.formula = { segs: [['<|im_start|>user↵', C.mute], [' question ', C.ink2], ['<|im_end|>↵<|im_start|>assistant↵', C.mute], [' answer ', C.ink], ['<|im_end|>', C.mute]], note: 'The template is part of the data. The model learns that an answer follows <|im_start|>assistant and ends with <|im_end|>, which is how it knows when to stop.' }
+  }
+
+  /* ---------- 2: predict every token, grade only the answer ---------- */
+  function sceneGrade(p: number) {
+    const { W } = stage, L = slots(ALL, top + 44, 74, ASSIST, 30), bh = 30
+    const sweep = clamp((p - 0.04) / 0.74), pos = 1 + sweep * (N - 1), done = sweep >= 1
+    const cur = Math.min(N - 1, Math.floor(pos)), sub = done ? 1 : pos - cur
+    const ha = eout(clamp(p / 0.05))
+    title(`bar: the probability ${S.base} gave the real next token`, pad, top + 6, 1)
+    ALL.forEach((i) => {
+      const l = L[i], a = done || i <= cur ? 1 : 0.3
+      chip(i, l.x, l.y, a, !done && i === cur)
+      if (!T[i].trained) hatchRect(l.x, l.y - 11, l.w, 22, ha * a)
+      if (i === 0 || (!done && i > cur)) return
+      const g = done || i < cur ? 1 : eout(clamp(sub * 2))
+      pbar(l.x + l.w / 2, l.y + 16, prob(T[i].base) * g, bh, T[i].trained ? hue(i) : C.mute, T[i].trained ? 0.9 : 0.45)
+    })
+    // the cursor: everything before is read, this token is guessed
+    if (!done) {
+      const a0 = L[cur - 1], a1 = L[cur], c1 = a1.x + a1.w / 2
+      if (a0.y === a1.y) { const c0 = a0.x + a0.w / 2; arrow([[c0, a0.y - 14], [(c0 + c1) / 2, a1.y - 26], [c1, a1.y - 14]], 1) }
+      else arrow([[a1.x - 18, a1.y - 24], [c1, a1.y - 14]], 1)
+      const t = T[cur], ly = a1.y + 16 + bh + 12
+      caption(t.trained ? pct(prob(t.base)) : 'not graded', c1, ly, eout(clamp(sub * 3)), t.trained ? C.ink : C.mute)
+    }
+    // the loss: each graded token's −log p, added up
+    const my = L[N - 1].y + 16 + bh + 48, mx0 = pad, mx1 = W - pad - 250, sc = (mx1 - mx0) / TOTAL
+    title('the loss: −log p of the answer’s tokens, added up', mx0, my - 12, 1)
+    ctx.fillStyle = rgba(C.ink, 0.07); ctx.fillRect(mx0, my, mx1 - mx0, 12)
+    let x = mx0, sum = 0, n = 0
+    for (let i = ANS; i < N && (done || i <= cur); i++) {
+      const g = done || i < cur ? 1 : clamp(sub * 2 - 0.5), w = T[i].base! * sc * g
+      ctx.fillStyle = rgba(hue(i), 0.85); ctx.fillRect(x, my, w, 12)
+      x += w; sum += T[i].base! * g; if (g >= 1) n++
+    }
+    ctx.font = F.mono(12, 500); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.ink, 1)
+    ctx.fillText(`${sum.toFixed(1)} nats`, mx1 + 14, my + 6)
+    caption(done ? `÷ ${answer.length} tokens = ${S.answerLoss.base.toFixed(2)} nats per token` : `${n} of ${answer.length} answer tokens so far`, mx1 + 14, my + 28, 1, C.mute, 'left')
+    if (done || cur < 2) mk.formula = { segs: [['L', C.ink], [' = ', C.mute], [`mean over ${answer.length} answer tokens of −log p`, C.ink2], [' = ', C.mute], [S.answerLoss.base.toFixed(3), C.ink]], note: 'The hatched positions are predicted too, in the same forward pass, but their guesses are dropped from the loss. SFT lowers the graded ones, over many thousands of such examples.' }
+    else {
+      const t = T[cur], pv = prob(t.base)
+      mk.formula = { segs: [[`p(“${show(t.text)}” | the ${cur} tokens before)`, C.ink2], [' = ', C.mute], [pct(pv), C.ink], ...(t.trained ? [['   −log p = ', C.mute], [t.base!.toFixed(2), C.ink]] as [string, RGB][] : [['   masked: not in the loss', C.mute]] as [string, RGB][])], note: 'Every position is predicted in one forward pass, as in pretraining; the causal mask keeps each guess from seeing its own token. The loss mask is a different thing: it only decides which guesses are graded.' }
+    }
+  }
+
+  /* ---------- 3: the same prompt, before and after ---------- */
+  function sceneBefore(p: number) {
+    const { W } = stage, gap = 48, colW = (W - 2 * pad - gap) / 2
+    const cols: [number, string, string, string, number][] = [[pad, S.base, 'before post-training', one(S.wrote.base), 0.06], [pad + colW + gap, S.model, 'after post-training', one(S.wrote.tuned), 0.42]]
+    cols.forEach(([x, name, sub, text, t0], c) => {
+      const a = eout(clamp((p - t0 + 0.06) / 0.08))
+      if (a <= 0) return
+      rowName(name, sub, x, top + 12, a)
+      const uw = colW * 0.82, ul = wrap(S.user, uw - 28, font), ub: Box = { x: x + colW - uw, y: top + 58, w: uw, h: ul.length * lh + 22 }
+      bubble(ub, ul, a, '', 'right')
+      const rw = colW * 0.9, rl = wrap(text, rw - 28, font), rb: Box = { x, y: ub.y + ub.h + 20, w: rw, h: rl.length * lh + 22 }
+      const nch = Math.round(text.length * clamp((p - t0) / 0.26))
+      bubble(rb, [], a, '', 'left')
+      // the reply, written out; the base model's speaker label in the colour of the template's "assistant"
+      const label = c === 0 && text.startsWith('Assistant:') ? 'Assistant:'.length : 0
+      let left = nch, yy = rb.y + 11 + lh / 2
+      rl.forEach((line, li) => {
+        const sh = line.slice(0, Math.max(0, left)), cut = li === 0 ? Math.min(label, sh.length) : 0
+        const x2 = runs([[sh.slice(0, cut), hue(ASSIST + 1)]], rb.x + 14, yy, a, F.mono(12, 600))
+        runs([[sh.slice(cut), C.ink]], x2, yy, a, font)
+        left -= line.length + 1; yy += lh
+      })
+      const na = eout(clamp((p - t0 - 0.28) / 0.1)) * a
+      if (na <= 0) return
+      let ny = rb.y + rb.h + 26, nx = rb.x + 14
+      if (label) nx = runs([['Assistant:', hue(ASSIST + 1)]], nx, ny, na, F.mono(11, 600)) + 8
+      const note = t(label ? 'it writes the speaker label itself: to a base model, a chat is a transcript to continue' : 'it answers the question, in one sentence as asked')
+      ctx.font = F.small; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.ink2, na)
+      for (const l of wrap(note, rw - (nx - rb.x) - 10, F.small)) { raw(() => ctx.fillText(l, nx, ny)); ny += 17 }
+    })
+    mk.formula = { segs: [['same prompt, same template', C.ink2], ['  ·  ', C.mute], ['different weights', C.ink]], note: 'Base models were trained to continue documents, so a chat is just more text to continue. SFT shows the model thousands of turns that end where the answer ends.' }
+  }
+
+  /* ---------- 4: sure of its own words ---------- */
+  function sceneSharp(p: number) {
+    const idx = ALL.filter((i) => T[i].trained), L = slots(idx, top + 50, 100), bh = 44
+    title('the page’s answer · bars: the probability of each token', pad, top + 6, 1)
+    const { W } = stage
+    modelKey(W - pad - 430, top + 2, 1)
+    idx.forEach((i, n) => {
+      const l = L[i], a = eout(clamp((p - 0.03 - n * 0.012) / 0.08)), g = eout(clamp((p - 0.12 - n * 0.012) / 0.2)), cx = l.x + l.w / 2
+      chip(i, l.x, l.y, a, i === DIV && p > 0.45)
+      pbar(cx - 6, l.y + 16, prob(T[i].base) * g, bh, C.ink2, 0.45 * a, 8)
+      pbar(cx + 6, l.y + 16, prob(T[i].tuned) * g, bh, hue(i), 0.95 * a, 8)
+    })
+    // what the tuned model wrote itself, and where the page's wording leaves it
+    const oa = eout(clamp((p - 0.45) / 0.12)), d = L[DIV], last = L[idx[idx.length - 1]], oy = last.y + 16 + bh + 64
+    title(`what ${S.model} wrote itself`, pad, oy - 22, oa)
+    const w = one(S.wrote.tuned).split(' ')
+    let x = runs([[w.slice(0, DIV_WORD).join(' ') + ' ', C.ink2]], pad, oy, oa, font)
+    const wx = x
+    x = runs([[w[DIV_WORD], hue(DIV)]], x, oy, oa, F.mono(12, 600))
+    runs([[' ' + w.slice(DIV_WORD + 1).join(' '), C.mute]], x, oy, oa, font)
+    const by = d.y + 16 + bh + 6
+    arrow([[d.x + d.w / 2, by], [d.x + d.w / 2, by + 12], [(wx + x) / 2, oy - 14]], oa)
+    ctx.font = F.small; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.ink, oa)
+    raw(() => {
+      const cx = Math.max(d.x + d.w / 2, (wx + x) / 2) + 14
+      ctx.fillText(tf('before: 1 in {}', odds(T[DIV].base!)), cx, by + 8)
+      ctx.fillText(tf('after: 1 in {}', odds(T[DIV].tuned!)), cx, by + 24)
+    })
+    mk.formula = { segs: [[`${S.model}, per token:`, C.ink2], ['  on its own answer ', C.mute], [S.cross.tuned[1].toFixed(2), C.ink], ['   on the base model’s ', C.mute], [S.cross.tuned[0].toFixed(2), C.ink], ['   on this page’s ', C.mute], [S.answerLoss.tuned.toFixed(2), C.ink]], note: 'A sharper distribution is what makes tuned models consistent, and also why they repeat stock phrases: probability has moved from many acceptable wordings onto a few.' }
   }
 
   /* ---------- 5: the masked tokens drift ---------- */
   function sceneUntrained(p: number) {
-    const x0 = pad + 200, y0 = top + 60, bw = 520, mx = Math.max(...DRIFT.slice(0, 6).map((t) => t.tuned!))
-    title('masked tokens where the tuned model got much worse · −log p', pad, top + 12, 1)
-    DRIFT.slice(0, 6).forEach((t, i) => {
-      const a = eout(clamp((p - 0.05 - i * 0.08) / 0.12)), y = y0 + i * 48, prev = T[t.i - 1]?.text ?? ''
+    const idx = ALL.filter((i) => i > 0 && !T[i].trained), L = slots(idx, top + 50, 100, ASSIST, 0), bh = 44
+    const { W } = stage
+    title('the prompt and template · masked, so never trained', pad, top + 6, 1)
+    modelKey(W - pad - 430, top + 2, 1)
+    idx.forEach((i, n) => {
+      const l = L[i], a = eout(clamp((p - 0.03 - n * 0.01) / 0.08)), g = eout(clamp((p - 0.1 - n * 0.01) / 0.2)), cx = l.x + l.w / 2
+      chip(i, l.x, l.y, a, DRIFT.includes(i) && p > 0.4)
+      hatchRect(l.x, l.y - 11, l.w, 22, a * 0.8)
+      pbar(cx - 6, l.y + 16, prob(T[i].base) * g, bh, C.ink2, 0.45 * a, 8)
+      pbar(cx + 6, l.y + 16, prob(T[i].tuned) * g, bh, hue(i), 0.95 * a, 8)
+    })
+    // the tokens that fell furthest, as odds
+    const y0 = Math.max(...idx.map((i) => L[i].y)) + 16 + bh + 44
+    DRIFT.forEach((i, r) => {
+      const a = eout(clamp((p - 0.42 - r * 0.08) / 0.1)), y = y0 + r * 34
+      if (a <= 0) return
+      caption('after', pad, y + 4, a, C.mute, 'left')
       noLigatures(true)
-      ctx.font = F.mono(11); ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.mute, a); ctx.fillText(`after ${show(prev)}`, x0 - 110, y + 8)
-      drawChip(x0 - 100, y + 8, { text: show(t.text), c: t.i }, a, 22)
+      ctx.font = F.small
+      let x = pad + ctx.measureText('after').width + 10
+      x += drawChip(x, y, { text: show(T[i - 1].text), c: i - 1 }, a * 0.7, 20) + 5
+      x += drawChip(x, y, { text: show(T[i].text), c: i }, a, 20, true) + 16
       noLigatures(false)
-      ctx.fillStyle = rgba(C.ink, 0.35 * a); ctx.fillRect(x0, y, (t.base! / mx) * bw, 7)
-      ctx.fillStyle = rgba(C.ink, 0.85 * a); ctx.fillRect(x0, y + 10, (t.tuned! / mx) * bw, 7)
-      ctx.font = F.mono(10.5); ctx.textAlign = 'left'; ctx.fillStyle = rgba(C.ink2, a); ctx.fillText(`base ${t.base!.toFixed(1)}`, x0 + (t.base! / mx) * bw + 6, y + 4)
-      ctx.fillStyle = rgba(C.ink, a); ctx.fillText(`tuned ${t.tuned!.toFixed(1)}`, x0 + (t.tuned! / mx) * bw + 6, y + 14)
+      ctx.font = F.small; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.ink, a)
+      raw(() => ctx.fillText(`${tf('before: 1 in {}', odds(T[i].base!))}   →   ${tf('after: 1 in {}', odds(T[i].tuned!))}`, x, y + 0.5))
     })
     mk.formula = { segs: [['masked', C.ink2], [' → ', C.mute], ['no gradient', C.ink], [' → ', C.mute], ['no constraint on those predictions', C.ink2]], note: 'Harmless here, since the program writes the template. It is also why a tuned model cannot be judged by its loss on ordinary text: it was trained to be good at answers, not at everything.' }
   }
 
-  return { format: sceneFormat, mask: sceneMask, before: sceneBefore, sharp: sceneSharp, untrained: sceneUntrained }
+  return { chat: sceneChat, grade: sceneGrade, before: sceneBefore, sharp: sceneSharp, untrained: sceneUntrained }
 }
