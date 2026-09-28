@@ -3,7 +3,10 @@
  * (“…”, ‘…’) replaced by {}; values put them back as {0}, {1}… (see core/i18n.ts). A string without an entry is
  * shown in English. One file per part of the site.
  */
-export const ZH: Record<string, string> = {}
+import { terms } from './terms'
+import { ui } from './ui'
+
+export const ZH: Record<string, string> = { ...ui }
 
 /** Glossary terms by their English name: [Chinese name, Chinese definition, Chinese spellings to mark in captions…]. */
-export const ZH_TERMS: Record<string, string[]> = {}
+export const ZH_TERMS: Record<string, string[]> = terms
