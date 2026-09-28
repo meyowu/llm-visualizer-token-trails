@@ -16,7 +16,7 @@ const PHASES = [
   { id: 'why', name: 'Why call a tool', short: 'Why', dur: 9 },
   { id: 'schema', name: 'Tools as JSON schemas', short: 'Schemas', dur: 10 },
   { id: 'call', name: 'The model writes a call', short: '<tool_call>', dur: 11 },
-  { id: 'run', name: 'Check it, run it, send the result back', short: 'Run', dur: 11 },
+  { id: 'run', name: 'Check it, run it, return it', short: 'Run', dur: 11 },
   { id: 'answer', name: 'The answer, and when not to call', short: 'Answer', dur: 10 },
   { id: 'constrain', name: 'Constrained decoding', short: 'Constrain', dur: 10 },
 ]
