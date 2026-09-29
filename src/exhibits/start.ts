@@ -105,7 +105,7 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
   q('.st-go').addEventListener('click', () => nav('anatomy'))
   // pick up where this browser left off
   const last = lastPlace()
-  if (last && last.route !== 'start') {
+  if (last && pageName(last.route) && last.route !== 'start') {
     const b = document.createElement('button')
     b.type = 'button'; b.className = 'st-go st-resume'
     const page = pageName(last.route) ?? last.route.split('/').pop()

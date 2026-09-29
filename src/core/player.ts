@@ -1,7 +1,7 @@
 import { rich } from './frame'
 import { withTerms } from './glossary'
 import { t as tr } from './i18n'
-import { setParams } from './link'
+import { readAddress, setParams } from './link'
 import { markSeen } from './progress'
 import { pref } from './prefs'
 import { clamp } from './util'
@@ -353,7 +353,7 @@ export class Player {
   private linkPhase(id: string) {
     if (!this.btn.isConnected || this.btn.closest('.leaving')) return
     setParams({ phase: id })
-    markSeen(location.hash.replace(/^#\/?/, '').split('?')[0], id, this.phases.length)
+    markSeen(readAddress().route, id, this.phases.length)
   }
 
   /** Show a question card; playback waits until it is answered or skipped. */

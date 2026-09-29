@@ -28,7 +28,8 @@ let played = false
 export function mountHome(root: HTMLElement, nav: Nav): () => void {
   root.classList.add('home')
   const last = lastPlace()
-  const resume = last && last.route !== 'start' && last.route !== 'home' ? last : null
+  // a page of the site other than the start (an older build recorded pages under '')
+  const resume = last && pageName(last.route) && last.route !== 'start' ? last : null
   root.innerHTML = `
     <div class="home-stage"></div>
     <button class="home-lang" type="button">${lang === 'zh' ? 'English' : '中文'}</button>
