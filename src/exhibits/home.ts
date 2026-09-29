@@ -4,7 +4,9 @@ import { lastPlace } from '../core/progress'
 import { Stage, runLoop } from '../core/stage'
 import { C, blend, mixc, rgba, type RGB } from '../core/theme'
 import { clamp, eio, eout, lerp, reducedMotion } from '../core/util'
-import { mixing, nextDist, presets } from '../lib/gpt2/data'
+import opening from '../data/opening.json'
+import { symbolText } from '../lib/gpt2/bpe'
+import { cand, mixing, nextDistOn, unpackAttention } from '../lib/gpt2/decode'
 import { pageName, type Nav } from './registry'
 
 /*
@@ -55,10 +57,11 @@ export function mountHome(root: HTMLElement, nav: Nav): () => void {
   const ctx = stage.ctx
 
   // the real run: GPT-2 small on "The cat sat on the"
-  const pass = presets().find((p) => p.key === 'cat')!.passes[0]
+  // only this pass's slice of the run (scripts/opening-export.mjs), so the home page loads a few KiB of data
+  const pass = { texts: opening.syms.map(symbolText), att: unpackAttention(opening.attn, opening.ids.length), next: { ...opening.next, top: opening.next.top.map(cand) } }
   const texts = pass.texts, N = texts.length
   const mix = mixing(pass.att)
-  const dist = nextDist(pass.next, 1, 5)
+  const dist = nextDistOn(opening.tGrid, pass.next, 1, 5)
   const top = dist.rows[0]
   const hue = (i: number): RGB => C.tok[i % 7]
   /** Lane i's colour after block l: the tokens it has taken in, blended by the real attention. */

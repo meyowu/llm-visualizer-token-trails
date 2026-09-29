@@ -20,7 +20,7 @@ await page.addInitScript(() => { localStorage.setItem('tt-i18n-harvest', '1'); l
 await page.goto(BASE + '#/start')
 await page.waitForFunction(() => window.__tt)
 // the rail's pages, and the opening animation (not in the rail), which is watched to its end
-const routes = ['home', ...await page.evaluate(() => [...document.querySelectorAll('.nav a[href^="#/"]')].map((a) => a.getAttribute('href').slice(2)))]
+const routes = ['home', ...await page.evaluate(() => [...document.querySelectorAll('.nav a[href]')].map((a) => a.getAttribute('href').replace(/^[#/]+|\/$/g, '')))]
 for (const route of routes.filter((r) => r.startsWith(prefix))) {
   await page.evaluate((r) => { location.hash = '#/' + r }, route)
   await page.waitForTimeout(route === 'home' ? 11500 : 600)
@@ -46,7 +46,7 @@ const missing = await page.evaluate(async () => {
   for (const [k, texts] of Object.entries(tt.learnTexts())) { tt.harvest.route = 'learn:' + k; texts.forEach((s) => tt.t(s)) }
   // switching re-renders the page and the check calls t() again: record neither
   tt.harvest.on = false
-  tt.setLang('zh')
+  await tt.setLang('zh')
   const out = {}
   for (const [key, e] of tt.harvest.seen) if (tt.t(e.ex) === e.ex) out[key] = { ex: e.ex, routes: [...e.routes] }
   return out

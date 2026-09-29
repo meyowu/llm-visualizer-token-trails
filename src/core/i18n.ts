@@ -1,4 +1,4 @@
-import { ZH, ZH_TERMS } from '../locales/zh'
+import { getParams } from './link'
 import { pref } from './prefs'
 
 /*
@@ -7,6 +7,8 @@ import { pref } from './prefs'
  * from live values: numbers and quoted spans (“ Cairo”, ‘the’) in it become placeholders, a key reads like
  * 'loss {} after {} steps', and the Chinese puts the values back as {0}, {1}… in any order. A string with no
  * entry stays English.
+ *
+ * The Chinese is its own chunk, fetched by loadLang() only for readers who choose it.
  *
  * HTML text is translated where the frame, player, rail and pages set it. Canvas text is translated where it is
  * drawn (localizeCanvas patches fillText and measureText); token text and math are drawn inside raw(), untouched.
@@ -23,11 +25,23 @@ export function norm(s: string): { key: string; args: string[] } {
   return { key, args }
 }
 
-const lowerZH = new Map(Object.entries(ZH).map(([k, v]) => [k.toLowerCase(), v]))
+let ZH: Record<string, string> = {}
+let ZH_TERMS: Record<string, string[]> = {}
+let lowerZH = new Map<string, string>()
+let zhLoad: Promise<void> | null = null
+/** Fetch a language's text once (English needs none); call before rendering in it. */
+export function loadLang(l: Lang): Promise<void> {
+  if (l !== 'zh') return Promise.resolve()
+  return (zhLoad ??= import('../locales/zh').then((m) => {
+    ZH = m.ZH; ZH_TERMS = m.ZH_TERMS
+    lowerZH = new Map(Object.entries(ZH).map(([k, v]) => [k.toLowerCase(), v]))
+    cache.clear()
+  }))
+}
 
 function initial(): Lang {
   let q: string | null = null
-  try { q = new URLSearchParams(location.hash.split('?')[1] ?? '').get('lang') } catch { /* no location */ }
+  try { q = getParams().get('lang') } catch { /* no location */ }
   const saved = q ?? pref.get('lang')
   if (saved === 'en' || saved === 'zh') return saved
   return typeof navigator !== 'undefined' && /^zh/i.test(navigator.language) ? 'zh' : 'en'
@@ -36,9 +50,10 @@ export let lang: Lang = initial()
 document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'
 
 const listeners = new Set<() => void>()
-/** Switch language; listeners (the router) re-render. */
-export function setLang(l: Lang) {
+/** Switch language (after fetching its text); listeners (the router) re-render. */
+export async function setLang(l: Lang) {
   if (l === lang) return
+  await loadLang(l)
   lang = l
   pref.set('lang', l)
   document.documentElement.lang = l === 'zh' ? 'zh-CN' : 'en'

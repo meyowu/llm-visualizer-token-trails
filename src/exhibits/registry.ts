@@ -1,44 +1,3 @@
-import { mountInContext } from './agents/incontext'
-import { mountMultiAgent } from './agents/multiagent'
-import { mountRag } from './agents/rag'
-import { mountReact } from './agents/react'
-import { mountToolCalling } from './agents/toolcalling'
-import { mountContinuousBatching } from './serving/batching'
-import { mountFlashAttention } from './serving/flashattention'
-import { mountKvCache } from './serving/kvcache'
-import { mountPagedAttention } from './serving/paged'
-import { mountQuantization } from './serving/quantization'
-import { mountSpeculative } from './serving/speculative'
-import { mountBert } from './lineage/bert'
-import { mountClip } from './lineage/clip'
-import { mountDeepseek } from './lineage/deepseek'
-import { mountDit } from './lineage/dit'
-import { mountLlama } from './lineage/llama'
-import { mountMamba } from './lineage/mamba'
-import { mountCompare } from './lineage/compare'
-import { mountT5 } from './lineage/t5'
-import { mountVit } from './lineage/vit'
-import { mountMixtral } from './lineage/mixtral'
-import { mountTransformer2017 } from './lineage/transformer2017'
-import { mountBackprop } from './training/backprop'
-import { mountBpeTrain } from './training/bpetrain'
-import { mountDpo } from './training/dpo'
-import { mountLoss } from './training/loss'
-import { mountLora } from './training/lora'
-import { mountOptimizer } from './training/optimizer'
-import { mountScaling } from './training/scaling'
-import { mountSft } from './training/sft'
-import { mountFoundations } from './foundations'
-import { mountGlossary } from './glossary'
-import { mountHome } from './home'
-import { mountStart } from './start'
-import { mountAttention } from './transformer/attention'
-import { mountEmbedding } from './transformer/embedding'
-import { mountLayerNorm } from './transformer/layernorm'
-import { mountMlp } from './transformer/mlp'
-import { mountOverview } from './transformer/overview'
-import { mountTokenizer } from './transformer/tokenizer'
-import { mountUnembed } from './transformer/unembed'
 
 /** Navigate to a route; `origin` (client coords) is where the zoom transition starts. */
 export type Nav = (route: string, origin?: { x: number; y: number }) => void
@@ -49,7 +8,8 @@ export interface Exhibit {
   tag: string
   /** Present when the exhibit is live. Routes nest by '/': a deeper route opens with a zoom-in. */
   route?: string
-  mount?: Mount
+  /** Loads the page's code (each page is its own chunk, fetched when first opened) and returns its mount. */
+  load?: () => Promise<Mount>
   /** Steps or parts of this exhibit, shown indented under it. */
   children?: Exhibit[]
 }
@@ -74,15 +34,15 @@ export const CATEGORIES: Category[] = [
     title: 'Inside the model',
     entries: [
       {
-        name: 'Forward pass', tag: 'the Transformer · GPT-2 small', route: 'anatomy', mount: mountOverview,
+        name: 'Forward pass', tag: 'the Transformer · GPT-2 small', route: 'anatomy', load: () => import('./transformer/overview').then((m) => m.mountOverview),
         // teaching order: the residual stream and LayerNorm come before the sub-layers that use them
         children: [
-          { name: 'Tokenizer', tag: 'byte-level BPE', route: 'anatomy/tokenizer', mount: mountTokenizer },
-          { name: 'Embedding', tag: 'W_E · positions', route: 'anatomy/embedding', mount: mountEmbedding },
-          { name: 'LayerNorm & Residual', tag: 'pre-LN stream', route: 'anatomy/layernorm', mount: mountLayerNorm },
-          { name: 'Attention', tag: 'QKᵀ · softmax · V', route: 'anatomy/attention', mount: mountAttention },
-          { name: 'MLP', tag: '768 → 3072 → 768', route: 'anatomy/mlp', mount: mountMlp },
-          { name: 'Unembed & Sampling', tag: 'logits · temperature', route: 'anatomy/unembed', mount: mountUnembed },
+          { name: 'Tokenizer', tag: 'byte-level BPE', route: 'anatomy/tokenizer', load: () => import('./transformer/tokenizer').then((m) => m.mountTokenizer) },
+          { name: 'Embedding', tag: 'W_E · positions', route: 'anatomy/embedding', load: () => import('./transformer/embedding').then((m) => m.mountEmbedding) },
+          { name: 'LayerNorm & Residual', tag: 'pre-LN stream', route: 'anatomy/layernorm', load: () => import('./transformer/layernorm').then((m) => m.mountLayerNorm) },
+          { name: 'Attention', tag: 'QKᵀ · softmax · V', route: 'anatomy/attention', load: () => import('./transformer/attention').then((m) => m.mountAttention) },
+          { name: 'MLP', tag: '768 → 3072 → 768', route: 'anatomy/mlp', load: () => import('./transformer/mlp').then((m) => m.mountMlp) },
+          { name: 'Unembed & Sampling', tag: 'logits · temperature', route: 'anatomy/unembed', load: () => import('./transformer/unembed').then((m) => m.mountUnembed) },
         ],
       },
     ],
@@ -92,61 +52,61 @@ export const CATEGORIES: Category[] = [
     title: 'Architectures',
     entries: [
       { heading: 'Compare' },
-      { name: 'Architecture diff', tag: 'any two of 29 models, 2019–2025', route: 'lineage/compare', mount: mountCompare },
+      { name: 'Architecture diff', tag: 'any two of 29 models, 2019–2025', route: 'lineage/compare', load: () => import('./lineage/compare').then((m) => m.mountCompare) },
       { heading: 'Origin' },
-      { name: 'Transformer (2017)', tag: 'encoder–decoder · post-LN · sinusoids', route: 'lineage/transformer-2017', mount: mountTransformer2017 },
+      { name: 'Transformer (2017)', tag: 'encoder–decoder · post-LN · sinusoids', route: 'lineage/transformer-2017', load: () => import('./lineage/transformer2017').then((m) => m.mountTransformer2017) },
       { heading: 'Decoder-only' },
-      { name: 'LLaMA', tag: 'RoPE · RMSNorm · SwiGLU · GQA', route: 'lineage/llama', mount: mountLlama },
-      { name: 'Mixtral', tag: 'MLP → 8 experts, top-2', route: 'lineage/mixtral', mount: mountMixtral },
-      { name: 'DeepSeek', tag: 'MLA · fine-grained MoE', route: 'lineage/deepseek', mount: mountDeepseek },
+      { name: 'LLaMA', tag: 'RoPE · RMSNorm · SwiGLU · GQA', route: 'lineage/llama', load: () => import('./lineage/llama').then((m) => m.mountLlama) },
+      { name: 'Mixtral', tag: 'MLP → 8 experts, top-2', route: 'lineage/mixtral', load: () => import('./lineage/mixtral').then((m) => m.mountMixtral) },
+      { name: 'DeepSeek', tag: 'MLA · fine-grained MoE', route: 'lineage/deepseek', load: () => import('./lineage/deepseek').then((m) => m.mountDeepseek) },
       { heading: 'Encoder' },
-      { name: 'BERT', tag: 'bidirectional mask', route: 'lineage/bert', mount: mountBert },
+      { name: 'BERT', tag: 'bidirectional mask', route: 'lineage/bert', load: () => import('./lineage/bert').then((m) => m.mountBert) },
       { heading: 'Encoder–decoder' },
-      { name: 'T5', tag: 'text to text · relative buckets', route: 'lineage/t5', mount: mountT5 },
+      { name: 'T5', tag: 'text to text · relative buckets', route: 'lineage/t5', load: () => import('./lineage/t5').then((m) => m.mountT5) },
       { heading: 'Vision & diffusion' },
-      { name: 'Vision Transformer', tag: 'tokens → 16×16 patches', route: 'lineage/vit', mount: mountVit },
-      { name: 'CLIP', tag: 'image ↔ text embeddings', route: 'lineage/clip', mount: mountClip },
-      { name: 'Diffusion Transformer', tag: 'denoising · DiT', route: 'lineage/dit', mount: mountDit },
+      { name: 'Vision Transformer', tag: 'tokens → 16×16 patches', route: 'lineage/vit', load: () => import('./lineage/vit').then((m) => m.mountVit) },
+      { name: 'CLIP', tag: 'image ↔ text embeddings', route: 'lineage/clip', load: () => import('./lineage/clip').then((m) => m.mountClip) },
+      { name: 'Diffusion Transformer', tag: 'denoising · DiT', route: 'lineage/dit', load: () => import('./lineage/dit').then((m) => m.mountDit) },
       { heading: 'Beyond attention' },
-      { name: 'Mamba', tag: 'attention → selective SSM', route: 'lineage/mamba', mount: mountMamba },
+      { name: 'Mamba', tag: 'attention → selective SSM', route: 'lineage/mamba', load: () => import('./lineage/mamba').then((m) => m.mountMamba) },
     ],
   },
   {
     id: 'training',
     title: 'Training',
     entries: [
-      { name: 'Next-token loss', tag: 'cross-entropy · p − y', route: 'training/loss', mount: mountLoss },
-      { name: 'Backprop', tag: 'gradients through every block', route: 'training/backprop', mount: mountBackprop },
-      { name: 'Optimizer', tag: 'AdamW · warmup · schedule', route: 'training/optimizer', mount: mountOptimizer },
-      { name: 'Learning the tokenizer', tag: 'counting pairs for BPE', route: 'training/tokenizer', mount: mountBpeTrain },
-      { name: 'Scaling laws', tag: 'loss vs compute', route: 'training/scaling', mount: mountScaling },
+      { name: 'Next-token loss', tag: 'cross-entropy · p − y', route: 'training/loss', load: () => import('./training/loss').then((m) => m.mountLoss) },
+      { name: 'Backprop', tag: 'gradients through every block', route: 'training/backprop', load: () => import('./training/backprop').then((m) => m.mountBackprop) },
+      { name: 'Optimizer', tag: 'AdamW · warmup · schedule', route: 'training/optimizer', load: () => import('./training/optimizer').then((m) => m.mountOptimizer) },
+      { name: 'Learning the tokenizer', tag: 'counting pairs for BPE', route: 'training/tokenizer', load: () => import('./training/bpetrain').then((m) => m.mountBpeTrain) },
+      { name: 'Scaling laws', tag: 'loss vs compute', route: 'training/scaling', load: () => import('./training/scaling').then((m) => m.mountScaling) },
       { heading: 'After pretraining' },
-      { name: 'SFT', tag: 'instruction tuning', route: 'training/sft', mount: mountSft },
-      { name: 'RLHF & DPO', tag: 'learning from preferences', route: 'training/dpo', mount: mountDpo },
-      { name: 'LoRA', tag: 'low-rank adapters', route: 'training/lora', mount: mountLora },
+      { name: 'SFT', tag: 'instruction tuning', route: 'training/sft', load: () => import('./training/sft').then((m) => m.mountSft) },
+      { name: 'RLHF & DPO', tag: 'learning from preferences', route: 'training/dpo', load: () => import('./training/dpo').then((m) => m.mountDpo) },
+      { name: 'LoRA', tag: 'low-rank adapters', route: 'training/lora', load: () => import('./training/lora').then((m) => m.mountLora) },
     ],
   },
   {
     id: 'serving',
     title: 'Serving',
     entries: [
-      { name: 'KV Cache', tag: 'prefill / decode', route: 'serving/kv-cache', mount: mountKvCache },
-      { name: 'FlashAttention', tag: 'tiled · on-chip', route: 'serving/flashattention', mount: mountFlashAttention },
-      { name: 'PagedAttention', tag: 'block tables', route: 'serving/pagedattention', mount: mountPagedAttention },
-      { name: 'Continuous Batching', tag: 'iteration-level', route: 'serving/continuous-batching', mount: mountContinuousBatching },
-      { name: 'Speculative Decoding', tag: 'draft → verify', route: 'serving/speculative-decoding', mount: mountSpeculative },
-      { name: 'Quantization', tag: 'int4 · fp8', route: 'serving/quantization', mount: mountQuantization },
+      { name: 'KV Cache', tag: 'prefill / decode', route: 'serving/kv-cache', load: () => import('./serving/kvcache').then((m) => m.mountKvCache) },
+      { name: 'FlashAttention', tag: 'tiled · on-chip', route: 'serving/flashattention', load: () => import('./serving/flashattention').then((m) => m.mountFlashAttention) },
+      { name: 'PagedAttention', tag: 'block tables', route: 'serving/pagedattention', load: () => import('./serving/paged').then((m) => m.mountPagedAttention) },
+      { name: 'Continuous Batching', tag: 'iteration-level', route: 'serving/continuous-batching', load: () => import('./serving/batching').then((m) => m.mountContinuousBatching) },
+      { name: 'Speculative Decoding', tag: 'draft → verify', route: 'serving/speculative-decoding', load: () => import('./serving/speculative').then((m) => m.mountSpeculative) },
+      { name: 'Quantization', tag: 'int4 · fp8', route: 'serving/quantization', load: () => import('./serving/quantization').then((m) => m.mountQuantization) },
     ],
   },
   {
     id: 'agents',
     title: 'Agents',
     entries: [
-      { name: 'In-context learning', tag: 'prompts as programs', route: 'agents/in-context', mount: mountInContext },
-      { name: 'ReAct Loop', tag: 'think → act → observe', route: 'agents/react', mount: mountReact },
-      { name: 'Tool Calling', tag: 'schema → call → result', route: 'agents/tool-calling', mount: mountToolCalling },
-      { name: 'RAG Pipeline', tag: 'embed → retrieve → read', route: 'agents/rag', mount: mountRag },
-      { name: 'Multi-agent Handoff', tag: 'orchestrator', route: 'agents/multi-agent', mount: mountMultiAgent },
+      { name: 'In-context learning', tag: 'prompts as programs', route: 'agents/in-context', load: () => import('./agents/incontext').then((m) => m.mountInContext) },
+      { name: 'ReAct Loop', tag: 'think → act → observe', route: 'agents/react', load: () => import('./agents/react').then((m) => m.mountReact) },
+      { name: 'Tool Calling', tag: 'schema → call → result', route: 'agents/tool-calling', load: () => import('./agents/toolcalling').then((m) => m.mountToolCalling) },
+      { name: 'RAG Pipeline', tag: 'embed → retrieve → read', route: 'agents/rag', load: () => import('./agents/rag').then((m) => m.mountRag) },
+      { name: 'Multi-agent Handoff', tag: 'orchestrator', route: 'agents/multi-agent', load: () => import('./agents/multiagent').then((m) => m.mountMultiAgent) },
     ],
   },
 ]
@@ -156,14 +116,14 @@ export const exhibitsOf = (c: Category): Exhibit[] =>
   c.entries.filter((e): e is Exhibit => !isHeading(e)).flatMap((e) => [e, ...(e.children ?? [])])
 
 /** The opening animation (the default route; reached again from the logo, not listed in the rail). */
-export const HOME: Exhibit = { name: 'Token Trails', tag: '', route: 'home', mount: mountHome }
+export const HOME: Exhibit = { name: 'Token Trails', tag: '', route: 'home', load: () => import('./home').then((m) => m.mountHome) }
 /** The first page of the tour, linked above the categories. */
-export const START: Exhibit = { name: 'Start here', tag: 'what this model does', route: 'start', mount: mountStart }
-export const FOUNDATIONS: Exhibit = { name: 'Foundations', tag: 'dot product · matmul · softmax', route: 'foundations', mount: mountFoundations }
-export const GLOSSARY: Exhibit = { name: 'Glossary', tag: 'terms in plain words', route: 'glossary', mount: mountGlossary }
+export const START: Exhibit = { name: 'Start here', tag: 'what this model does', route: 'start', load: () => import('./start').then((m) => m.mountStart) }
+export const FOUNDATIONS: Exhibit = { name: 'Foundations', tag: 'dot product · matmul · softmax', route: 'foundations', load: () => import('./foundations').then((m) => m.mountFoundations) }
+export const GLOSSARY: Exhibit = { name: 'Glossary', tag: 'terms in plain words', route: 'glossary', load: () => import('./glossary').then((m) => m.mountGlossary) }
 
-export const ROUTES: Record<string, Mount> = Object.fromEntries(
-  [HOME, START, FOUNDATIONS, GLOSSARY, ...CATEGORIES.flatMap(exhibitsOf)].filter((e) => e.route && e.mount).map((e) => [e.route!, e.mount!]),
+export const ROUTES: Record<string, () => Promise<Mount>> = Object.fromEntries(
+  [HOME, START, FOUNDATIONS, GLOSSARY, ...CATEGORIES.flatMap(exhibitsOf)].filter((e) => e.route && e.load).map((e) => [e.route!, e.load!]),
 )
 /** The display name of a live route ('serving/kv-cache' → 'KV Cache'). */
 export const pageName = (route: string): string | undefined =>

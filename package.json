@@ -13,10 +13,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/pages.mjs",
     "build:artifact": "tsc --noEmit && vite build --mode artifact && node scripts/artifact.mjs",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "data:opening": "node scripts/opening-export.mjs"
   },
   "devDependencies": {
     "typescript": "^7.0.2",

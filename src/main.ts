@@ -1,16 +1,18 @@
 import './styles.css'
 import { registerFonts } from './core/fonts'
 import { rich } from './core/frame'
-import { harvest, lang, onLang, setLang, t } from './core/i18n'
+import { harvest, lang, loadLang, onLang, setLang, t } from './core/i18n'
 import { openAtPhase } from './core/player'
 import { pref } from './core/prefs'
 import { progress } from './core/progress'
-import { getParams } from './core/link'
+import { getParams, readAddress, routeHref, HASH_ROUTES } from './core/link'
 import { poke } from './core/stage'
 import { watchTheme } from './core/theme'
 import { reducedMotion } from './core/util'
-import { learnTexts } from './exhibits/learn'
-import { ALIASES, CATEGORIES, DEFAULT_ROUTE, FOUNDATIONS, GLOSSARY, ROUTES, START, exhibitsOf, isHeading, type Exhibit } from './exhibits/registry'
+import { ALIASES, CATEGORIES, DEFAULT_ROUTE, FOUNDATIONS, GLOSSARY, ROUTES, START, exhibitsOf, isHeading, type Exhibit, type Mount } from './exhibits/registry'
+
+// a Chinese reader's text arrives before anything is drawn
+await loadLang(lang)
 
 registerFonts()
 // light / dark: follow the system until the reader picks one
@@ -73,7 +75,7 @@ onLang(() => {
   remount()
 })
 // dev only: the harvest used to list every string a page shows (see scripts/i18n-harvest.mjs)
-if (import.meta.env.DEV) Object.assign(window, { __tt: { harvest, t, setLang, learnTexts } })
+if (import.meta.env.DEV) import('./exhibits/learn').then(({ learnTexts }) => Object.assign(window, { __tt: { harvest, t, setLang, learnTexts } }))
 if (pref.get('palette') === 'cvd') document.documentElement.dataset.palette = 'cvd'
 watchTheme(poke)
 // canvases drawn before a font arrived redraw with it
@@ -83,7 +85,9 @@ const railNav = document.querySelector('.nav') as HTMLElement
 const main = document.querySelector('.main') as HTMLElement
 const app = document.querySelector('.app') as HTMLElement
 // the logo opens the opening animation again
-document.querySelector('.brand')!.addEventListener('click', (e) => { e.preventDefault(); go('home') })
+const brand = document.querySelector('.brand') as HTMLAnchorElement
+brand.href = routeHref('home')
+brand.addEventListener('click', (e) => { e.preventDefault(); go('home') })
 
 /* ---------- rail: collapsible on wide screens, a drawer on phones ---------- */
 const railBtn = document.querySelector('.rail-btn') as HTMLButtonElement
@@ -126,7 +130,9 @@ function exhibitLink(ex: Exhibit, active: string): HTMLElement {
   }
   if (ex.route) {
     const a = el as HTMLAnchorElement
-    a.href = '#/' + ex.route
+    a.href = routeHref(ex.route)
+    // fetch the page's code as soon as the pointer is on its way
+    a.addEventListener('pointerenter', () => { ROUTES[ex.route!]?.().catch(() => {}) }, { once: true })
     if (ex.route === active) a.setAttribute('aria-current', 'page')
     a.addEventListener('click', (e) => { e.preventDefault(); go(ex.route!) })
   }
@@ -256,31 +262,43 @@ function saveButton(route: string, root: HTMLElement) {
 /* ---------- router ---------- */
 let current: { route: string; root: HTMLElement; destroy: () => void } | null = null
 
-/** The route (and ?query) in the address, with old prefixes rewritten. */
+/** The route (and ?query) in the address; old #/ links, old prefixes and unknown routes are rewritten in place. */
 function parse(): string {
-  let [h, qs] = location.hash.replace(/^#\/?/, '').split('?')
+  let { route: h, qs } = readAddress()
+  let fix = !HASH_ROUTES && location.hash.startsWith('#/')
   for (const [from, to] of ALIASES) {
     if (h !== from && !h.startsWith(from + '/')) continue
-    h = to + h.slice(from.length)
-    try { history.replaceState(null, '', '#/' + h + (qs ? '?' + qs : '')) } catch { /* sandboxed frames may refuse */ }
+    h = to + h.slice(from.length); fix = true
   }
-  if (ROUTES[h]) return h + (qs ? '?' + qs : '')
-  if (h) try { history.replaceState(null, '', '#/' + DEFAULT_ROUTE) } catch { /* sandboxed frames may refuse */ }
-  return DEFAULT_ROUTE
+  if (!h) h = DEFAULT_ROUTE
+  if (!ROUTES[h]) { h = DEFAULT_ROUTE; qs = ''; fix = true }
+  if (fix) try { history.replaceState(null, '', routeHref(h, qs)) } catch { /* sandboxed frames may refuse */ }
+  return h + (qs ? '?' + qs : '')
 }
 
 const depth = (r: string) => r.split('/').length
 
+let navTicket = 0
 /** Open a route, e.g. 'anatomy/unembed' or 'anatomy/unembed?phase=sample' to start at a phase. */
-function go(target: string, origin?: { x: number; y: number }, push = true) {
+async function go(target: string, origin?: { x: number; y: number }, push = true) {
   const [route, qs] = target.split('?')
-  if (!ROUTES[route]) return
+  const load = ROUTES[route]
+  if (!load) return
   if (current?.route === route) { current.root.dispatchEvent(new Event('tt-restart')); return }
   if (push) {
     // "← Forward pass" and the like: if that is where we came from, go back instead of stacking history
     if (!qs && history.state?.prev === route) { try { history.back(); return } catch { /* fall through */ } }
-    try { history.pushState({ prev: current?.route ?? null }, '', '#/' + target) } catch { /* sandboxed frames may refuse */ }
+    try { history.pushState({ prev: current?.route ?? null }, '', routeHref(route, qs)) } catch { /* sandboxed frames may refuse */ }
   }
+  // each page is its own chunk: wait for its code; a newer navigation that starts meanwhile wins
+  const ticket = ++navTicket
+  let mount: Mount | null = null
+  try { mount = await load() } catch (err) {
+    // after a deploy the old chunk names are gone: reload once for the new ones
+    if (reloadOnce()) return
+    console.error(err)
+  }
+  if (ticket !== navTicket) return
   openAtPhase(new URLSearchParams(qs ?? '').get('phase'))
   harvest.route = route
   const old = current
@@ -288,7 +306,11 @@ function go(target: string, origin?: { x: number; y: number }, push = true) {
   root.className = 'view'
   main.appendChild(root)
   let destroy: () => void
-  try { destroy = ROUTES[route](root, go) } catch (err) {
+  try {
+    if (!mount) throw new Error(`no code for ${route}`)
+    destroy = mount(root, go)
+    try { sessionStorage.removeItem('tt-reloaded') } catch { /* storage may be blocked */ }
+  } catch (err) {
     // a page that fails to start says so instead of leaving a blank screen
     console.error(err)
     root.innerHTML = `<header class="head"><div><p class="eyebrow">${t('Something went wrong')}</p><div class="titlebar"><h1>${t('This page did not load')}</h1></div><p class="start-body">${t('Try reloading the page; the error is in the browser console.')}</p></div></header>`
@@ -304,6 +326,9 @@ function go(target: string, origin?: { x: number; y: number }, push = true) {
   app.classList.toggle('home', route === 'home')
   app.classList.remove('menu-open'); syncRailBtn()
   renderRail(route)
+  // the next page of the tour is the likeliest next click: fetch its code while the reader reads this one
+  const next = tourStep(route, 1)
+  if (next) (window.requestIdleCallback ?? ((f: () => void) => setTimeout(f, 1500)))(() => { ROUTES[next]?.().catch(() => {}) })
   if (old) {
     old.root.inert = true // the leaving view can no longer take focus or be read
     // move focus to the new page's title so keyboard and screen-reader users land on it
@@ -336,12 +361,21 @@ function transition(old: { root: HTMLElement; destroy: () => void }, next: HTMLE
 /** Rebuild the current page where it is (after a language switch): same route, same step. */
 function remount() {
   if (!current) return
-  const target = location.hash.replace(/^#\/?/, '') || current.route
+  const { route, qs } = readAddress(), target = (route || current.route) + (qs ? '?' + qs : '')
   const old = current
   current = null
   old.destroy(); old.root.remove()
   go(target, undefined, false)
 }
 
+/** Reload the page once (per tab session) when a page's code fails to load, as after a deploy renamed the chunks. */
+function reloadOnce(): boolean {
+  try {
+    if (sessionStorage.getItem('tt-reloaded')) return false
+    sessionStorage.setItem('tt-reloaded', '1')
+  } catch { return false }
+  location.reload()
+  return true
+}
 window.addEventListener('popstate', () => go(parse(), undefined, false))
 go(parse(), undefined, false)

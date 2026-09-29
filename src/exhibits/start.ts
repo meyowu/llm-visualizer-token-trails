@@ -1,5 +1,6 @@
 import { rich, toggle } from '../core/frame'
 import { t } from '../core/i18n'
+import { routeHref } from '../core/link'
 import { legendList } from '../core/legend'
 import { lastPlace } from '../core/progress'
 import { PROMPT_LABELS, nextDist, presets } from '../lib/gpt2/data'
@@ -88,7 +89,7 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
   PATH.forEach(([route, name], i) => {
     const li = document.createElement('li')
     const n = route === 'foundations' ? 'prep' : route === 'anatomy' ? 'map' : route.startsWith('training') ? 'then' : route.startsWith('lineage') || route.startsWith('serving') || route.startsWith('agents') ? 'more' : String(i - 1).padStart(2, '0')
-    li.innerHTML = `<a href="#/${route}"><span class="n">${/\d/.test(n) ? n : t(n)}</span><b></b></a>`
+    li.innerHTML = `<a href="${routeHref(route)}"><span class="n">${/\d/.test(n) ? n : t(n)}</span><b></b></a>`
     li.querySelector('b')!.textContent = t(name)
     li.querySelector('a')!.addEventListener('click', (e) => { e.preventDefault(); nav(route) })
     ol.appendChild(li)

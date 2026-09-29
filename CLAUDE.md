@@ -8,7 +8,8 @@ A portfolio of interactive, animated visualizations of AI concepts, built step b
 
 - `npm run dev`: dev server on :5173.
 - `npm run typecheck`: `tsc --noEmit` (TypeScript 7, strict, `noUnusedLocals`/`noUnusedParameters`).
-- `npm run build`: typecheck, then a production build to `dist/`.
+- `npm run build`: typecheck, then a production build to `dist/`, then `scripts/pages.mjs`: one HTML file per page (`dist/anatomy/attention/index.html`, its own title, description, canonical URL and share card), `404.html`, `sitemap.xml`, `robots.txt`.
+- `npm run data:opening`: regenerate `src/data/opening.json` (the home animation's slice of `gpt2.json`); run it after `scripts/gpt2-export.ts`.
 - `npm run build:artifact`: a single-file page in `dist-artifact/index.html` (via `vite-plugin-singlefile` + `scripts/artifact.mjs`, which strips the doctype/html/head/body wrappers). Publish that file to the existing preview Artifact by its `url` rather than creating a new one.
 
 There are no tests. To verify a change: typecheck, then open the page and step through the phases (← / → jump between phases, Space plays/pauses). Check the console for errors.
@@ -16,7 +17,9 @@ There are no tests. To verify a change: typecheck, then open the page and step t
 ## Layout
 
 ```
-src/main.ts                 rail nav (collapsible; a drawer on phones), hash router (#/route?phase=id), page titles, theme,
+src/main.ts                 rail nav (collapsible; a drawer on phones), router (/route/?phase=id; # routes in the preview build; old #/ links
+                            rewritten), each page's code loaded on first visit (the next tour page and hovered rail links prefetched),
+                            page titles, theme,
                             ?embed=1 and Present modes, Save frame,
                             tour order with previous/next (Shift+←/→), zoom transitions
 src/styles.css              design tokens (dark-first, light via prefers-color-scheme / data-theme) + frame styles
@@ -25,10 +28,11 @@ src/core/stage.ts           Stage: DPR-aware canvas with a min size; scaled to f
 src/core/player.ts          Player: phases, t, play/pause, step buttons, Step/Auto pacing, speed, timeline, keys, All steps list
                             (player.describe), ?phase= in the URL; openAtPhase() for links
 src/core/fonts.ts           registerFonts(): the three families as self-hosted woff2 (@fontsource files), Latin, Latin Ext, Greek
-src/core/link.ts            getParams()/setParams(): page state in the address (#/route?phase=…&head=6.6), replaceState only
+src/core/link.ts            routeHref()/readAddress(): /anatomy/unembed/?phase=… on the site, #/anatomy/unembed?phase=… in the single-file
+                            preview (HASH_ROUTES); getParams()/setParams(): page state in the address, replaceState only
 src/core/progress.ts        steps seen per page and the last place (rail ✓ / n of m, Resume on the start page)
 src/core/prefs.ts           pref.get/set: reader preferences in localStorage (speed, pacing, questions, temperature, strategy, lang)
-src/core/i18n.ts            EN / 中文: lang, setLang/onLang, t() (English is the key; numbers and quoted spans are {} placeholders),
+src/core/i18n.ts            EN / 中文: lang, loadLang (the Chinese is its own chunk), setLang/onLang, t() (English is the key; numbers and quoted spans are {} placeholders),
                             tf(template, …args) for text built around names (the template is the key),
                             localizeCanvas() (fillText/measureText translate), raw() for text that must stay as is, harvest mode
 src/locales/zh/             Chinese: ZH (key → text with {0}, {1}…) and ZH_TERMS (glossary names, definitions, spellings), one file per part
@@ -50,7 +54,8 @@ src/exhibits/learn.ts       per page: code lines (marked per phase), predict-the
 src/exhibits/kit.ts         mountExhibit(): the shared frame of a scene-per-phase page, Architectures, Serving, Training and Agents (Compare button,
                             pills that jump to a phase, onFrame hooks) and canvas helpers (Kit: pill, lane, glass, arrow…)
 src/exhibits/registry.ts    categories (Inside the model, Architectures, Training, Serving, Agents; routes anatomy/*, lineage/*, …) → entries: exhibits or sub-headings;
-                            an exhibit may have `children` (its steps); live when it has `route` and `mount`
+                            an exhibit may have `children` (its steps); live when it has `route` and `load` (a dynamic import of its
+                            mount, so every page is its own chunk); no static imports of pages, so Node can read it (scripts/pages.mjs)
 src/lib/bert/data.ts        types for src/data/bert.json (masked-word examples, a look-ahead head, a sentence pair)
 src/lib/t5/data.ts          types for src/data/t5.json, and T5's relative-position bucket()
 src/lib/vit/data.ts         decodes src/data/vit.json (int8 base64): posSim(i, j), filters, explained
@@ -72,11 +77,17 @@ src/lib/models/data.ts      the model library (src/data/models.json): types, fam
 src/lib/gpt2/
   bpe.ts                    GPT-2 byte-level BPE (pre-split, merges by rank, ids), symbolText(); no imports, so Node can load it
   merges.txt                GPT-2's 50,000 merge rules, imported with ?raw only by the tokenizer page
-  data.ts                   decodes src/data/gpt2.json: presets, nextDist() at any T, headKind(), mixing() (lane colours),
+  decode.ts                 decoding without the data: attention bytes, token texts, nextDistOn() at any T, mixing() (lane colours)
+  data.ts                   decodes src/data/gpt2.json with decode.ts: presets, nextDist() at any T, headKind(),
                             wpeSlice() and streamNorms() for the 2017 Transformer page, leftOnly() for the BERT page,
                             kvSlice() (one head's real q, k, v) for the KV cache page
 src/data/gpt2.json          real GPT-2 small activations for 3 prompts × 3 greedy passes, and one sentence scored per position
                             for training (made by scripts/gpt2-export.ts)
+src/data/opening.json       the home animation's pass of gpt2.json, top 8 logits with the rest folded into the tail (exact), a few KiB
+                            (made by scripts/opening-export.mjs), so the home page does not download gpt2.json
+public/og.png               the 1200 × 630 share card: the home animation just before its title, with the name and address
+scripts/pages.mjs           after vite build: a page file per route with its meta tags, 404.html, sitemap.xml, robots.txt
+scripts/opening-export.mjs  cuts src/data/opening.json out of src/data/gpt2.json
 scripts/i18n-harvest.mjs    opens every page and step on the dev server in harvest mode and prints the strings with no Chinese yet
 scripts/gpt2-export.ts      offline GPT-2 small forward pass in plain TS (Node 23+); weights in ~/.cache/token-trails/gpt2
 scripts/bert-export.ts      offline BERT-base (uncased) forward pass, WordPiece included; writes src/data/bert.json;
@@ -210,7 +221,7 @@ src/exhibits/agents/
 ## Adding an exhibit or detail view
 
 1. Write `mountX(root, nav): () => void`: `createFrame` (with `formula: true` for a detail view) → `new Stage` → `new Player(PHASES, frame.controls)` → `new MatrixKit(stage, tokens, frame.setFormula)` → set `player.describe` (caption per phase, for All steps) → `teach(player, page)` with an entry in `learn.ts` → `runLoop(step, () => !player.playing)` that ticks, draws, updates the timeline UI and sets the caption. Only set an initial `player.t` when it is still 0 (a `?phase=` link may have placed it). Return a destroy that stops the loop and calls `player.destroy()` and `stage.destroy()`.
-2. Register it in `registry.ts` (`route` + `mount`), and add it to `TOUR` in `main.ts` if it belongs to the reading order. Steps of an exhibit go in its `children` with a deeper route (`anatomy/mlp`), which opens with a zoom-in. Routes are hash-based (`#/anatomy/attention`, `#/lineage/llama`); old ones keep working through `ALIASES`.
+2. Register it in `registry.ts` (`route` + `load: () => import('./x/page').then((m) => m.mountX)`; never a static import, which would put the page in every visitor's download), and add it to `TOUR` in `main.ts` if it belongs to the reading order. Steps of an exhibit go in its `children` with a deeper route (`anatomy/mlp`), which opens with a zoom-in. Routes are paths (`/anatomy/attention/`, `/lineage/llama/`; `#/…` in the preview build); old `#/` links and renamed prefixes (`ALIASES`) keep working. A new route gets its page file, sitemap entry and meta tags from `scripts/pages.mjs` automatically.
    An Architectures (lineage/*), Serving, Training or Agents page (scenes per phase rather than one matrix walk-through) uses `mountExhibit()` from `exhibits/kit.ts` instead: pass the frame options, phases, captions, a Compare route per phase and a `scenes(env)` factory. Serving, Training and Agents pages pass `compareLabel: 'Related'`, since their links go to related pages rather than to the GPT-2 part they change. Give it `hints` per phase: the hint under the formula strip should offer only what that phase has (hover targets, labels to click, controls).
 3. To open a detail view from the overview, add its plate to `plateAt` / `PLATE_ROUTES` in `overview.ts` (hover highlight and `drawOpenHint` follow). Mention the click in that phase's caption.
 
@@ -225,7 +236,7 @@ src/exhibits/agents/
   - Call `mk.begin()` each frame and register hoverable result matrices with `mk.hit()`. A click or tap pins a cell (`mk.pin`); read the inspected cell with `mk.focus` / `mk.hovered()`, never `mk.hover` alone.
   - Specs: a plain value is what the drawing uses; `real` renders as "· GPT-2 768" (`realLabel` changes the prefix).
 - **Real vs toy numbers.** Never show a made-up number as GPT-2's. The overview and Unembed use a real GPT-2 small run (`src/lib/gpt2/data.ts`); when only part of a real vector fits, say how much is drawn (`8 drawn`, `dims 1–16 of 768`). Detail views that animate every GEMM compute real arithmetic at toy size (`TOY` in `model.ts`: d_model 8, d_head 4, 2 heads; `TOY_FF` 32), say `shown: toy` in the specs, and show the GPT-2 small shape next to each matrix (`real`, `N × 768`, `value / real`).
-- **Changing the real data.** Edit the prompts or fields in `scripts/gpt2-export.ts`, run `node scripts/gpt2-export.ts` (needs model.safetensors, merges.txt, vocab.json from huggingface.co/openai-community/gpt2 in ~/.cache/token-trails/gpt2), and commit the regenerated `src/data/gpt2.json`. Keep it small: it is bundled into the page.
+- **Changing the real data.** Edit the prompts or fields in `scripts/gpt2-export.ts`, run `node scripts/gpt2-export.ts` (needs model.safetensors, merges.txt, vocab.json from huggingface.co/openai-community/gpt2 in ~/.cache/token-trails/gpt2), then `npm run data:opening`, and commit the regenerated `src/data/gpt2.json` and `src/data/opening.json`. Keep them small: they are downloaded by the pages that use them.
 - **Visual language is fixed.** The user approved it; don't redesign it.
   - Colors come only from `C` / the CSS tokens. Never hard-code hex in drawing code, and check both themes (and the opt-in `data-palette="cvd"` token hues). `--faint` / `C.faint` is for rules and grids only; any text uses `--mute` or stronger.
   - Each token keeps its hue (`--t0…--t6`, token i → `i % 7`) everywhere. Information mixing between tokens is shown by blending hues: the overview uses real attention (`mixing()` in `data.ts`, first-token sinks count as no-ops), the toy detail views use `laneMix()` in `model.ts`, averaged over heads.
@@ -238,6 +249,8 @@ src/exhibits/agents/
 
 ## Gotchas
 
+- The minifier turns any spelling of U+FFFD (`'\uFFFD'`, `String.fromCharCode(0xfffd)`) into the literal character, and the preview Artifact refuses a page that contains it. Don't use it as a fallback character.
+- The production build has no `window.__ttPlayer` (dev only); in scripts against `dist/`, step with the arrow keys and read `.cap-title`.
 - The browser pane is unreliable for checking drawings: screenshots of an emulated viewport can come out blank or half-scaled, and a hidden pane stops rAF and ResizeObserver (document.visibilityState is "hidden"), so sizes go stale. To inspect a frame, POST `canvas.toDataURL()` to a small local server and read the PNG.
 - The browser pane's `preview_start` with the `dev` config has failed to serve before. If :5173 doesn't answer, run `npx vite --port 5174` in the background and navigate there. A hidden pane throttles rAF, so take a fresh screenshot before judging a frozen frame.
 - Don't rely on Unicode subscript characters in the serif; use `mathRun()` or `fillRich()` for math with subscripts. A one- or two-letter name before `_` is math (W_Q, ln_f, π_ref, x_{t−1} with braces); a longer one is code (count_letter, <tool_call>) and stays as written.
