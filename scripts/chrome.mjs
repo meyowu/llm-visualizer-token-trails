@@ -123,7 +123,9 @@ export async function launch({ block = [] } = {}) {
   async function close() {
     const exited = new Promise((resolve) => { if (proc.exitCode !== null) resolve(); else proc.once('exit', resolve) })
     await send('Browser.close').catch(() => {})
-    await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 5000))])
+    let timer
+    await Promise.race([exited, new Promise((resolve) => { timer = setTimeout(resolve, 5000) })])
+    clearTimeout(timer)
     if (proc.exitCode === null) proc.kill('SIGKILL')
     fs.rmSync(dir, { recursive: true, force: true })
   }
