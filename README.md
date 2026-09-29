@@ -46,7 +46,7 @@ npm run dev     # http://localhost:5173
 npm run build   # typecheck, then a static build in dist/
 ```
 
-Every push to `main` is built and deployed to [tokentrails.org](https://tokentrails.org) by [GitHub Actions](.github/workflows/deploy.yml). How the code is organised, and how to add a page or regenerate the data, is in [CLAUDE.md](CLAUDE.md).
+Every push to `main` is built and deployed to [tokentrails.org](https://tokentrails.org) by [GitHub Actions](.github/workflows/deploy.yml). The site counts visits with [Cloudflare Web Analytics](https://www.cloudflare.com/web-analytics/), which sets no cookies and collects no personal data. How the code is organised, and how to add a page or regenerate the data, is in [CLAUDE.md](CLAUDE.md).
 
 ## License
 
