@@ -26,7 +26,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      # typecheck, then the production build (base './', so it works under /token-trails/)
+      # typecheck, the production build, then a file per page with its text, read in the runner's Google Chrome
       - run: npm run build
       - uses: actions/upload-pages-artifact@v5
         with:

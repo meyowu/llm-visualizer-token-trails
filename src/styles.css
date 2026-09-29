@@ -405,3 +405,18 @@ abbr.term { text-decoration: underline dotted; text-decoration-color: var(--mute
 .st-bar-key i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; vertical-align: -1px; }
 .st-bar-key b { font: 500 12.5px var(--mono); color: var(--ink); }
 .st-bar-key small { font: 400 12px var(--mono); color: var(--mute); }
+
+/* ---------- each page as text ---------- */
+/* scripts/pages.mjs writes every page's text and a list of all pages into its page file, for search engines that do
+   not run scripts and for readers with scripts off; the app draws the page instead, so they show only when scripts
+   are off (the <noscript> in index.html) */
+.static-page, .static-nav { display: none; }
+.static-page { height: 100%; overflow-y: auto; }
+.static-page .start-body { grid-template-columns: minmax(0, 1fr); }
+.static-page ol { padding-left: 20px; }
+.static-page li { color: var(--ink2); }
+.static-page h3 { margin: 16px 0 4px; font: 500 14px var(--sans); color: var(--ink); }
+.static-page pre { margin: 0; overflow-x: auto; font: 400 12px/1.6 var(--mono); color: var(--ink2); }
+.static-page a { color: var(--ink2); }
+.static-nav { gap: 14px; }
+.static-nav .cat { cursor: default; }

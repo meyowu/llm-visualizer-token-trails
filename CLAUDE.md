@@ -8,11 +8,11 @@ A portfolio of interactive, animated visualizations of AI concepts, built step b
 
 - `npm run dev`: dev server on :5173.
 - `npm run typecheck`: `tsc --noEmit` (TypeScript 7, strict, `noUnusedLocals`/`noUnusedParameters`).
-- `npm run build`: typecheck, then a production build to `dist/`, then `scripts/pages.mjs`: one HTML file per page (`dist/anatomy/attention/index.html`, its own title, description, canonical URL and share card), `404.html`, `sitemap.xml`, `robots.txt`.
+- `npm run build`: typecheck, then a production build to `dist/`, then `scripts/pages.mjs`: one HTML file per page (`dist/anatomy/attention/index.html`, its own title, description, canonical URL and share card, and the page's text: every page is opened in headless Chrome and its header, every step's caption, code and references are written in, with a list of all pages; hidden while the app runs), `404.html`, `sitemap.xml`, `robots.txt`. It needs Chrome or Chromium (found in the usual places, or set `CHROME`; the deploy uses the runner's Google Chrome) and fails if any page throws or logs an error.
 - `npm run data:opening`: regenerate `src/data/opening.json` (the home animation's slice of `gpt2.json`); run it after `scripts/gpt2-export.ts`.
 - `npm run build:artifact`: a single-file page in `dist-artifact/index.html` (via `vite-plugin-singlefile` + `scripts/artifact.mjs`, which strips the doctype/html/head/body wrappers). Publish that file to the existing preview Artifact by its `url` rather than creating a new one.
 
-There are no tests. To verify a change: typecheck, then open the page and step through the phases (← / → jump between phases, Space plays/pauses). Check the console for errors.
+There are no tests, but `npm run build` opens every page once and fails on an error. To verify a change: typecheck, then open the page and step through the phases (← / → jump between phases, Space plays/pauses). Check the console for errors.
 
 ## Layout
 
@@ -86,7 +86,11 @@ src/data/gpt2.json          real GPT-2 small activations for 3 prompts × 3 gree
 src/data/opening.json       the home animation's pass of gpt2.json, top 8 logits with the rest folded into the tail (exact), a few KiB
                             (made by scripts/opening-export.mjs), so the home page does not download gpt2.json
 public/og.png               the 1200 × 630 share card: the home animation just before its title, with the name and address
-scripts/pages.mjs           after vite build: a page file per route with its meta tags, 404.html, sitemap.xml, robots.txt
+scripts/pages.mjs           after vite build: a page file per route with its meta tags and its text (read from the built site in Chrome:
+                            header, All steps, code, references; a .static-page article and a .static-nav list that the app removes
+                            and styles.css hides unless scripts are off), 404.html, sitemap.xml, robots.txt
+scripts/chrome.mjs          headless Chrome over the DevTools protocol through a pipe (no package): open a page, wait for the network,
+                            evaluate, collect errors; used by pages.mjs
 scripts/opening-export.mjs  cuts src/data/opening.json out of src/data/gpt2.json
 scripts/i18n-harvest.mjs    opens every page and step on the dev server in harvest mode and prints the strings with no Chinese yet
 scripts/gpt2-export.ts      offline GPT-2 small forward pass in plain TS (Node 23+); weights in ~/.cache/token-trails/gpt2

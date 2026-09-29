@@ -189,7 +189,7 @@ export class Player {
     this.steps = document.createElement('details')
     this.steps.className = 'steps'
     this.steps.innerHTML = `<summary>${tr('All steps')}</summary><ol></ol>`
-    this.steps.addEventListener('toggle', () => this.renderSteps())
+    this.steps.addEventListener('toggle', () => { if (this.steps.open) this.renderSteps() })
     // a card above the controls for questions and the end-of-page recap
     this.card = document.createElement('section')
     this.card.className = 'coach'
@@ -340,8 +340,10 @@ export class Player {
       else s.el.removeAttribute('aria-current')
     })
     if (ci !== this.shown) {
+      // written on the first frame even while folded away, so every step's text is in the page for search engines;
+      // while open, the list follows the current step
+      if (this.steps.open || this.shown < 0) this.renderSteps()
       this.shown = ci
-      if (this.steps.open) this.renderSteps()
       this.linkPhase(this.phases[ci].id)
       this.markCode()
     }
@@ -424,7 +426,6 @@ export class Player {
   }
 
   private renderSteps() {
-    if (!this.steps.open) return
     const ol = this.steps.querySelector('ol')!, ci = this.curIndex()
     ol.innerHTML = ''
     this.phases.forEach((p, i) => {

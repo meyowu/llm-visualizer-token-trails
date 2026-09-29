@@ -11,6 +11,9 @@ import { watchTheme } from './core/theme'
 import { reducedMotion } from './core/util'
 import { ALIASES, CATEGORIES, DEFAULT_ROUTE, FOUNDATIONS, GLOSSARY, ROUTES, START, exhibitsOf, isHeading, type Exhibit, type Mount } from './exhibits/registry'
 
+// the page's text in the page file is for search engines and readers with scripts off (scripts/pages.mjs); the app
+// draws the page instead (the list of pages in the rail is replaced when the rail is drawn)
+document.querySelector('.static-page')?.remove()
 // a Chinese reader's text arrives before anything is drawn
 await loadLang(lang)
 
