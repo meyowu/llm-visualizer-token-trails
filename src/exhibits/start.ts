@@ -6,19 +6,19 @@ import { PROMPT_LABELS, nextDist, presets } from '../lib/gpt2/data'
 import { pageName, type Nav } from './registry'
 
 /** The route of each step of the tour, in teaching order. */
-const PATH: [string, string, string][] = [
-  ['foundations', 'Foundations', 'Warm-up, if you need it: dot product, matrix product, softmax, one-hot.'],
-  ['anatomy', 'Forward pass', 'The whole trip on one screen, with the numbers of a real GPT-2 run. Come back to it as the map.'],
-  ['anatomy/tokenizer', 'Tokenizer', 'How text becomes a list of token ids.'],
-  ['anatomy/embedding', 'Embedding', 'How each id becomes a vector of 768 numbers.'],
-  ['anatomy/layernorm', 'LayerNorm & Residual', 'The stream every layer reads from and adds to.'],
-  ['anatomy/attention', 'Attention', 'How a token pulls in information from the tokens before it.'],
-  ['anatomy/mlp', 'MLP', 'How each token is then transformed on its own.'],
-  ['anatomy/unembed', 'Unembed & Sampling', 'How the last vector becomes probabilities, and one next token.'],
-  ['training/loss', 'Training', 'Where the numbers come from: the loss every weight is trained on, backpropagation, optimizers, scaling laws, then SFT, preference tuning and LoRA.'],
-  ['lineage/transformer-2017', 'Architectures', 'Where GPT-2 came from and what followed: ten architectures drawn as changes to it, from the 2017 Transformer to Mamba.'],
-  ['serving/kv-cache', 'Serving', 'How a trained model is run fast and cheaply: the KV cache, FlashAttention, batching, speculative decoding, quantization.'],
-  ['agents/in-context', 'Agents', 'How a model becomes an agent: examples and instructions in the prompt, a ReAct loop, tool calls, retrieval, and agents handing work to agents.'],
+const PATH: [string, string][] = [
+  ['foundations', 'Foundations'],
+  ['anatomy', 'Forward pass'],
+  ['anatomy/tokenizer', 'Tokenizer'],
+  ['anatomy/embedding', 'Embedding'],
+  ['anatomy/layernorm', 'LayerNorm & Residual'],
+  ['anatomy/attention', 'Attention'],
+  ['anatomy/mlp', 'MLP'],
+  ['anatomy/unembed', 'Unembed & Sampling'],
+  ['training/loss', 'Training'],
+  ['lineage/transformer-2017', 'Architectures'],
+  ['serving/kv-cache', 'Serving'],
+  ['agents/in-context', 'Agents'],
 ]
 
 
@@ -85,12 +85,11 @@ export function mountStart(root: HTMLElement, nav: Nav): () => void {
   demo()
 
   const ol = q('.st-path ol')
-  PATH.forEach(([route, name, what], i) => {
+  PATH.forEach(([route, name], i) => {
     const li = document.createElement('li')
     const n = route === 'foundations' ? 'prep' : route === 'anatomy' ? 'map' : route.startsWith('training') ? 'then' : route.startsWith('lineage') || route.startsWith('serving') || route.startsWith('agents') ? 'more' : String(i - 1).padStart(2, '0')
-    li.innerHTML = `<a href="#/${route}"><span class="n">${/\d/.test(n) ? n : t(n)}</span><b></b><small></small></a>`
+    li.innerHTML = `<a href="#/${route}"><span class="n">${/\d/.test(n) ? n : t(n)}</span><b></b></a>`
     li.querySelector('b')!.textContent = t(name)
-    li.querySelector('small')!.textContent = t(what)
     li.querySelector('a')!.addEventListener('click', (e) => { e.preventDefault(); nav(route) })
     ol.appendChild(li)
   })

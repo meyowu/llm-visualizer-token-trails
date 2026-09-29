@@ -7,7 +7,7 @@ import { Stage, runLoop } from '../core/stage'
 import { C, rgba, type RGB } from '../core/theme'
 import { reducedMotion } from '../core/util'
 import { teach } from './learn'
-import type { Nav } from './registry'
+import { pageName, type Nav } from './registry'
 
 /*
  * The shared frame of a scene-per-phase exhibit (the Architectures, Training, Serving and Agents pages): one scene per phase,
@@ -176,8 +176,10 @@ export function mountExhibit(root: HTMLElement, nav: Nav, o: ExhibitOptions): ()
     draw()
     player.updateUI()
     for (const fn of hooks) fn()
-    const cur = player.cur(), cmp = `${tr(o.compareLabel ?? 'Compare')}: ${tr(o.compare[cur.id][0])} ↗`
-    if (compare.textContent !== cmp) compare.textContent = cmp
+    // the button names the page it opens; what to look for there is its tooltip
+    const cur = player.cur(), [what, route] = o.compare[cur.id], name = pageName(route.split('?')[0])
+    const cmp = `${tr(o.compareLabel ?? 'Compare')}: ${tr(name ?? what)} ↗`
+    if (compare.textContent !== cmp) { compare.textContent = cmp; compare.title = tr(what) }
     const [t, s] = o.caps[cur.id]
     frame.setCaption(cur.name, cur.short ?? cur.name, t, s)
     if (o.hints) frame.setHint(o.hints[cur.id] ?? '')

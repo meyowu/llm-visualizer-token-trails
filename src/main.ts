@@ -111,9 +111,10 @@ function exhibitLink(ex: Exhibit, active: string): HTMLElement {
   const li = document.createElement('li')
   const el = document.createElement(ex.route ? 'a' : 'div')
   el.className = 'ex' + (ex.route ? '' : ' soon')
-  el.innerHTML = '<span></span><small></small>'
+  // the name only: what the page is about is on the page (the subtitle stays as a tooltip)
+  el.innerHTML = '<span></span>'
   el.querySelector('span')!.textContent = t(ex.name)
-  el.querySelector('small')!.innerHTML = rich(t(ex.tag))
+  el.title = t(ex.tag).replace(/_\{?([^}\s·]+)\}?/g, '$1')
   if (!ex.route) {
     el.insertAdjacentHTML('beforeend', `<em class="soon-pill">${t('soon')}<span class="sr-only"> ${t('(coming soon)')}</span></em>`)
     el.title = t('In progress')
