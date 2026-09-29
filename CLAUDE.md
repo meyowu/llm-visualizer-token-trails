@@ -242,7 +242,7 @@ src/exhibits/agents/
 - The browser pane's `preview_start` with the `dev` config has failed to serve before. If :5173 doesn't answer, run `npx vite --port 5174` in the background and navigate there. A hidden pane throttles rAF, so take a fresh screenshot before judging a frozen frame.
 - Don't rely on Unicode subscript characters in the serif; use `mathRun()` or `fillRich()` for math with subscripts. A one- or two-letter name before `_` is math (W_Q, ln_f, π_ref, x_{t−1} with braces); a longer one is code (count_letter, <tool_call>) and stays as written.
 - Phones: nothing in the page may be wider than the screen. Below 520px the frame's toggles, steppers, slider labels, caption titles and shape lines wrap (`styles.css`); keep phase names plus their short label under about 36 characters and caption shape lines under about 46. Check every phase at 390px wide (document.documentElement.scrollWidth must stay 390) after adding a page.
-- The repo: github.com/meyowu/token-trails.
+- The repo: github.com/meyowu/llm-visualizer-token-trails (renamed from token-trails on 2026-09-29; the old URL redirects).
 
 ## Shipping
 

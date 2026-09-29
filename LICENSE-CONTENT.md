@@ -17,7 +17,7 @@ It covers:
 
 You may copy, share and adapt this content for non-commercial purposes, as long as you give credit, for example:
 
-> Token Trails by Zhehao Wu, https://github.com/meyowu/token-trails, CC BY-NC 4.0
+> Token Trails by Zhehao Wu, https://tokentrails.org, CC BY-NC 4.0
 
 and indicate if you changed it. For commercial use (courses, books, paid training, products), please ask first:
 zhehao075@gmail.com.

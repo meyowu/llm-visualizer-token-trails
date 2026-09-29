@@ -8,7 +8,7 @@
   "homepage": "https://tokentrails.org",
   "repository": {
     "type": "git",
-    "url": "https://github.com/meyowu/token-trails.git"
+    "url": "https://github.com/meyowu/llm-visualizer-token-trails.git"
   },
   "type": "module",
   "scripts": {
