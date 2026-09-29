@@ -174,7 +174,8 @@ function scenes({ stage, ctx, mk, k }: Env) {
       caption(`Mamba · ${(STATE / 2 ** 20).toFixed(2)} MiB at any length`, Xn(maxN) - 4, Yb(STATE) - 8, ga, C.ink, 'right')
       const cross = STATE / KV_PER_TOKEN
       ctx.fillStyle = rgba(C.ink, ga); ctx.beginPath(); ctx.arc(Xn(cross), Yb(STATE), 3, 0, 7); ctx.fill()
-      caption(`the two lines cross at ${Math.round(cross)} tokens`, cx0 + 12, cy0 + 16, ga, C.ink2, 'left')
+      // next to the crossing, right of the rising line and a line above Mamba's label
+      caption(`the two lines cross at ${Math.round(cross)} tokens`, Xn(cross) + 72, Yb(STATE) - 34, ga, C.ink2, 'left')
     }
     mk.formula = { segs: [['GPT-2  2 × 12 layers × 768 × 2 bytes = 36 KiB per token', C.ink2], ['     ·     ', C.mute], ['Mamba  24 × 1,536 × (16 + 3) × 2 bytes = 1.3 MiB', C.ink]], note: 'The Mamba state holds 16 numbers per channel for the scan and the last 3 inputs for the width-4 convolution. Attention’s work per new token also grows with the text; the scan’s does not.' }
   }

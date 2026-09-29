@@ -212,16 +212,16 @@ function scenes({ stage, ctx, mk, k }: Env) {
       rr(rC.x - 7, rC.y - 7, DC * c + 14, N * c + 14, 6); ctx.stroke(); ctx.setLineDash([])
       title('kv cache', rC.x - 7, rC.y + N * c + 46, cb)
       const tx = rV.x + NH * DH * c + 34, ty = top + 90
-      if (tx + 170 < W) {
-        title('cached per token, per layer', tx, ty, cb)
+      if (tx + 150 < W - pad) {
+        title('cached per token', tx, ty, cb)
         caption('MHA: K and V', tx, ty + 30, cb, C.mute, 'left')
         ctx.font = F.mono(13, 500); ctx.textAlign = 'left'; ctx.fillStyle = rgba(C.ink2, cb)
         ctx.fillText('2 × 2 × 4 = 16', tx, ty + 50)
-        caption('real: 32,768', tx, ty + 68, cb, C.mute, 'left')
+        caption('real, per layer: 32,768', tx, ty + 68, cb, C.mute, 'left')
         caption('MLA: c (+ RoPE key)', tx, ty + 104, cb, C.mute, 'left')
         ctx.font = F.mono(13, 500); ctx.fillStyle = rgba(C.ink, cb)
         ctx.fillText('2', tx, ty + 124)
-        caption('real: 512 + 64 = 576', tx, ty + 142, cb, C.mute, 'left')
+        caption('real, per layer: 512 + 64 = 576', tx, ty + 142, cb, C.mute, 'left')
       }
     }
     const fs = mk.resolve({ c: { g: g1, K: DM }, k: { g: g2, K: DC }, v: { g: g3, K: DC } })

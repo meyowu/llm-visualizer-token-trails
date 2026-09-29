@@ -238,8 +238,11 @@ function scenes({ stage, ctx, mk, k }: Env) {
     if (ma > 0) {
       const ex = expected(ALPHA, K)
       ctx.fillStyle = rgba(C.tok[4], ma); ctx.beginPath(); ctx.arc(X(ALPHA), Y(ex), 5, 0, 7); ctx.fill()
-      caption(`this run: α ≈ ${fmt(ALPHA)} (${accepted} of ${compared} checks)`, X(ALPHA) + 12, Y(ex) + 34, ma, C.ink, 'left')
-      caption(`${ex.toFixed(1)} tokens per pass expected, ${(spec.output.length / spec.targetPasses).toFixed(1)} observed`, X(ALPHA) + 12, Y(ex) + 50, ma, C.ink2, 'left')
+      // the run's numbers in the empty top-left of the plot, keyed to the dot by its colour
+      const nx = cx0 + 20, ny = cy0 + 14
+      ctx.beginPath(); ctx.arc(nx, ny - 4, 4, 0, 7); ctx.fill()
+      caption(`this run: α ≈ ${fmt(ALPHA)} (${accepted} of ${compared} checks)`, nx + 12, ny, ma, C.ink, 'left')
+      caption(`${ex.toFixed(1)} tokens per pass expected, ${(spec.output.length / spec.targetPasses).toFixed(1)} observed`, nx + 12, ny + 16, ma, C.ink2, 'left')
     }
     // the cost of the draft
     const ca = eout(clamp((p - 0.65) / 0.12)), rx = cx1 + 90

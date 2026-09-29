@@ -42,6 +42,27 @@ export function symbolText(symbol: string): string {
   try { return new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(bytes)) } catch { return symbol }
 }
 
+/**
+ * Readable text for a run of symbols: each symbol's own text, except that a character whose UTF-8 bytes are split
+ * across symbols (GPT-2 splits ’ into two) shows as that character with its part, "’ 1/2" and "’ 2/2".
+ */
+export function symbolLabels(symbols: string[]): string[] {
+  const bytes = symbols.map(symbolBytes), all = bytes.flat(), owner = bytes.flatMap((b, i) => b.map(() => i))
+  const out = symbols.map((s) => symbolText(s))
+  // UTF-8: a lead byte says how long its character is
+  const len = (b: number) => (b < 0x80 ? 1 : b >= 0xf0 ? 4 : b >= 0xe0 ? 3 : b >= 0xc0 ? 2 : 1)
+  for (let k = 0; k < all.length; ) {
+    const n = Math.min(len(all[k]), all.length - k), toks = [...new Set(owner.slice(k, k + n))]
+    if (toks.length > 1) {
+      let ch = '�'
+      try { ch = new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(all.slice(k, k + n))) } catch { /* not valid UTF-8 */ }
+      toks.forEach((t, j) => { out[t] = `${ch} ${j + 1}/${toks.length}` })
+    }
+    k += n
+  }
+  return out
+}
+
 let byteCharTable: string[] | null = null
 /** A piece of text as GPT-2's byte symbols, before any merge (" cat" → ["Ġ", "c", "a", "t"]). */
 export function byteSymbols(text: string): string[] {

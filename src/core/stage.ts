@@ -109,13 +109,18 @@ for (const ev of ['pointermove', 'pointerdown', 'pointerup', 'keydown', 'wheel',
  */
 export function runLoop(step: (dt: number, now: number) => void, idle: () => boolean = () => false): () => void {
   let last = performance.now()
-  let id = 0
+  let id = 0, reported = false
   const tick = (now: number) => {
+    // the next frame is booked first: an error in one frame must not stop the page for good
+    id = requestAnimationFrame(tick)
     // the first frame's timestamp can precede performance.now() at start: never step backwards
     const dt = Math.max(0, Math.min(0.05, (now - last) / 1000))
     last = now
-    if (!idle() || now - lastPoke < 700) step(dt, now)
-    id = requestAnimationFrame(tick)
+    try {
+      if (!idle() || now - lastPoke < 700) step(dt, now)
+    } catch (err) {
+      if (!reported) { reported = true; console.error(err) }
+    }
   }
   id = requestAnimationFrame(tick)
   return () => cancelAnimationFrame(id)

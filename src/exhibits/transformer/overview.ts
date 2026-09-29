@@ -96,8 +96,9 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
   }
   function advance() {
     if (S.passIdx >= pr().passes.length - 1) { setPass(0); return }
-    const a = ysFor(V.N), b = ysFor(V.N + 1)
-    S.prevYs = [...a.ys, b.ys[V.N]]; S.prevSp = a.sp
+    // the picked token landed one row below the last one; the next pass moves every row from there
+    const a = ysFor(V.N)
+    S.prevYs = [...a.ys, a.ys[V.N - 1] + a.sp]; S.prevSp = a.sp
     setPass(S.passIdx + 1)
   }
   player.onEnd = advance
@@ -476,8 +477,6 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     const N = V.N, d = V.dist, yl = ys[N - 1], ry = (k: number) => G.mid + (k - 3) * G.rowH
     const bx0 = G.xDist0 + 92, bx1 = W - G.padR - 52, lastCol = colorAt(pts[N - 1], G.xWU), nextCol = C.tok[V.next.c]
     if (g <= 0) return
-    ctx.font = F.label; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; spaced(true)
-    ctx.fillStyle = rgba(C.mute, g * a); ctx.fillText('P( NEXT | CONTEXT )', G.xDist0, ry(0) - G.rowH * 0.75); spaced(false)
     const picked = pS > 0 ? clamp(pS / 0.3) : 0
     const rows = [...d.rows.map((r) => ({ text: r.text, p: r.p, other: false })), { text: '', p: d.rest, other: true }]
     rows.forEach((r, k) => {
@@ -508,7 +507,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     if (pS <= 0.5) return
     const N = V.N, tok = V.next
     const f = eio(clamp((pS - 0.5) / 0.4)), sx = G.xDist0, sy = G.mid - 3 * G.rowH
-    const nxt = ysFor(N + 1), tx = G.xTok, ty = nxt.ys[N], cx = (sx + tx) / 2, cy = G.labY - 150
+    const cur = curYs(), tx = G.xTok, ty = cur.ys[N - 1] + cur.sp, cx = (sx + tx) / 2, cy = G.labY - 150
     const a = isLast ? 1 - clamp((pS - 0.9) / 0.1) : 1
     ctx.setLineDash([2, 5]); ctx.strokeStyle = rgba(C.tok[tok.c], 0.35 * a * (1 - clamp((pS - 0.9) / 0.1))); ctx.lineWidth = 1
     ctx.beginPath()
@@ -519,7 +518,7 @@ export function mountOverview(root: HTMLElement, nav: Nav): () => void {
     }
     ctx.stroke(); ctx.setLineDash([])
     const u = 1 - f, x = u * u * sx + 2 * u * f * cx + f * f * tx, y = u * u * sy + 2 * u * f * cy + f * f * ty
-    const h = Math.min(22, nxt.sp * 0.8), w = drawChip(x, y, tok, a, h, true)
+    const h = Math.min(22, cur.sp * 0.8), w = drawChip(x, y, tok, a, h, true)
     if (f >= 1) { ctx.font = F.small; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillStyle = rgba(C.mute, a); ctx.fillText(String(tok.id), x + w + 8, y + 0.5) }
   }
   /** Hover hint on a plate that opens a detail view. */

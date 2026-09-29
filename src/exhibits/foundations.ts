@@ -92,7 +92,7 @@ export function mountFoundations(root: HTMLElement, _nav: Nav): () => void {
     mk.hit('C', RC, 3, 3)
     ctx.font = F.small; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.mute, fin)
     ctx.fillText('row i of A →', RA.x - 10, RA.y + c / 2)
-    ctx.textAlign = 'center'; ctx.fillText('column j of B ↓', RB.x + c / 2, RB.y - 26)
+    ctx.textAlign = 'center'; ctx.fillText('column j of B ↓', RB.x + c / 2, RB.y - 50)
     const f = mk.resolve({ C: { g, K } })
     if (f) mk.gemmOverlay({ A: RA, Av: A, B: RB, Bv: B, C: RC, f, names: ['C', 'A', 'B'], note: `Cell (${f.i}, ${f.j}) is the dot product of row ${f.i} of A and column ${f.j} of B. On every page A sits on the left, B above, and C where they meet.` })
   }

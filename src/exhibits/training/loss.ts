@@ -116,11 +116,12 @@ export function mountLoss(root: HTMLElement, _nav: Nav): () => void {
       // the gradient p − y: right token up, the others down by their probability
       const gA = eout(clamp(pg / 0.4)) * (ps > 0 ? 1 - clamp(ps / 0.2) : 1)
       if (gA > 0) {
-        const gval = (right ? 1 : 0) - p0[i], len = gval * 90, ax = x + 18, ay = yv - 26
+        // both kinds sit above the percentage: up arrows start there, down arrows end there
+        const gval = (right ? 1 : 0) - p0[i], len = gval * 90, ax = x + 18, ay = yv - 26, dir = Math.sign(len) || 1
+        const tail = len > 0 ? ay : ay + len, head = len > 0 ? ay - len : ay
         ctx.strokeStyle = rgba(right ? col : C.ink, gA); ctx.lineWidth = 2
-        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax, ay - len); ctx.stroke()
-        const dir = Math.sign(len) || 1
-        ctx.beginPath(); ctx.moveTo(ax - 4, ay - len + 5 * dir); ctx.lineTo(ax, ay - len); ctx.lineTo(ax + 4, ay - len + 5 * dir); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(ax, tail); ctx.lineTo(ax, head); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(ax - 4, head + 5 * dir); ctx.lineTo(ax, head); ctx.lineTo(ax + 4, head + 5 * dir); ctx.stroke()
       }
     })
     // loss curve over the toy steps

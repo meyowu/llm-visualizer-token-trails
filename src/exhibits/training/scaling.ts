@@ -2,7 +2,7 @@ import { F, ctx } from '../../core/draw'
 import { raw } from '../../core/i18n'
 import { C, rgba } from '../../core/theme'
 import { clamp, eout, lerp } from '../../core/util'
-import { Gpt2Bpe } from '../../lib/gpt2/bpe'
+import { Gpt2Bpe, symbolLabels } from '../../lib/gpt2/bpe'
 import { scaling as S } from '../../lib/scaling/data'
 import { mountExhibit, words, type Env } from '../kit'
 import type { Nav } from '../registry'
@@ -128,22 +128,23 @@ function scenes({ stage, mk, k }: Env) {
   function sceneTokens(p: number) {
     const { W } = stage, sm = Mo[0].losses, lg = Mo[2].losses, gain = sm.map((v, i) => v - lg[i]), y0 = top + 40
     if (!bpe) { caption('loading the tokenizer …', pad, y0, 1, C.mute, 'left'); return }
-    const syms = bpe.encode(S.text).map((id) => bpe!.symbolOf(id)).slice(1)
+    // every token's text; the first has nothing before it, so it has no loss and is drawn plain
+    const all = symbolLabels(bpe.encode(S.text).map((id) => bpe!.symbolOf(id))).map((s) => s.replace(/\n/g, '↵')), syms = all.slice(1)
     title('the first sentences · shade: how much easier each token got for GPT-2 large', pad, y0 - 16, 1)
     let x = pad, y = y0 + 10
     const mx = Math.max(...gain), a = eout(clamp(p / 0.2))
-    for (let i = 0; i < syms.length; i++) {
-      const w = Math.min(90, 10 + syms[i].length * 7.2)
+    for (let i = -1; i < syms.length; i++) {
+      const s = i < 0 ? all[0] : syms[i], w = Math.min(90, 10 + s.trim().length * 7.2)
       if (x + w > W - pad) { x = pad; y += 28 }
       if (y > stage.H - 150) break
-      const g = gain[i] / mx
-      ctx.fillStyle = rgba(g >= 0 ? C.tok[0] : C.ink, (g >= 0 ? 0.08 + 0.8 * g : 0.08) * a); ctx.fillRect(x, y - 11, w - 3, 22)
+      const g = i < 0 ? 0 : gain[i] / mx
+      if (i >= 0) { ctx.fillStyle = rgba(g >= 0 ? C.tok[0] : C.ink, (g >= 0 ? 0.08 + 0.8 * g : 0.08) * a); ctx.fillRect(x, y - 11, w - 3, 22) }
       if (g < 0) { ctx.strokeStyle = rgba(C.ink, 0.5 * a); ctx.strokeRect(x + 0.5, y - 10.5, w - 4, 21) }
-      ctx.font = F.mono(11); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.ink, a); raw(() => ctx.fillText(syms[i].replace(/^Ġ/, ' ').replace('Ċ', '↵'), x + 3, y))
+      ctx.font = F.mono(11); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(i < 0 ? C.mute : C.ink, a); raw(() => ctx.fillText(s.trim(), x + 3, y))
       x += w
     }
     const order = [...gain.keys()].sort((q, r) => gain[r] - gain[q]).slice(0, 3), ta = eout(clamp((p - 0.5) / 0.12))
-    order.forEach((i, j) => caption(`“${syms[i].replace(/^Ġ/, ' ').trim()}”: ${sm[i].toFixed(2)} → ${lg[i].toFixed(2)}`, pad + j * 260, stage.H - 110, ta, C.ink2, 'left'))
+    order.forEach((i, j) => caption(`“${syms[i].trim()}”: ${sm[i].toFixed(2)} → ${lg[i].toFixed(2)}`, pad + j * 260, stage.H - 110, ta, C.ink2, 'left'))
     const worse = gain.filter((g) => g < 0).length
     mk.formula = { segs: [['mean gain', C.ink2], [' = ', C.mute], [`${(Mo[0].loss - Mo[2].loss).toFixed(3)} nats per token`, C.ink], ['   ·   ', C.mute], [`${worse} of ${gain.length} tokens got harder`, C.ink2]], note: 'Outlined: tokens where the large model did worse. Scaling laws are about the average; any single prediction can go either way.' }
   }
@@ -151,16 +152,19 @@ function scenes({ stage, mk, k }: Env) {
   /* ---------- 3: L(N, D) ---------- */
   function sceneFit(p: number) {
     const x0 = pad + 60, x1 = pad + 600, y0 = top + 40, y1 = stage.H - 90
-    const { X, Y } = axes(x0, x1, y0, y1, [9, 13], [1.8, 3.4], false, 1, 'training tokens D (log)', 'loss (Chinchilla fit)')
+    const { X, Y } = axes(x0, x1, y0, y1, [9, 13], [1.6, 3.4], false, 1, 'training tokens D (log)', 'loss (Chinchilla fit)')
     ctx.font = F.mono(10.5); ctx.fillStyle = rgba(C.mute, 1); ctx.textAlign = 'right'; ctx.textBaseline = 'middle'
     for (const v of [2, 2.5, 3]) ctx.fillText(v.toFixed(1), x0 - 6, Y(v))
     const Ns = [1e8, 1e9, 1e10, 7e10, 1e12]
+    // the curves' names at their right ends, pushed apart where the curves bunch up
+    const ly = Ns.map((N) => Y(Lnd(N, 1e13)) + 4)
+    for (let i = ly.length - 2; i >= 0; i--) ly[i] = Math.min(ly[i], ly[i + 1] - 15)
     Ns.forEach((N, i) => {
       const a = eout(clamp((p - 0.05 - i * 0.12) / 0.12))
       ctx.strokeStyle = rgba(C.tok[i], a); ctx.lineWidth = 1.8; ctx.beginPath()
       for (let e = 9; e <= 13; e += 0.05) { const y = Y(Math.min(3.4, Lnd(N, 10 ** e))); if (e === 9) ctx.moveTo(X(10 ** e), y); else ctx.lineTo(X(10 ** e), y) }
       ctx.stroke()
-      caption(`N = ${big(N)}`, x1 + 8, Y(Lnd(N, 1e13)) + 4, a, C.tok[i], 'left')
+      caption(`N = ${big(N)}`, x1 + 8, ly[i], a, C.tok[i], 'left')
     })
     ctx.strokeStyle = rgba(C.ink, 0.4); ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(x0, Y(E)); ctx.lineTo(x1, Y(E)); ctx.stroke(); ctx.setLineDash([])
     caption('E = 1.69: what no model removes', x0 + 8, Y(E) - 6, 1, C.mute, 'left')

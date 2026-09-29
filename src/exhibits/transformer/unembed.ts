@@ -291,7 +291,7 @@ export function mountUnembed(root: HTMLElement, nav: Nav): () => void {
     subLabel('ln_f', L.lnX, yl - 24 - (N - 1) * 10, lnAct > 0.5)
     drawChip(L.lx, yl + 26, seq[N - 1], a, 20)
     ctx.font = F.small; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(C.mute, a)
-    ctx.fillText('last position only', L.lx + chipW(seq[N - 1].text) + 8, yl + 26)
+    ctx.fillText('last position only', L.lx, yl + 52)
   }
   function drawX(a: number, reveal?: (i: number, j: number) => number) {
     mk.drawMat({ r: L.xr, vals: R.xs, kind: 'row', alpha: a, name: 'x', shape: '1 × 768', real: `${D} drawn`, label: 'bottom', rowCols: [mk.tokRGB(seq.length - 1)], reveal })

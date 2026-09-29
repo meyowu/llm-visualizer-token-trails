@@ -191,9 +191,9 @@ function scenes({ stage, ctx, mk, k }: Env) {
   /* ---------- scene 4: size ---------- */
   function sceneSize(p: number) {
     const { W: Wd } = stage
-    const x0 = pad + 200, w = Wd - pad - x0 - 270, max = 320, rowH = 62
+    const x0 = pad + 200, w = Wd - pad - x0 - 310, max = 320, rowH = 62
     title('kv cache per token, 16-bit', x0, top + 18, 1)
-    title('one 128K-token sequence', Wd - pad - 150, top + 18, 1)
+    title('one 128K-token sequence', Wd - pad - 190, top + 18, 1)
     MODELS.forEach(([name, v, sub], r) => {
       const a = eout(clamp((p - 0.05 - r * 0.12) / 0.12)), g = eio(clamp((p - 0.08 - r * 0.12) / 0.2)), y = top + 44 + r * rowH
       if (a <= 0) return
@@ -203,7 +203,7 @@ function scenes({ stage, ctx, mk, k }: Env) {
       ctx.fillStyle = rgba(C.ink, 0.7 * a); ctx.fillRect(x0, y + 4, bw, 20)
       ctx.font = F.mono(12); ctx.fillStyle = rgba(C.ink2, a * g); ctx.fillText(`${fmt(v)} KiB`, x0 + bw + 8, y + 19)
       const gib = (v * 131072) / 2 ** 20
-      ctx.fillText(name === 'GPT-2 small' ? 'max 1,024 tokens' : `${gib >= 10 ? Math.round(gib) : gib.toFixed(1)} GiB`, Wd - pad - 150, y + 19)
+      ctx.fillText(name === 'GPT-2 small' ? 'max 1,024 tokens' : `${gib >= 10 ? Math.round(gib) : gib.toFixed(1)} GiB`, Wd - pad - 190, y + 19)
     })
     const la = eout(clamp((p - 0.62) / 0.1))
     caption('LLaMA 3 70B’s weights take 140 GB in 16-bit; its cache for one 128K-token sequence takes 40 GiB,', x0, top + 44 + MODELS.length * rowH + 20, la, C.ink2, 'left')

@@ -210,7 +210,8 @@ function scenes({ stage, mk, k }: Env) {
       else if (hatchA > 0) { ctx.strokeStyle = rgba(C.mute, 0.7 * hatchA); ctx.beginPath(); ctx.moveTo(x + 1, y + cs - 1); ctx.lineTo(x + cs - 1, y + 1); ctx.stroke() }
     }
     const gb = gy + rows * (cs + 2)
-    caption(`allowed at the name: ${c.allowed} tokens (${(frac * 100).toFixed(3)}%), less than the filled cell; hatched: masked`, gx, gb + 18, hatchA, C.ink2, 'left')
+    caption(`allowed at the name: ${c.allowed} tokens (${(frac * 100).toFixed(3)}%), less than the filled cell`, gx, gb + 18, hatchA, C.ink2, 'left')
+    caption('hatched: masked', gx, gb + 34, hatchA, C.mute, 'left')
     // before and after
     const xD = gx + cols * (cs + 2) + 60, wD = W - pad - xD, ba = eout(clamp((p - 0.4) / 0.12))
     title('model’s own top tokens', xD, y0 - 14, 1)
