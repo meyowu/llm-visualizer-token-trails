@@ -5,7 +5,7 @@
   "description": "Interactive, animated visualizations of AI concepts, starting with the Transformer.",
   "license": "MIT",
   "author": "Zhehao Wu <zhehao075@gmail.com>",
-  "homepage": "https://meyowu.github.io/token-trails/",
+  "homepage": "https://tokentrails.org",
   "repository": {
     "type": "git",
     "url": "https://github.com/meyowu/token-trails.git"
