@@ -1,4 +1,5 @@
 import { F, rr, serifAt } from '../../core/draw'
+import { raw } from '../../core/i18n'
 import { fmt, fmtF, gemm, type Rect } from '../../core/matrix'
 import { C, rgba, type RGB } from '../../core/theme'
 import { clamp, eio, eout, lerp } from '../../core/util'
@@ -39,7 +40,7 @@ const COMPARE: Record<string, [string, string]> = {
 
 const CAPS: Record<string, [string, string]> = {
   towers: ['CLIP has two encoders. The text one is shaped like GPT-2 (causal, 12 layers) but outputs one vector, read at the end-of-text token, instead of next-token scores. The image one is a Vision Transformer. Each vector is projected to 512 numbers and scaled to length 1. Click a label to jump.', 'image → ViT → 512 · text → Transformer → 512'],
-  space: ['These are real CLIP embeddings of four drawn images and their captions. On their first principal component, all images sit on one side and all captions on the other (the known “modality gap”); on the second, each image lines up with its own caption.', 'length-1 vectors · dot product = cosine'],
+  space: ['These are real CLIP embeddings of four drawn images and their captions. On their first principal component, all images sit on one side and all captions on the other (the known “modality gap”); on the second, the heart’s picture and caption sit at one end and the triangle’s at the other, while the square and the star, pictures and captions alike, fall close together in between.', 'length-1 vectors · dot product = cosine'],
   matrix: ['Training takes a batch of image–caption pairs and computes every image against every caption: one matrix product. The loss pushes the diagonal (the true pairs) up and everything else down, along rows and along columns. Real CLIP numbers; hover the cells.', 'S = I · Tᵀ · softmax both ways'],
   zeroshot: ['Because labels are just text, CLIP classifies without training for the task: write one caption per class, embed them, and pick the most similar. CLIP was never trained on these shapes, yet all eight answers here are right.', 'class = argmax cos(image, “a photo of a …”)'],
   scale: ['The raw cosines are close together (0.2 to 0.4). CLIP multiplies them by a learned scale, the inverse of a temperature, before the softmax. It starts at 14.3 and training pushes it to its cap of 100, which turns small gaps into confident answers.', 'softmax(100 · cos)'],
@@ -152,18 +153,32 @@ function scenes({ stage, ctx, mk, k }: Env) {
     }
     // the principal-component map
     const mx0 = x0 + SHOW * cs + 90, mx1 = W - pad - 20, my0 = top + 40, my1 = top + avail - 30
-    const X = (v: number) => lerp(mx0 + 30, mx1 - 30, (v + 0.7) / 1.4), Y = (v: number) => lerp(my1 - 20, my0 + 20, (v + 0.32) / 0.6)
+    const ys = clip.pca.map((q) => q[1]), lo = Math.min(...ys) - 0.04, hi = Math.max(...ys) + 0.04
+    const X = (v: number) => lerp(mx0 + 150, mx1 - 60, (v + 0.6) / 1.2), Y = (v: number) => lerp(my1 - 20, my0 + 30, (v - lo) / (hi - lo))
+    /** Pixel heights pushed apart to at least `gap`, in their order, so close points keep readable labels. */
+    const spread = (v: number[], gap: number) => {
+      const o = v.map((y, k) => [y, k]).sort((a, b) => a[0] - b[0]), out = [...v]
+      for (let r = 1; r < o.length; r++) o[r][0] = Math.max(o[r][0], o[r - 1][0] + gap)
+      const shift = (o[o.length - 1][0] - v[o[o.length - 1][1]]) / 2
+      o.forEach(([y, k]) => { out[k] = y - shift })
+      return out
+    }
+    const iY = spread(clip.pca.slice(0, N).map((q) => Y(q[1])), 32), tY = spread(clip.pca.slice(N).map((q) => Y(q[1])), 20)
     const ma = eout(clamp((p - 0.35) / 0.12))
     if (ma > 0) {
       title('two principal directions of the 8 vectors', mx0, top + 12, ma)
       ctx.strokeStyle = rgba(C.ink, 0.15 * ma); ctx.lineWidth = 1
       ctx.beginPath(); ctx.moveTo(X(0), my0); ctx.lineTo(X(0), my1); ctx.moveTo(mx0, Y(0)); ctx.lineTo(mx1, Y(0)); ctx.stroke()
       caption('captions', X(-0.54), my1 + 18, ma, C.ink2); caption('images', X(0.54), my1 + 18, ma, C.ink2)
+      // a dot at each vector's true place; its picture or caption beside it, moved apart where two are close
       for (let j = 0; j < N; j++) {
         const la = eout(clamp((p - 0.5 - j * 0.06) / 0.1)) * ma, [ix, iy] = clip.pca[j], [tx, ty] = clip.pca[N + j]
-        ctx.setLineDash([3, 4]); ctx.strokeStyle = rgba(hue(j), 0.7 * la); ctx.beginPath(); ctx.moveTo(X(tx) + 64, Y(ty)); ctx.lineTo(X(ix) - 16, Y(iy)); ctx.stroke(); ctx.setLineDash([])
-        pic(j, X(ix) - 13, Y(iy) - 13, 26, ma, true)
-        ctx.font = F.mono(11); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(hue(j), ma); ctx.fillText(clip.captions[j].text, X(tx), Y(ty))
+        ctx.setLineDash([3, 4]); ctx.strokeStyle = rgba(hue(j), 0.7 * la); ctx.beginPath(); ctx.moveTo(X(tx), Y(ty)); ctx.lineTo(X(ix), Y(iy)); ctx.stroke(); ctx.setLineDash([])
+        ctx.strokeStyle = rgba(hue(j), 0.5 * ma); ctx.lineWidth = 1
+        ctx.beginPath(); ctx.moveTo(X(ix), Y(iy)); ctx.lineTo(X(ix) + 12, iY[j]); ctx.moveTo(X(tx), Y(ty)); ctx.lineTo(X(tx) - 10, tY[j]); ctx.stroke()
+        for (const [x, y] of [[X(ix), Y(iy)], [X(tx), Y(ty)]]) { ctx.fillStyle = rgba(hue(j), ma); ctx.beginPath(); ctx.arc(x, y, 3, 0, 7); ctx.fill() }
+        pic(j, X(ix) + 14, iY[j] - 13, 26, ma, true)
+        ctx.font = F.mono(11); ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(hue(j), ma); raw(() => ctx.fillText(clip.captions[j].text, X(tx) - 14, tY[j]))
       }
     }
     mk.formula = { segs: [['‖i‖ = ‖t‖ = 1', C.ink2], ['     ·     ', C.mute], ['i · t = cos(angle between them)', C.ink]], note: 'Real CLIP ViT-B/32 embeddings. The map is a projection of 512 dimensions onto the two directions along which these 8 vectors vary most; the horizontal one separates the two kinds of input, the vertical one the four items.' }
@@ -266,7 +281,7 @@ function scenes({ stage, ctx, mk, k }: Env) {
     ctx.fillStyle = rgba(C.ink, fin); ctx.beginPath(); ctx.arc(X(t), ay, 5, 0, 7); ctx.fill()
     ctx.font = serifAt(18); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = rgba(C.ink, fin); ctx.fillText(`scale ${t < 10 ? t.toFixed(1) : Math.round(t)}`, ax0, ay - 16)
     caption('14.3 = 1 / 0.07, the starting value · 100, the cap it reaches', ax0, ay + 44, fin, C.ink2, 'left')
-    mk.formula = { segs: [['p = softmax(scale · cos)', C.ink], ['     ·     ', C.mute], [`scale ${t < 10 ? t.toFixed(1) : Math.round(t)}  →  p(“a red circle”) = ${fmtF(P[0])}`, C.ink2]], note: 'The same as dividing by a temperature T = 1 / scale, as in GPT-2’s sampling, except that here it is learned during training. The cosines themselves never change on this slide.' }
+    mk.formula = { segs: [['p = softmax(scale · cos)', C.ink], ['     ·     ', C.mute], [`scale ${t < 10 ? t.toFixed(1) : Math.round(t)}  →  p(“${clip.captions[0].text}”) = ${fmtF(P[0])}`, C.ink2]], note: 'The same as dividing by a temperature T = 1 / scale, as in GPT-2’s sampling, except that here it is learned during training. The cosines themselves never change on this slide.' }
   }
 
   return { towers: sceneTowers, space: sceneSpace, matrix: sceneMatrix, zeroshot: sceneZeroshot, scale: sceneScale }

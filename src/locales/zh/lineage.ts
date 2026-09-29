@@ -596,7 +596,7 @@ export const lineage: Record<string, string> = {
   'i · t = cos(angle between them)': 'i · t = cos(两者夹角)',
   'Real CLIP ViT-B/{} embeddings. The map is a projection of {} dimensions onto the two directions along which these {} vectors vary most; the horizontal one separates the two kinds of input, the vertical one the four items.': '真实的 CLIP ViT-B/{0} 嵌入。这张图把 {1} 维投影到这 {2} 个向量变化最大的两个方向上；水平方向把两类输入分开，垂直方向把四个物体分开。',
   'GPT-2’s embeddings': 'GPT-2 的嵌入',
-  'These are real CLIP embeddings of four drawn images and their captions. On their first principal component, all images sit on one side and all captions on the other (the known {}); on the second, each image lines up with its own caption.': '这些是四张手绘图像及其说明文字的真实 CLIP 嵌入。在第一主成分上，所有图像在一侧，所有说明在另一侧（即所谓的 {0}）；在第二主成分上，每张图像与自己的说明对齐。',
+  'These are real CLIP embeddings of four drawn images and their captions. On their first principal component, all images sit on one side and all captions on the other (the known {}); on the second, the heart’s picture and caption sit at one end and the triangle’s at the other, while the square and the star, pictures and captions alike, fall close together in between.': '这些是四张手绘图像及其说明文字的真实 CLIP 嵌入。在第一主成分上，所有图像在一侧，所有说明在另一侧（即所谓的 {0}）；在第二主成分上，爱心的图像和说明在一端，三角形的在另一端，而正方形和星形，无论图像还是说明，都挤在中间。',
   'length-1 vectors · dot product = cosine': '长度为 1 的向量 · 点积 = 余弦',
   'TWO PRINCIPAL DIRECTIONS OF THE {} VECTORS': '这 {0} 个向量的两个主方向',
   'captions': '说明文字',

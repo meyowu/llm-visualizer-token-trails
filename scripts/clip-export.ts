@@ -136,8 +136,14 @@ const star = (x: number, y: number) => {
   const t = Math.abs(k - Math.PI / 5) / (Math.PI / 5)
   return r < 34 + (82 - 34) * t ** 1.6
 }
+/** The classic implicit heart, (u² + v² − 1)³ < u² v³, about 140 px across (image y points down). */
+const heart = (x: number, y: number) => {
+  const u = x / 62, v = -y / 62 + 0.125, q = u * u + v * v - 1
+  return q * q * q < u * u * v * v * v
+}
+// no red disc: on white it reads as a national flag
 const SHAPES: Record<string, Shape> = {
-  circle: (x, y) => x * x + y * y < 70 * 70,
+  heart,
   square: (x, y) => Math.abs(x) < 64 && Math.abs(y) < 64,
   triangle: (x, y) => y < 62 && y > -80 + Math.abs(x) * 1.75,
   star,
@@ -176,7 +182,7 @@ function encodeImage(img: Uint8ClampedArray) {
 
 /* ---------- export ---------- */
 const r3 = (v: number) => Math.round(v * 1000) / 1000
-const PAIRS: [string, string][] = [['red', 'circle'], ['blue', 'square'], ['green', 'triangle'], ['yellow', 'star']]
+const PAIRS: [string, string][] = [['red', 'heart'], ['blue', 'square'], ['green', 'triangle'], ['yellow', 'star']]
 const scale = Math.exp(w('logit_scale')[0])
 const images = PAIRS.map(([c, s]) => { const img = draw(s, c); console.log(`image: ${c} ${s}`); return { c, s, img, emb: encodeImage(img) } })
 const caption = (texts: string[]) => texts.map((t) => ({ t, ...encodeText(t) }))
