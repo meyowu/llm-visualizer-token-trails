@@ -54,7 +54,7 @@ export function symbolLabels(symbols: string[]): string[] {
   for (let k = 0; k < all.length; ) {
     const n = Math.min(len(all[k]), all.length - k), toks = [...new Set(owner.slice(k, k + n))]
     if (toks.length > 1) {
-      let ch = '�'
+      let ch = String.fromCharCode(0xfffd)
       try { ch = new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(all.slice(k, k + n))) } catch { /* not valid UTF-8 */ }
       toks.forEach((t, j) => { out[t] = `${ch} ${j + 1}/${toks.length}` })
     }
