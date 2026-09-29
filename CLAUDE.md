@@ -242,8 +242,10 @@ src/exhibits/agents/
 - The browser pane's `preview_start` with the `dev` config has failed to serve before. If :5173 doesn't answer, run `npx vite --port 5174` in the background and navigate there. A hidden pane throttles rAF, so take a fresh screenshot before judging a frozen frame.
 - Don't rely on Unicode subscript characters in the serif; use `mathRun()` or `fillRich()` for math with subscripts. A one- or two-letter name before `_` is math (W_Q, ln_f, π_ref, x_{t−1} with braces); a longer one is code (count_letter, <tool_call>) and stays as written.
 - Phones: nothing in the page may be wider than the screen. Below 520px the frame's toggles, steppers, slider labels, caption titles and shape lines wrap (`styles.css`); keep phase names plus their short label under about 36 characters and caption shape lines under about 46. Check every phase at 390px wide (document.documentElement.scrollWidth must stay 390) after adding a page.
-- The repo is private: github.com/meyowu/token-trails.
+- The repo: github.com/meyowu/token-trails.
 
 ## Shipping
 
 When a piece of work is finished and verified, ship it without asking: commit on `main`, push, then `npm run build:artifact` and republish `dist-artifact/index.html` to the existing preview Artifact (https://claude.ai/artifact/RbScAmBiuDJhyQ9xvgG9vz) by its `url`.
+
+A push to `main` also deploys the site to GitHub Pages (https://meyowu.github.io/token-trails/) through `.github/workflows/deploy.yml` (`npm ci`, `npm run build`, upload `dist/`); check it with `gh run list --workflow deploy.yml`. Code is MIT, the explanatory content CC BY-NC 4.0 (`LICENSE-CONTENT.md`), third-party material is listed in `NOTICE.md`: add a row there when a new export script uses another model.

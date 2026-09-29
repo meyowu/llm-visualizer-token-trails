@@ -8,6 +8,8 @@ The site reads in English or Chinese (the EN / 中文 switch in the sidebar, or 
 
 Made by Zhehao Wu · [zhehao075@gmail.com](mailto:zhehao075@gmail.com) · [github.com/meyowu/token-trails](https://github.com/meyowu/token-trails)
 
+**Live:** [meyowu.github.io/token-trails](https://meyowu.github.io/token-trails/), deployed from `main` by GitHub Actions ([.github/workflows/deploy.yml](.github/workflows/deploy.yml)).
+
 ## What's here
 
 - **Start here**: what a language model does (a live next-token example with real GPT-2 numbers), what a Transformer is, the path through the chapters inside the model, and how to read the pictures.
@@ -182,3 +184,9 @@ scripts/
 ```
 
 To add an exhibit, write a `mount(root, nav) => destroy` function under `exhibits/` and give its entry in `registry.ts` a `route` and `mount`.
+
+## License
+
+- Code: MIT ([LICENSE](LICENSE)).
+- Explanatory content (captions, notes, questions, glossary definitions, the Chinese translations, the drawings' design and the logo): CC BY-NC 4.0 ([LICENSE-CONTENT.md](LICENSE-CONTENT.md)). Non-commercial use with credit is welcome; for commercial use, ask.
+- Third-party fonts, GPT-2's merge rules and the numbers computed from public models keep their own licenses ([NOTICE.md](NOTICE.md)).
