@@ -5,10 +5,11 @@ import { harvest, lang, loadLang, onLang, setLang, t } from './core/i18n'
 import { openAtPhase } from './core/player'
 import { pref } from './core/prefs'
 import { progress } from './core/progress'
-import { getParams, readAddress, routeHref, HASH_ROUTES } from './core/link'
+import { getParams, pathIsZh, readAddress, routeHref, HASH_ROUTES } from './core/link'
 import { poke } from './core/stage'
 import { watchTheme } from './core/theme'
 import { reducedMotion } from './core/util'
+import { SEO } from './exhibits/seo'
 import { ALIASES, CATEGORIES, DEFAULT_ROUTE, FOUNDATIONS, GLOSSARY, ROUTES, START, exhibitsOf, isHeading, type Exhibit, type Mount } from './exhibits/registry'
 
 // the page's text in the page file is for search engines and readers with scripts off (scripts/pages.mjs); the app
@@ -72,6 +73,10 @@ function applyStatic() {
 applyStatic()
 langBtn.addEventListener('click', () => setLang(lang === 'en' ? 'zh' : 'en'))
 onLang(() => {
+  // the address follows the language: /zh/… for Chinese
+  const { route, qs } = readAddress()
+  try { history.replaceState(history.state, '', routeHref(route || 'home', qs)) } catch { /* sandboxed frames may refuse */ }
+  brand.href = routeHref('home')
   applyStatic()
   applyTheme(pref.get('theme') ?? 'system')
   syncRailBtn()
@@ -269,6 +274,12 @@ let current: { route: string; root: HTMLElement; destroy: () => void } | null = 
 function parse(): string {
   let { route: h, qs } = readAddress()
   let fix = !HASH_ROUTES && location.hash.startsWith('#/')
+  if (!HASH_ROUTES) {
+    // the path names the language: a reader who chose Chinese is taken to /zh/…, and ?lang= has done its work
+    const q = new URLSearchParams(qs)
+    if (q.has('lang')) { q.delete('lang'); qs = q.toString(); fix = true }
+    if (pathIsZh() !== (lang === 'zh')) fix = true
+  }
   for (const [from, to] of ALIASES) {
     if (h !== from && !h.startsWith(from + '/')) continue
     h = to + h.slice(from.length); fix = true
@@ -323,8 +334,10 @@ async function go(target: string, origin?: { x: number; y: number }, push = true
   chapterNav(route, root)
   saveButton(route, root)
   current = { route, root, destroy }
-  const cat = CATEGORIES.find((c) => exhibitsOf(c).some((e) => e.route === route))?.title
-  document.title = route === 'home' ? 'Token Trails' : [t(nameOf(route)), cat && t(cat), 'Token Trails'].filter(Boolean).join(' · ')
+  // the title and description search results show (exhibits/seo.ts), in the reader's language
+  const seo = SEO[route], cat = CATEGORIES.find((c) => exhibitsOf(c).some((e) => e.route === route))?.title
+  document.title = seo ? (route === 'home' ? t(seo[0]) : `${t(seo[0])} · Token Trails`) : [t(nameOf(route)), cat && t(cat), 'Token Trails'].filter(Boolean).join(' · ')
+  if (seo) document.querySelector('meta[name="description"]')?.setAttribute('content', t(seo[1]))
   // the opening animation has the whole window: no rail
   app.classList.toggle('home', route === 'home')
   app.classList.remove('menu-open'); syncRailBtn()

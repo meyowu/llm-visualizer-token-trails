@@ -1,4 +1,4 @@
-import { getParams } from './link'
+import { getParams, pathIsZh, setPathLang } from './link'
 import { pref } from './prefs'
 
 /*
@@ -40,6 +40,8 @@ export function loadLang(l: Lang): Promise<void> {
 }
 
 function initial(): Lang {
+  // a Chinese page's address (/zh/…) decides; elsewhere ?lang=, the reader's choice, then the browser's language
+  try { if (pathIsZh()) return 'zh' } catch { /* no location */ }
   let q: string | null = null
   try { q = getParams().get('lang') } catch { /* no location */ }
   const saved = q ?? pref.get('lang')
@@ -47,6 +49,7 @@ function initial(): Lang {
   return typeof navigator !== 'undefined' && /^zh/i.test(navigator.language) ? 'zh' : 'en'
 }
 export let lang: Lang = initial()
+setPathLang(lang === 'zh')
 document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'
 
 const listeners = new Set<() => void>()
@@ -55,6 +58,7 @@ export async function setLang(l: Lang) {
   if (l === lang) return
   await loadLang(l)
   lang = l
+  setPathLang(l === 'zh')
   pref.set('lang', l)
   document.documentElement.lang = l === 'zh' ? 'zh-CN' : 'en'
   cache.clear()

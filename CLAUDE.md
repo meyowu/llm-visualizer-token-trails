@@ -8,7 +8,7 @@ A portfolio of interactive, animated visualizations of AI concepts, built step b
 
 - `npm run dev`: dev server on :5173.
 - `npm run typecheck`: `tsc --noEmit` (TypeScript 7, strict, `noUnusedLocals`/`noUnusedParameters`).
-- `npm run build`: typecheck, then a production build to `dist/`, then `scripts/pages.mjs`: one HTML file per page (`dist/anatomy/attention/index.html`, its own title, description, canonical URL and share card, and the page's text: every page is opened in headless Chrome and its header, every step's caption, code and references are written in, with a list of all pages; hidden while the app runs), `404.html`, `sitemap.xml`, `robots.txt`. It needs Chrome or Chromium (found in the usual places, or set `CHROME`; the deploy uses the runner's Google Chrome) and fails if any page throws or logs an error.
+- `npm run build`: typecheck, then a production build to `dist/`, then `scripts/pages.mjs`: one HTML file per page and language (`dist/anatomy/attention/index.html` and `dist/zh/anatomy/attention/index.html`), each with its title and description (`src/exhibits/seo.ts`), canonical URL, hreflang links to the other language, share card, structured data (JSON-LD: WebSite on the home page, BreadcrumbList elsewhere) and the page's text: every page is opened in headless Chrome in both languages and its header, every step's caption, code and references are written in, with the rail's list of pages; hidden while the app runs. Also `404.html`, `sitemap.xml` (both languages), `robots.txt`. It needs Chrome or Chromium (found in the usual places, or set `CHROME`; the deploy uses the runner's Google Chrome) and fails if any page throws or logs an error, or a live route has no title and description or no Chinese for them.
 - `npm run data:opening`: regenerate `src/data/opening.json` (the home animation's slice of `gpt2.json`); run it after `scripts/gpt2-export.ts`.
 - `npm run build:artifact`: a single-file page in `dist-artifact/index.html` (via `vite-plugin-singlefile` + `scripts/artifact.mjs`, which strips the doctype/html/head/body wrappers). Publish that file to the existing preview Artifact by its `url` rather than creating a new one.
 
@@ -17,8 +17,9 @@ There are no tests, but `npm run build` opens every page once and fails on an er
 ## Layout
 
 ```
-src/main.ts                 rail nav (collapsible; a drawer on phones), router (/route/?phase=id; # routes in the preview build; old #/ links
-                            rewritten), each page's code loaded on first visit (the next tour page and hovered rail links prefetched),
+src/main.ts                 rail nav (collapsible; a drawer on phones), router (/route/?phase=id, /zh/route/ in Chinese; # routes in the
+                            preview build; old #/ links rewritten; a reader who chose Chinese is taken to /zh/), title and meta
+                            description from exhibits/seo.ts, each page's code loaded on first visit (the next tour page and hovered rail links prefetched),
                             page titles, theme,
                             ?embed=1 and Present modes, Save frame,
                             tour order with previous/next (Shift+←/→), zoom transitions
@@ -28,14 +29,16 @@ src/core/stage.ts           Stage: DPR-aware canvas with a min size; scaled to f
 src/core/player.ts          Player: phases, t, play/pause, step buttons, Step/Auto pacing, speed, timeline, keys, All steps list
                             (player.describe), ?phase= in the URL; openAtPhase() for links
 src/core/fonts.ts           registerFonts(): the three families as self-hosted woff2 (@fontsource files), Latin, Latin Ext, Greek
-src/core/link.ts            routeHref()/readAddress(): /anatomy/unembed/?phase=… on the site, #/anatomy/unembed?phase=… in the single-file
-                            preview (HASH_ROUTES); getParams()/setParams(): page state in the address, replaceState only
+src/core/link.ts            routeHref()/readAddress(): /anatomy/unembed/?phase=… on the site (/zh/anatomy/unembed/… in Chinese: pathIsZh(),
+                            setPathLang()), #/anatomy/unembed?phase=… in the single-file preview (HASH_ROUTES); getParams()/setParams():
+                            page state in the address, replaceState only
 src/core/progress.ts        steps seen per page and the last place (rail ✓ / n of m, Resume on the start page)
 src/core/prefs.ts           pref.get/set: reader preferences in localStorage (speed, pacing, questions, temperature, strategy, lang)
-src/core/i18n.ts            EN / 中文: lang, loadLang (the Chinese is its own chunk), setLang/onLang, t() (English is the key; numbers and quoted spans are {} placeholders),
+src/core/i18n.ts            EN / 中文: lang (a /zh/ path, else ?lang=, the reader's choice, the browser's language), loadLang (the Chinese is its own chunk), setLang/onLang, t() (English is the key; numbers and quoted spans are {} placeholders),
                             tf(template, …args) for text built around names (the template is the key),
                             localizeCanvas() (fillText/measureText translate), raw() for text that must stay as is, harvest mode
-src/locales/zh/             Chinese: ZH (key → text with {0}, {1}…) and ZH_TERMS (glossary names, definitions, spellings), one file per part
+src/locales/zh/             Chinese: ZH (key → text with {0}, {1}…) and ZH_TERMS (glossary names, definitions, spellings), one file per part;
+                            pages.ts holds the search titles and descriptions
 src/core/frame.ts           createFrame(): header/specs (setSpecs), stage host, formula strip, caption line, controls; toggle(), stepper(),
                             select() (a dropdown with option groups), rich()
 src/core/draw.ts            primitives: chips, plate(), bracketLabel(), mathName()/mathRun(), fonts F
@@ -53,6 +56,8 @@ src/exhibits/learn.ts       per page: code lines (marked per phase), predict-the
                             Questions on; options shown in a fixed shuffled order per question), recap; teach(player, page)
 src/exhibits/kit.ts         mountExhibit(): the shared frame of a scene-per-phase page, Architectures, Serving, Training and Agents (Compare button,
                             pills that jump to a phase, onFrame hooks) and canvas helpers (Kit: pill, lane, glass, arrow…)
+src/exhibits/seo.ts         per route: the title search results show (in the words people search for; the site's name is added) and a
+                            one-sentence description; no imports, so Node can read it (scripts/pages.mjs)
 src/exhibits/registry.ts    categories (Inside the model, Architectures, Training, Serving, Agents; routes anatomy/*, lineage/*, …) → entries: exhibits or sub-headings;
                             an exhibit may have `children` (its steps); live when it has `route` and `load` (a dynamic import of its
                             mount, so every page is its own chunk); no static imports of pages, so Node can read it (scripts/pages.mjs)
@@ -86,9 +91,10 @@ src/data/gpt2.json          real GPT-2 small activations for 3 prompts × 3 gree
 src/data/opening.json       the home animation's pass of gpt2.json, top 8 logits with the rest folded into the tail (exact), a few KiB
                             (made by scripts/opening-export.mjs), so the home page does not download gpt2.json
 public/og.png               the 1200 × 630 share card: the home animation just before its title, with the name and address
-scripts/pages.mjs           after vite build: a page file per route with its meta tags and its text (read from the built site in Chrome:
-                            header, All steps, code, references; a .static-page article and a .static-nav list that the app removes
-                            and styles.css hides unless scripts are off), 404.html, sitemap.xml, robots.txt
+scripts/pages.mjs           after vite build: a page file per route and language (/zh/…) with its meta tags, hreflang, JSON-LD and its text
+                            (read from the built site in Chrome: title, description, header, All steps, code, references, the rail; a
+                            .static-page article and a .static-nav list that the app removes and styles.css hides unless scripts are
+                            off), 404.html, sitemap.xml, robots.txt
 scripts/chrome.mjs          headless Chrome over the DevTools protocol through a pipe (no package): open a page, wait for the network,
                             evaluate, collect errors; used by pages.mjs
 scripts/opening-export.mjs  cuts src/data/opening.json out of src/data/gpt2.json
@@ -225,7 +231,7 @@ src/exhibits/agents/
 ## Adding an exhibit or detail view
 
 1. Write `mountX(root, nav): () => void`: `createFrame` (with `formula: true` for a detail view) → `new Stage` → `new Player(PHASES, frame.controls)` → `new MatrixKit(stage, tokens, frame.setFormula)` → set `player.describe` (caption per phase, for All steps) → `teach(player, page)` with an entry in `learn.ts` → `runLoop(step, () => !player.playing)` that ticks, draws, updates the timeline UI and sets the caption. Only set an initial `player.t` when it is still 0 (a `?phase=` link may have placed it). Return a destroy that stops the loop and calls `player.destroy()` and `stage.destroy()`.
-2. Register it in `registry.ts` (`route` + `load: () => import('./x/page').then((m) => m.mountX)`; never a static import, which would put the page in every visitor's download), and add it to `TOUR` in `main.ts` if it belongs to the reading order. Steps of an exhibit go in its `children` with a deeper route (`anatomy/mlp`), which opens with a zoom-in. Routes are paths (`/anatomy/attention/`, `/lineage/llama/`; `#/…` in the preview build); old `#/` links and renamed prefixes (`ALIASES`) keep working. A new route gets its page file, sitemap entry and meta tags from `scripts/pages.mjs` automatically.
+2. Register it in `registry.ts` (`route` + `load: () => import('./x/page').then((m) => m.mountX)`; never a static import, which would put the page in every visitor's download), and add it to `TOUR` in `main.ts` if it belongs to the reading order. Steps of an exhibit go in its `children` with a deeper route (`anatomy/mlp`), which opens with a zoom-in. Routes are paths (`/anatomy/attention/`, `/lineage/llama/`; `#/…` in the preview build); old `#/` links and renamed prefixes (`ALIASES`) keep working. A new route gets its page files (English and /zh/), sitemap entries and meta tags from `scripts/pages.mjs` automatically; give it a title and description in `src/exhibits/seo.ts` (the words people search for, 60 characters or so for the title with the site's name, about 150 for the description) and their Chinese in `src/locales/zh/pages.ts`, or the build fails.
    An Architectures (lineage/*), Serving, Training or Agents page (scenes per phase rather than one matrix walk-through) uses `mountExhibit()` from `exhibits/kit.ts` instead: pass the frame options, phases, captions, a Compare route per phase and a `scenes(env)` factory. Serving, Training and Agents pages pass `compareLabel: 'Related'`, since their links go to related pages rather than to the GPT-2 part they change. Give it `hints` per phase: the hint under the formula strip should offer only what that phase has (hover targets, labels to click, controls).
 3. To open a detail view from the overview, add its plate to `plateAt` / `PLATE_ROUTES` in `overview.ts` (hover highlight and `drawOpenHint` follow). Mention the click in that phase's caption.
 

@@ -6,12 +6,13 @@
 import { agents } from './agents'
 import { anatomy } from './anatomy'
 import { lineage } from './lineage'
+import { pages } from './pages'
 import { serving } from './serving'
 import { terms } from './terms'
 import { training } from './training'
 import { ui } from './ui'
 
-export const ZH: Record<string, string> = { ...ui, ...anatomy, ...training, ...lineage, ...serving, ...agents }
+export const ZH: Record<string, string> = { ...ui, ...pages, ...anatomy, ...training, ...lineage, ...serving, ...agents }
 
 /** Glossary terms by their English name: [Chinese name, Chinese definition, Chinese spellings to mark in captions…]. */
 export const ZH_TERMS: Record<string, string[]> = terms
